@@ -1,5 +1,13 @@
-const api = require('../../utils/api');
 const { createPageInstance, initStorage, defaultUser } = require('../helpers');
+
+function createControllablePromise() {
+  let resolve, reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
 
 function createMockApp(loggedIn = true) {
   return {
@@ -24,11 +32,13 @@ function createMockApp(loggedIn = true) {
 describe('Favorites 收藏页', () => {
   let page;
   let favoritesPage;
+  let api;
 
   beforeAll(() => {
     jest.resetModules();
     require('../../pages/favorites/favorites');
     favoritesPage = Page.mock.calls[Page.mock.calls.length - 1][0];
+    api = require('../../utils/api');
   });
 
   beforeEach(() => {
@@ -203,9 +213,47 @@ describe('Favorites 收藏页', () => {
       expect(item).toHaveProperty('summary');
     });
 
-    test('加载中不再重复请求', async () => {
-      page.data.loading = true;
-      await page.loadFavorites();
+    test('加载中允许新请求（可重入），旧请求结果被取消', async () => {
+      const { promise: firstPromise, resolve: resolveFirst } = createControllablePromise();
+      const { promise: secondPromise, resolve: resolveSecond } = createControllablePromise();
+
+      const mockApi = jest.spyOn(api, 'getFavoriteList')
+        .mockReturnValueOnce(firstPromise)
+        .mockReturnValueOnce(secondPromise);
+
+      const firstCall = page.loadFavorites();
+      expect(page._loadRequestId).toBe(1);
+
+      const secondCall = page.loadFavorites();
+      expect(page._loadRequestId).toBe(2);
+
+      resolveSecond({
+        code: 200,
+        data: {
+          list: [{ id: 'article_002', title: '第二篇', category: 'farming', content: '内容2', createTime: '2024-12-10' }],
+          hasMore: false
+        }
+      });
+
+      const secondResult = await secondCall;
+      expect(secondResult.cancelled).toBe(false);
+      expect(page.data.favoriteList.length).toBe(1);
+      expect(page.data.favoriteList[0].id).toBe('article_002');
+
+      resolveFirst({
+        code: 200,
+        data: {
+          list: [{ id: 'article_001', title: '第一篇', category: 'farming', content: '内容1', createTime: '2024-12-15' }],
+          hasMore: false
+        }
+      });
+
+      const firstResult = await firstCall;
+      expect(firstResult.cancelled).toBe(true);
+      expect(page.data.favoriteList.length).toBe(1);
+      expect(page.data.favoriteList[0].id).toBe('article_002');
+
+      mockApi.mockRestore();
     });
   });
 
@@ -339,6 +387,174 @@ describe('Favorites 收藏页', () => {
       await new Promise(resolve => setTimeout(resolve, 300));
 
       expect(page.data.favoriteList.length).toBe(countBefore);
+    });
+  });
+
+  describe('竞态场景测试', () => {
+    test('refreshData 打断正在进行的 loadList，旧请求结果被取消', async () => {
+      const { promise: loadPromise, resolve: resolveLoad } = createControllablePromise();
+      const { promise: refreshPromise, resolve: resolveRefresh } = createControllablePromise();
+
+      const mockApi = jest.spyOn(api, 'getFavoriteList')
+        .mockReturnValueOnce(loadPromise)
+        .mockReturnValueOnce(refreshPromise);
+
+      page.data.page = 3;
+      page.data.favoriteList = [{ id: 'old' }];
+
+      const loadCall = page.loadList();
+      expect(page._loadRequestId).toBe(1);
+
+      const refreshCall = page.refreshData();
+      expect(page._loadRequestId).toBe(2);
+      expect(page.data.page).toBe(1);
+      expect(page.data.favoriteList).toEqual([]);
+
+      resolveRefresh({
+        code: 200,
+        data: {
+          list: [{ id: 'new', title: '新数据', category: 'all', content: '新内容', createTime: '2024-12-20' }],
+          hasMore: false
+        }
+      });
+
+      await refreshCall;
+      expect(page.data.favoriteList.length).toBe(1);
+      expect(page.data.favoriteList[0].id).toBe('new');
+
+      resolveLoad({
+        code: 200,
+        data: {
+          list: [{ id: 'old_data', title: '旧数据', category: 'all', content: '旧内容', createTime: '2024-12-01' }],
+          hasMore: true
+        }
+      });
+
+      const loadResult = await loadCall;
+      expect(loadResult.cancelled).toBe(true);
+      expect(page.data.favoriteList.length).toBe(1);
+      expect(page.data.favoriteList[0].id).toBe('new');
+
+      mockApi.mockRestore();
+    });
+
+    test('切换分类打断正在进行的加载，显示最新分类数据', async () => {
+      const { promise: allPromise, resolve: resolveAll } = createControllablePromise();
+      const { promise: farmingPromise, resolve: resolveFarming } = createControllablePromise();
+
+      const mockApi = jest.spyOn(api, 'getFavoriteList')
+        .mockReturnValueOnce(allPromise)
+        .mockReturnValueOnce(farmingPromise);
+
+      page.data.currentCategory = 'all';
+      const allCall = page.loadList();
+      expect(page._loadRequestId).toBe(1);
+
+      page.onCategoryChange({ currentTarget: { dataset: { id: 'farming' } } });
+      expect(page._loadRequestId).toBe(2);
+      expect(page.data.currentCategory).toBe('farming');
+
+      resolveFarming({
+        code: 200,
+        data: {
+          list: [{ id: 'farming_001', title: '农耕收藏', category: 'farming', content: '农耕内容', createTime: '2024-12-15' }],
+          hasMore: false
+        }
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(page.data.favoriteList.length).toBe(1);
+      expect(page.data.favoriteList[0].category).toBe('farming');
+
+      resolveAll({
+        code: 200,
+        data: {
+          list: [{ id: 'all_001', title: '全部收藏', category: 'all', content: '全部内容', createTime: '2024-12-10' }],
+          hasMore: true
+        }
+      });
+
+      const allResult = await allCall;
+      expect(allResult.cancelled).toBe(true);
+      expect(page.data.favoriteList.length).toBe(1);
+      expect(page.data.favoriteList[0].category).toBe('farming');
+
+      mockApi.mockRestore();
+    });
+
+    test('onShow 触发的 refreshData 打断正在进行的加载', async () => {
+      const { promise: firstPromise, resolve: resolveFirst } = createControllablePromise();
+      const { promise: secondPromise, resolve: resolveSecond } = createControllablePromise();
+
+      const mockApi = jest.spyOn(api, 'getFavoriteList')
+        .mockReturnValueOnce(firstPromise)
+        .mockReturnValueOnce(secondPromise);
+
+      const firstCall = page.loadList();
+      expect(page._loadRequestId).toBe(1);
+
+      page.onShow();
+      expect(page._loadRequestId).toBe(2);
+
+      resolveSecond({
+        code: 200,
+        data: {
+          list: [{ id: 'onshow_data', title: 'onShow刷新', category: 'all', content: '内容', createTime: '2024-12-20' }],
+          hasMore: false
+        }
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(page.data.favoriteList.length).toBe(1);
+      expect(page.data.favoriteList[0].title).toBe('onShow刷新');
+
+      resolveFirst({
+        code: 200,
+        data: {
+          list: [{ id: 'old_data', title: '旧数据', category: 'all', content: '旧内容', createTime: '2024-12-01' }],
+          hasMore: true
+        }
+      });
+
+      const firstResult = await firstCall;
+      expect(firstResult.cancelled).toBe(true);
+      expect(page.data.favoriteList.length).toBe(1);
+      expect(page.data.favoriteList[0].title).toBe('onShow刷新');
+
+      mockApi.mockRestore();
+    });
+
+    test('快速连续多次调用，只有最后一次生效', async () => {
+      const promises = [];
+      const resolvers = [];
+      for (let i = 0; i < 3; i++) {
+        const { promise, resolve } = createControllablePromise();
+        promises.push(promise);
+        resolvers.push(resolve);
+      }
+
+      const mockApi = jest.spyOn(api, 'getFavoriteList');
+      promises.forEach(p => mockApi.mockReturnValueOnce(p));
+
+      const calls = [];
+      calls.push(page.loadFavorites());
+      calls.push(page.refreshData());
+      calls.push(page.onCategoryChange({ currentTarget: { dataset: { id: 'craft' } } }));
+
+      expect(page._loadRequestId).toBe(3);
+
+      for (let i = 2; i >= 0; i--) {
+        resolvers[i]({
+          code: 200,
+          data: { list: [{ id: `call_${i}`, title: `第${i}次`, category: 'all', content: '内容', createTime: '2024-12-15' }], hasMore: false }
+        });
+      }
+
+      const results = await Promise.all(calls);
+
+      expect(page.data.favoriteList[0].id).toBe('call_2');
+
+      mockApi.mockRestore();
     });
   });
 });

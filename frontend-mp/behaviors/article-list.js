@@ -13,6 +13,10 @@ module.exports = Behavior({
     loadingMore: false
   },
 
+  created() {
+    this._loadRequestId = 0;
+  },
+
   methods: {
     getListKey() {
       throw new Error('getListKey must be implemented by page');
@@ -66,7 +70,7 @@ module.exports = Behavior({
     },
 
     async loadList() {
-      if (this.data.loading) return;
+      const requestId = ++this._loadRequestId;
 
       this.setData({ loading: true });
 
@@ -80,6 +84,10 @@ module.exports = Behavior({
           pageSize: this.data.pageSize,
           keyword: this.data.keyword
         });
+
+        if (requestId !== this._loadRequestId) {
+          return { cancelled: true };
+        }
 
         if (res.code === 200) {
           const list = res.data.list.map(item => ({
@@ -100,11 +108,19 @@ module.exports = Behavior({
         } else {
           wx.showToast({ title: res.message || '加载失败', icon: 'none' });
         }
+
+        return { cancelled: false, success: res.code === 200 };
       } catch (error) {
+        if (requestId !== this._loadRequestId) {
+          return { cancelled: true };
+        }
         console.error('[ArticleList] 加载列表失败:', error);
         wx.showToast({ title: '网络错误，请重试', icon: 'none' });
+        return { cancelled: false, success: false, error };
       } finally {
-        this.setData({ loading: false });
+        if (requestId === this._loadRequestId) {
+          this.setData({ loading: false });
+        }
       }
     },
 
@@ -116,11 +132,16 @@ module.exports = Behavior({
         page: this.data.page + 1
       });
 
-      await this.loadList();
-      this.setData({ loadingMore: false });
+      const result = await this.loadList();
+
+      if (!result.cancelled) {
+        this.setData({ loadingMore: false });
+      }
+
+      return result;
     },
 
-    onCategoryChange(e) {
+    async onCategoryChange(e) {
       const id = e.currentTarget.dataset.id;
       if (id === this.data.currentCategory) return;
 
@@ -132,24 +153,24 @@ module.exports = Behavior({
         hasMore: true
       });
 
-      this.loadList();
+      return this.loadList();
     },
 
     onSearchInput(e) {
       this.setData({ keyword: e.detail.value });
     },
 
-    onSearch() {
+    async onSearch() {
       const listKey = this.getListKey();
       this.setData({
         page: 1,
         [listKey]: [],
         hasMore: true
       });
-      this.loadList();
+      return this.loadList();
     },
 
-    clearSearch() {
+    async clearSearch() {
       const listKey = this.getListKey();
       this.setData({
         keyword: '',
@@ -157,7 +178,7 @@ module.exports = Behavior({
         [listKey]: [],
         hasMore: true
       });
-      this.loadList();
+      return this.loadList();
     },
 
     goToDetail(e) {

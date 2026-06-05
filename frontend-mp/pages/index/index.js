@@ -15,7 +15,7 @@ Page({
     return 'getArticleList';
   },
 
-  loadArticles() {
+  async loadArticles() {
     return this.loadList();
   }
 });

@@ -23,9 +23,9 @@ Page({
     this.loadList();
   },
 
-  onShow() {
+  async onShow() {
     if (!this.checkLoginStatus()) return;
-    this.refreshData();
+    return this.refreshData();
   },
 
   checkLoginStatus() {
@@ -41,8 +41,8 @@ Page({
     });
   },
 
-  loadFavorites() {
-    if (!this.checkLoginStatus()) return;
+  async loadFavorites() {
+    if (!this.checkLoginStatus()) return { cancelled: false, success: false };
     return this.loadList();
   },
 

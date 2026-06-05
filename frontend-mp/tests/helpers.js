@@ -100,6 +100,8 @@ function mergeBehaviors(pageDef) {
 
   let mergedData = {};
   let mergedMethods = {};
+  const lifecycleHooks = ['created', 'attached', 'ready', 'moved', 'detached'];
+  let mergedLifecycles = {};
 
   for (const behavior of pageDef.behaviors) {
     if (behavior.data) {
@@ -112,18 +114,44 @@ function mergeBehaviors(pageDef) {
         }
       });
     }
+    lifecycleHooks.forEach(hook => {
+      if (typeof behavior[hook] === 'function') {
+        if (!mergedLifecycles[hook]) {
+          mergedLifecycles[hook] = [];
+        }
+        mergedLifecycles[hook].push(behavior[hook]);
+      }
+    });
   }
 
   mergedData = { ...mergedData, ...pageDef.data };
 
   const pageMethods = Object.keys(pageDef).filter(
-    key => typeof pageDef[key] === 'function' && key !== 'behaviors'
+    key => typeof pageDef[key] === 'function' && key !== 'behaviors' && !lifecycleHooks.includes(key)
   );
   pageMethods.forEach(method => {
     mergedMethods[method] = pageDef[method];
   });
 
-  return { data: mergedData, ...mergedMethods };
+  lifecycleHooks.forEach(hook => {
+    if (typeof pageDef[hook] === 'function') {
+      if (!mergedLifecycles[hook]) {
+        mergedLifecycles[hook] = [];
+      }
+      mergedLifecycles[hook].push(pageDef[hook]);
+    }
+  });
+
+  const result = { data: mergedData, ...mergedMethods };
+
+  Object.keys(mergedLifecycles).forEach(hook => {
+    const fns = mergedLifecycles[hook];
+    result[hook] = function(...args) {
+      fns.forEach(fn => fn.apply(this, args));
+    };
+  });
+
+  return result;
 }
 
 function createPageInstance(pageDef, dataOverrides = {}) {
@@ -150,6 +178,10 @@ function createPageInstance(pageDef, dataOverrides = {}) {
   methods.forEach(method => {
     instance[method] = merged[method].bind(instance);
   });
+
+  if (typeof instance.created === 'function') {
+    instance.created();
+  }
 
   return instance;
 }
