@@ -90,6 +90,9 @@ function initStorage(overrides = {}) {
   if (overrides.favorites) {
     wx.setStorageSync('favorites', overrides.favorites);
   }
+  if (overrides.likes) {
+    wx.setStorageSync('likes', overrides.likes);
+  }
 }
 
 function mergeBehaviors(pageDef) {

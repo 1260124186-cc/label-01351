@@ -63,7 +63,8 @@ Page({
             : article.title
         });
 
-        this.checkFavoriteStatus(id);
+        await this.checkFavoriteStatus(id);
+        await this.checkLikeStatus(id);
       } else {
         this.setData({
           article: null,
@@ -95,6 +96,17 @@ Page({
       }
     } catch (error) {
       console.error('[Detail] 检查收藏状态失败:', error);
+    }
+  },
+
+  async checkLikeStatus(id) {
+    try {
+      const res = await api.checkLike(id);
+      if (res.code === 200) {
+        this.setData({ liked: res.data.isLike });
+      }
+    } catch (error) {
+      console.error('[Detail] 检查点赞状态失败:', error);
     }
   },
 

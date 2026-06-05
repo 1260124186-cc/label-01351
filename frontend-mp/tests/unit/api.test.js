@@ -338,9 +338,10 @@ describe('api.getUserStats', () => {
   });
 });
 
-describe('api.likeArticle / unlikeArticle', () => {
+describe('api.likeArticle / unlikeArticle / checkLike', () => {
   beforeEach(() => {
     initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
   });
 
   test('点赞文章增加 likeCount', async () => {
@@ -350,9 +351,33 @@ describe('api.likeArticle / unlikeArticle', () => {
     const res = await api.likeArticle('article_001');
     expect(res.code).toBe(200);
     expect(res.data.likeCount).toBe(likeBefore + 1);
+    expect(res.data.isLike).toBe(true);
 
     const after = wx.getStorageSync('articles').find(a => a.id === 'article_001');
     expect(after.likeCount).toBe(likeBefore + 1);
+  });
+
+  test('点赞文章存储到 likes', async () => {
+    const res = await api.likeArticle('article_001');
+    expect(res.code).toBe(200);
+
+    const likes = wx.getStorageSync('likes');
+    expect(likes['user_001']).toContain('article_001');
+  });
+
+  test('重复点赞返回已点赞状态', async () => {
+    await api.likeArticle('article_001');
+    const before = wx.getStorageSync('articles').find(a => a.id === 'article_001');
+    const likeBefore = before.likeCount;
+
+    const res = await api.likeArticle('article_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isLike).toBe(true);
+    expect(res.data.likeCount).toBe(likeBefore);
+
+    const likes = wx.getStorageSync('likes');
+    const count = likes['user_001'].filter(id => id === 'article_001').length;
+    expect(count).toBe(1);
   });
 
   test('取消点赞减少 likeCount', async () => {
@@ -363,9 +388,20 @@ describe('api.likeArticle / unlikeArticle', () => {
     const afterLike = wx.getStorageSync('articles').find(a => a.id === 'article_001');
     expect(afterLike.likeCount).toBe(likeBefore + 1);
 
-    await api.unlikeArticle('article_001');
+    const res = await api.unlikeArticle('article_001');
+    expect(res.data.isLike).toBe(false);
     const afterUnlike = wx.getStorageSync('articles').find(a => a.id === 'article_001');
     expect(afterUnlike.likeCount).toBe(likeBefore);
+  });
+
+  test('取消点赞从 likes 移除', async () => {
+    await api.likeArticle('article_001');
+    let likes = wx.getStorageSync('likes');
+    expect(likes['user_001']).toContain('article_001');
+
+    await api.unlikeArticle('article_001');
+    likes = wx.getStorageSync('likes');
+    expect(likes['user_001']).not.toContain('article_001');
   });
 
   test('取消点赞 likeCount 最小为 0', async () => {
@@ -388,6 +424,33 @@ describe('api.likeArticle / unlikeArticle', () => {
   test('取消点赞空 ID 返回 400', async () => {
     const res = await api.unlikeArticle('');
     expect(res.code).toBe(400);
+  });
+
+  test('检查点赞状态 - 已点赞', async () => {
+    await api.likeArticle('article_001');
+    const res = await api.checkLike('article_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isLike).toBe(true);
+  });
+
+  test('检查点赞状态 - 未点赞', async () => {
+    const res = await api.checkLike('article_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isLike).toBe(false);
+  });
+
+  test('检查点赞空 ID 返回 400', async () => {
+    const res = await api.checkLike('');
+    expect(res.code).toBe(400);
+  });
+
+  test('不同用户点赞互不影响', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    await api.likeArticle('article_001');
+
+    wx.setStorageSync('userInfo', { id: 'user_002', nickname: '另一个用户' });
+    const res = await api.checkLike('article_001');
+    expect(res.data.isLike).toBe(false);
   });
 });
 

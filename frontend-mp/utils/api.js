@@ -341,6 +341,11 @@ const likeArticle = async (id) => {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
 
+    let userInfo = wx.getStorageSync('userInfo');
+    if (!userInfo) {
+      userInfo = { id: 'user_001' };
+    }
+
     const articles = wx.getStorageSync('articles') || [];
     const article = articles.find(item => item.id === id);
 
@@ -348,13 +353,24 @@ const likeArticle = async (id) => {
       return { code: 404, data: null, message: '文章不存在' };
     }
 
+    const likes = wx.getStorageSync('likes') || {};
+    const userLikes = likes[userInfo.id] || [];
+
+    if (userLikes.includes(id)) {
+      return { code: 200, data: { isLike: true, likeCount: article.likeCount }, message: '已点赞' };
+    }
+
     // 增加点赞数
     article.likeCount = (article.likeCount || 0) + 1;
     wx.setStorageSync('articles', articles);
 
+    userLikes.push(id);
+    likes[userInfo.id] = userLikes;
+    wx.setStorageSync('likes', likes);
+
     return {
       code: 200,
-      data: { likeCount: article.likeCount },
+      data: { isLike: true, likeCount: article.likeCount },
       message: '点赞成功'
     };
   }, '点赞失败');
@@ -373,6 +389,11 @@ const unlikeArticle = async (id) => {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
 
+    let userInfo = wx.getStorageSync('userInfo');
+    if (!userInfo) {
+      userInfo = { id: 'user_001' };
+    }
+
     const articles = wx.getStorageSync('articles') || [];
     const article = articles.find(item => item.id === id);
 
@@ -384,12 +405,52 @@ const unlikeArticle = async (id) => {
     article.likeCount = Math.max((article.likeCount || 0) - 1, 0);
     wx.setStorageSync('articles', articles);
 
+    const likes = wx.getStorageSync('likes') || {};
+    const userLikes = likes[userInfo.id] || [];
+
+    const index = userLikes.indexOf(id);
+    if (index > -1) {
+      userLikes.splice(index, 1);
+      likes[userInfo.id] = userLikes;
+      wx.setStorageSync('likes', likes);
+    }
+
     return {
       code: 200,
-      data: { likeCount: article.likeCount },
+      data: { isLike: false, likeCount: article.likeCount },
       message: '已取消点赞'
     };
   }, '取消点赞失败');
+};
+
+/**
+ * 检查文章是否已点赞
+ * @param {string} id - 文章ID
+ * @returns {Promise<Object>} - 点赞状态
+ */
+const checkLike = async (id) => {
+  return withErrorHandler(async () => {
+    await delay(100);
+
+    if (!id) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+
+    let userInfo = wx.getStorageSync('userInfo');
+    if (!userInfo) {
+      userInfo = { id: 'user_001' };
+    }
+
+    const likes = wx.getStorageSync('likes') || {};
+    const userLikes = likes[userInfo.id] || [];
+    const isLike = userLikes.includes(id);
+
+    return {
+      code: 200,
+      data: { isLike },
+      message: 'success'
+    };
+  }, '检查点赞状态失败');
 };
 
 /**
@@ -592,6 +653,7 @@ module.exports = {
   getUserStats,
   likeArticle,
   unlikeArticle,
+  checkLike,
   favoriteArticle,
   unfavoriteArticle,
   checkFavorite,

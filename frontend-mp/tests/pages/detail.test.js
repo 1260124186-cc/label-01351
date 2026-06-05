@@ -152,8 +152,16 @@ describe('Detail 文章详情页', () => {
 
     test('加载成功后检查收藏状态', async () => {
       page.checkFavoriteStatus = jest.fn();
+      page.checkLikeStatus = jest.fn();
       await page.loadArticleDetail('article_001');
       expect(page.checkFavoriteStatus).toHaveBeenCalledWith('article_001');
+    });
+
+    test('加载成功后检查点赞状态', async () => {
+      page.checkFavoriteStatus = jest.fn();
+      page.checkLikeStatus = jest.fn();
+      await page.loadArticleDetail('article_001');
+      expect(page.checkLikeStatus).toHaveBeenCalledWith('article_001');
     });
   });
 
@@ -256,6 +264,46 @@ describe('Detail 文章详情页', () => {
     test('未收藏时设置 favorited 为 false', async () => {
       await page.checkFavoriteStatus('article_001');
       expect(page.data.favorited).toBe(false);
+    });
+  });
+
+  describe('checkLikeStatus', () => {
+    beforeEach(() => {
+      wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('likes', {});
+    });
+
+    test('已点赞时设置 liked 为 true', async () => {
+      await api.likeArticle('article_001');
+      await page.checkLikeStatus('article_001');
+      expect(page.data.liked).toBe(true);
+    });
+
+    test('未点赞时设置 liked 为 false', async () => {
+      await page.checkLikeStatus('article_001');
+      expect(page.data.liked).toBe(false);
+    });
+  });
+
+  describe('加载详情后恢复点赞状态', () => {
+    beforeEach(() => {
+      wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('likes', {});
+    });
+
+    test('已点赞文章加载详情后 liked 为 true', async () => {
+      await api.likeArticle('article_001');
+      page.data.articleId = 'article_001';
+      page.data.article = null;
+      await page.loadArticleDetail('article_001');
+      expect(page.data.liked).toBe(true);
+    });
+
+    test('未点赞文章加载详情后 liked 为 false', async () => {
+      page.data.articleId = 'article_001';
+      page.data.article = null;
+      await page.loadArticleDetail('article_001');
+      expect(page.data.liked).toBe(false);
     });
   });
 
