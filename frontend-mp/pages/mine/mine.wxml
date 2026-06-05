@@ -1,0 +1,101 @@
+<!--pages/mine/mine.wxml-->
+<view class="page-container">
+  <!-- 未登录状态 -->
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">👤</text>
+      <text class="login-text">登录后查看个人信息</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <!-- 已登录状态 -->
+  <block wx:else>
+    <!-- 用户信息卡片 -->
+    <view class="user-card">
+      <view class="user-content">
+        <view class="user-avatar">
+          <text class="avatar-text">{{userInfo.nickname[0] || '用'}}</text>
+        </view>
+        <view class="user-info">
+          <view class="user-name">{{userInfo.nickname}}</view>
+        </view>
+      </view>
+
+      <!-- 统计数据 -->
+      <view class="user-stats">
+        <view class="stat-item">
+          <text class="stat-value">{{stats.articleCount}}</text>
+          <text class="stat-label">投稿</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-value">{{stats.likeCount}}</text>
+          <text class="stat-label">获赞</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-value">{{stats.viewCount}}</text>
+          <text class="stat-label">阅读</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快捷入口 -->
+    <view class="quick-actions">
+      <view class="action-item" bindtap="goToFavorites">
+        <text class="action-icon">⭐</text>
+        <text class="action-text">我的收藏</text>
+      </view>
+    </view>
+
+    <!-- 我的投稿 -->
+    <view class="section">
+      <view class="section-header">
+        <text class="section-title">我的投稿</text>
+        <text class="section-count">共 {{myArticles.length}} 篇</text>
+      </view>
+
+      <!-- 空状态 -->
+      <view class="empty-wrap" wx:if="{{!loading && myArticles.length === 0}}">
+        <text class="empty-icon">暂无</text>
+        <text class="empty-text">还没有投稿</text>
+        <button class="btn-publish" bindtap="goToPublish">去投稿</button>
+      </view>
+
+      <!-- 文章列表 -->
+      <view class="article-list" wx:else>
+        <view
+          class="article-item"
+          wx:for="{{myArticles}}"
+          wx:key="id"
+          bindtap="goToDetail"
+          data-id="{{item.id}}"
+        >
+          <view class="article-main">
+            <view class="article-title">{{item.title}}</view>
+            <view class="article-meta">
+              <text class="meta-category tag-{{item.category}}">{{item.categoryName}}</text>
+              <text class="meta-date">{{item.createTime}}</text>
+            </view>
+          </view>
+          <view class="article-stats">
+            <view class="mini-stat">
+              <text class="mini-icon">阅读</text>
+              <text class="mini-value">{{item.viewCount}}</text>
+            </view>
+            <view class="mini-stat">
+              <text class="mini-icon">点赞</text>
+              <text class="mini-value">{{item.likeCount}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 退出登录 -->
+    <view class="logout-section">
+      <button class="btn-logout" bindtap="onLogout">退出登录</button>
+    </view>
+  </block>
+</view>

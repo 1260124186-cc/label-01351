@@ -1,0 +1,22 @@
+{
+  "name": "xiangcun-culture-mp",
+  "version": "1.0.0",
+  "description": "乡村文化库 - 微信小程序",
+  "main": "mock/server.js",
+  "scripts": {
+    "mock": "node mock/server.js",
+    "start": "node mock/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "keywords": [
+    "miniprogram",
+    "wechat",
+    "culture",
+    "village"
+  ],
+  "author": "",
+  "license": "MIT"
+}

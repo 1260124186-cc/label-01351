@@ -1,0 +1,316 @@
+/* pages/detail/detail.wxss */
+
+.page-container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5f0e8 0%, #faf8f5 100%);
+}
+
+/* 加载状态 */
+.loading-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 200rpx 0;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 20rpx;
+  font-size: 28rpx;
+  color: var(--color-text-light);
+}
+
+/* 文章内容 */
+.article-wrap {
+  padding: 32rpx;
+  padding-bottom: 180rpx;
+}
+
+/* 分类标签 */
+.article-category {
+  display: inline-flex;
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  margin-bottom: 24rpx;
+}
+
+.tag-folklore {
+  background-color: rgba(139, 69, 19, 0.1);
+  color: #8B4513;
+}
+
+.tag-farming {
+  background-color: rgba(34, 139, 34, 0.1);
+  color: #228B22;
+}
+
+.tag-craft {
+  background-color: rgba(70, 130, 180, 0.1);
+  color: #4682B4;
+}
+
+.tag-memory {
+  background-color: rgba(218, 165, 32, 0.1);
+  color: #B8860B;
+}
+
+/* 标题 */
+.article-title {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: var(--color-text);
+  line-height: 1.4;
+  margin-bottom: 32rpx;
+}
+
+/* 作者信息 */
+.article-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--color-border);
+  margin-bottom: 40rpx;
+}
+
+.meta-author {
+  display: flex;
+  align-items: center;
+}
+
+.author-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16rpx;
+}
+
+.avatar-text {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #FFFFFF;
+}
+
+.author-name {
+  font-size: 28rpx;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.meta-date {
+  font-size: 26rpx;
+  color: var(--color-text-light);
+}
+
+/* 文章正文 */
+.article-content {
+  font-size: 32rpx;
+  color: var(--color-text);
+  line-height: 2;
+  white-space: pre-wrap;
+  text-align: justify;
+}
+
+/* 文章统计 */
+.article-stats-section {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-top: 32rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid var(--color-border);
+}
+
+.article-stats-section .stat-item {
+  display: flex;
+  align-items: center;
+  background: #faf8f5;
+  padding: 12rpx 24rpx;
+  border-radius: 24rpx;
+}
+
+.article-stats-section .stat-icon {
+  font-size: 28rpx;
+  margin-right: 8rpx;
+}
+
+.article-stats-section .stat-value {
+  font-size: 26rpx;
+  color: #666666;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 底部操作栏 */
+.article-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 32rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  background-color: #FFFFFF;
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.06);
+  border-top: 1rpx solid #f0ebe3;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 20rpx;
+  width: 100%;
+  max-width: 600rpx;
+}
+
+.btn-favorite {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 0;
+  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+  border-radius: 40rpx;
+  border: none;
+  font-size: 28rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 183, 0, 0.3);
+}
+
+.btn-favorite.favorited {
+  background: linear-gradient(135deg, #aaaaaa 0%, #888888 100%);
+  box-shadow: none;
+}
+
+.favorite-icon {
+  font-size: 32rpx;
+  margin-right: 8rpx;
+}
+
+.favorite-text {
+  color: #FFFFFF;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.btn-like {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 0;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%);
+  border-radius: 40rpx;
+  border: none;
+  font-size: 28rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 71, 87, 0.3);
+}
+
+.btn-like.liked {
+  background: linear-gradient(135deg, #aaaaaa 0%, #888888 100%);
+  box-shadow: none;
+}
+
+.like-icon {
+  font-size: 32rpx;
+  margin-right: 8rpx;
+}
+
+.like-text {
+  color: #FFFFFF;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 错误状态 */
+.error-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 200rpx 32rpx;
+}
+
+.error-icon {
+  font-size: 100rpx;
+  margin-bottom: 24rpx;
+}
+
+.error-text {
+  font-size: 32rpx;
+  color: var(--color-text-secondary);
+  margin-bottom: 40rpx;
+}
+
+.btn-back {
+  padding: 20rpx 48rpx;
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+  font-size: 28rpx;
+  border-radius: 40rpx;
+  border: none;
+}
+
+/* 未登录状态 */
+.login-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 32rpx;
+}
+
+.login-card {
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 80rpx 40rpx;
+  text-align: center;
+  box-shadow: 0 12rpx 40rpx rgba(139, 69, 19, 0.12);
+}
+
+.login-icon {
+  font-size: 100rpx;
+  display: block;
+  margin-bottom: 24rpx;
+}
+
+.login-text {
+  display: block;
+  font-size: 30rpx;
+  color: #888888;
+  margin-bottom: 40rpx;
+}
+
+.btn-login {
+  width: 60%;
+  height: 88rpx;
+  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  color: #FFFFFF;
+  font-size: 32rpx;
+  font-weight: bold;
+  border-radius: 44rpx;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,0 +1,120 @@
+<!--pages/publish/publish.wxml-->
+<view class="page-container">
+  <!-- 未登录状态 -->
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">👤</text>
+      <text class="login-text">登录后即可投稿</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <!-- 已登录状态 -->
+  <block wx:else>
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="header-title">分享你的故事</text>
+      <text class="header-desc">记录乡村记忆，传承文化智慧</text>
+    </view>
+
+    <!-- 表单区域 -->
+    <view class="form-container">
+      <!-- 标题输入 -->
+      <view class="form-item">
+        <view class="form-label">
+          <text class="label-text">文章标题</text>
+          <text class="label-required">*</text>
+        </view>
+        <view class="form-input-wrap">
+          <input 
+            class="form-input"
+            placeholder="请输入文章标题（至少2字）"
+            placeholder-class="input-placeholder"
+            maxlength="50"
+            value="{{formData.title}}"
+            bindinput="onTitleInput"
+          />
+          <text class="input-count">{{formData.title.length}}/50</text>
+        </view>
+      </view>
+
+      <!-- 分类选择 -->
+      <view class="form-item">
+        <view class="form-label">
+          <text class="label-text">文章分类</text>
+          <text class="label-required">*</text>
+        </view>
+        <view class="category-list">
+          <view 
+            class="category-option {{formData.category === item.id ? 'active' : ''}}"
+            wx:for="{{categories}}"
+            wx:key="id"
+            wx:if="{{item.id !== 'all'}}"
+            bindtap="onCategorySelect"
+            data-id="{{item.id}}"
+          >
+            <text class="option-icon">{{categoryIcons[item.id]}}</text>
+            <text class="option-name">{{item.name}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 内容输入 -->
+      <view class="form-item">
+        <view class="form-label">
+          <text class="label-text">文章内容</text>
+          <text class="label-required">*</text>
+        </view>
+        <view class="form-textarea-wrap">
+          <textarea 
+            class="form-textarea"
+            placeholder="请输入文章内容（至少10字）"
+            placeholder-class="input-placeholder"
+            maxlength="5000"
+            value="{{formData.content}}"
+            bindinput="onContentInput"
+            auto-height
+          />
+          <text class="textarea-count">{{formData.content.length}}/5000</text>
+        </view>
+      </view>
+
+      <!-- 提示信息 -->
+      <view class="form-tips">
+        <view class="tip-item">
+          <text class="tip-icon">💡</text>
+          <text class="tip-text">内容需原创，禁止抄袭或发布违规信息</text>
+        </view>
+        <view class="tip-item">
+          <text class="tip-icon">📝</text>
+          <text class="tip-text">建议分段书写，让文章更易阅读</text>
+        </view>
+      </view>
+
+      <!-- 发布按钮 -->
+      <view class="form-actions">
+        <button 
+          class="btn-publish"
+          bindtap="onSubmit"
+        >
+          <text wx:if="{{submitting}}">发布中...</text>
+          <text wx:else>发布文章</text>
+        </button>
+      </view>
+    </view>
+  </block>
+</view>
+
+<!-- 发布成功弹窗 -->
+<view class="success-modal {{showSuccess ? 'show' : ''}}" wx:if="{{showSuccess}}">
+  <view class="success-mask"></view>
+  <view class="success-content">
+    <text class="success-icon">🎉</text>
+    <text class="success-title">发布成功</text>
+    <text class="success-desc">感谢你的分享，让更多人了解乡村文化</text>
+    <view class="success-actions">
+      <button class="btn-continue" bindtap="continuePublish">继续投稿</button>
+      <button class="btn-view" bindtap="goToHome">查看文章</button>
+    </view>
+  </view>
+</view>
