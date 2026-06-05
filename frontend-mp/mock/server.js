@@ -10,6 +10,9 @@ app.use(cors());
 app.use(express.json());
 
 // Mock 数据存储
+let likes = {};
+let favorites = {};
+
 let articles = [
   {
     id: 'article_001',
@@ -106,31 +109,31 @@ app.get('/api/health', (req, res) => {
 // 获取文章列表
 app.get('/api/article/list', (req, res) => {
   const { category = 'all', page = 1, pageSize = 10, keyword = '' } = req.query;
-  
+
   let filteredArticles = articles.filter(item => item.status === 1);
-  
+
   // 分类筛选
   if (category && category !== 'all') {
     filteredArticles = filteredArticles.filter(item => item.category === category);
   }
-  
+
   // 关键词搜索
   if (keyword) {
     const kw = keyword.toLowerCase();
-    filteredArticles = filteredArticles.filter(item => 
-      item.title.toLowerCase().includes(kw) || 
+    filteredArticles = filteredArticles.filter(item =>
+      item.title.toLowerCase().includes(kw) ||
       item.content.toLowerCase().includes(kw)
     );
   }
-  
+
   // 按时间倒序
   filteredArticles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
-  
+
   // 分页
   const total = filteredArticles.length;
   const start = (parseInt(page) - 1) * parseInt(pageSize);
   const list = filteredArticles.slice(start, start + parseInt(pageSize));
-  
+
   res.json({
     code: 200,
     data: {
@@ -148,7 +151,7 @@ app.get('/api/article/list', (req, res) => {
 app.get('/api/article/detail/:id', (req, res) => {
   const { id } = req.params;
   const article = articles.find(item => item.id === id);
-  
+
   if (!article) {
     return res.json({
       code: 404,
@@ -156,10 +159,10 @@ app.get('/api/article/detail/:id', (req, res) => {
       message: '文章不存在'
     });
   }
-  
+
   // 增加浏览量
   article.viewCount = (article.viewCount || 0) + 1;
-  
+
   res.json({
     code: 200,
     data: article,
@@ -170,7 +173,7 @@ app.get('/api/article/detail/:id', (req, res) => {
 // 发布文章
 app.post('/api/article/publish', (req, res) => {
   const { title, content, category, authorId = 'user_001' } = req.body;
-  
+
   if (!title || !content || !category) {
     return res.json({
       code: 400,
@@ -178,9 +181,9 @@ app.post('/api/article/publish', (req, res) => {
       message: '参数不完整'
     });
   }
-  
+
   const user = users[authorId] || users['user_001'];
-  
+
   const newArticle = {
     id: generateId('article'),
     title,
@@ -193,9 +196,9 @@ app.post('/api/article/publish', (req, res) => {
     createTime: new Date().toISOString().split('T')[0],
     status: 1
   };
-  
+
   articles.unshift(newArticle);
-  
+
   res.json({
     code: 200,
     data: newArticle,
@@ -206,11 +209,11 @@ app.post('/api/article/publish', (req, res) => {
 // 获取我的文章
 app.get('/api/article/my', (req, res) => {
   const { authorId = 'user_001' } = req.query;
-  
+
   const myArticles = articles
     .filter(item => item.authorId === authorId)
     .sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
-  
+
   res.json({
     code: 200,
     data: {
@@ -224,8 +227,9 @@ app.get('/api/article/my', (req, res) => {
 // 点赞文章
 app.post('/api/article/like/:id', (req, res) => {
   const { id } = req.params;
+  const { userId = 'user_001' } = req.body;
   const article = articles.find(item => item.id === id);
-  
+
   if (!article) {
     return res.json({
       code: 404,
@@ -233,13 +237,212 @@ app.post('/api/article/like/:id', (req, res) => {
       message: '文章不存在'
     });
   }
-  
+
+  const userLikes = likes[userId] || [];
+  if (userLikes.includes(id)) {
+    return res.json({
+      code: 200,
+      data: { isLike: true, likeCount: article.likeCount },
+      message: '已点赞'
+    });
+  }
+
   article.likeCount = (article.likeCount || 0) + 1;
-  
+  userLikes.push(id);
+  likes[userId] = userLikes;
+
   res.json({
     code: 200,
-    data: { likeCount: article.likeCount },
+    data: { isLike: true, likeCount: article.likeCount },
     message: '点赞成功'
+  });
+});
+
+// 取消点赞文章
+app.post('/api/article/unlike/:id', (req, res) => {
+  const { id } = req.params;
+  const { userId = 'user_001' } = req.body;
+  const article = articles.find(item => item.id === id);
+
+  if (!article) {
+    return res.json({
+      code: 404,
+      data: null,
+      message: '文章不存在'
+    });
+  }
+
+  article.likeCount = Math.max((article.likeCount || 0) - 1, 0);
+
+  const userLikes = likes[userId] || [];
+  const index = userLikes.indexOf(id);
+  if (index > -1) {
+    userLikes.splice(index, 1);
+    likes[userId] = userLikes;
+  }
+
+  res.json({
+    code: 200,
+    data: { isLike: false, likeCount: article.likeCount },
+    message: '已取消点赞'
+  });
+});
+
+// 检查点赞状态
+app.get('/api/article/like/:id', (req, res) => {
+  const { id } = req.params;
+  const { userId = 'user_001' } = req.query;
+
+  if (!id) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '文章ID不能为空'
+    });
+  }
+
+  const userLikes = likes[userId] || [];
+  const isLike = userLikes.includes(id);
+
+  res.json({
+    code: 200,
+    data: { isLike },
+    message: 'success'
+  });
+});
+
+// 收藏文章
+app.post('/api/article/favorite/:id', (req, res) => {
+  const { id } = req.params;
+  const { userId = 'user_001' } = req.body;
+
+  if (!id) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '文章ID不能为空'
+    });
+  }
+
+  const userFavorites = favorites[userId] || [];
+  if (userFavorites.includes(id)) {
+    return res.json({
+      code: 200,
+      data: { isFavorite: true },
+      message: '已收藏'
+    });
+  }
+
+  userFavorites.push(id);
+  favorites[userId] = userFavorites;
+
+  res.json({
+    code: 200,
+    data: { isFavorite: true },
+    message: '收藏成功'
+  });
+});
+
+// 取消收藏文章
+app.post('/api/article/unfavorite/:id', (req, res) => {
+  const { id } = req.params;
+  const { userId = 'user_001' } = req.body;
+
+  if (!id) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '文章ID不能为空'
+    });
+  }
+
+  const userFavorites = favorites[userId] || [];
+  const index = userFavorites.indexOf(id);
+  if (index > -1) {
+    userFavorites.splice(index, 1);
+    favorites[userId] = userFavorites;
+  }
+
+  res.json({
+    code: 200,
+    data: { isFavorite: false },
+    message: '已取消收藏'
+  });
+});
+
+// 检查收藏状态
+app.get('/api/article/favorite/:id', (req, res) => {
+  const { id } = req.params;
+  const { userId = 'user_001' } = req.query;
+
+  if (!id) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '文章ID不能为空'
+    });
+  }
+
+  const userFavorites = favorites[userId] || [];
+  const isFavorite = userFavorites.includes(id);
+
+  res.json({
+    code: 200,
+    data: { isFavorite },
+    message: 'success'
+  });
+});
+
+// 获取收藏文章列表
+app.get('/api/article/favorites', (req, res) => {
+  const { userId = 'user_001', category = 'all', page = 1, pageSize = 10, keyword = '' } = req.query;
+
+  const userFavorites = favorites[userId] || [];
+
+  if (userFavorites.length === 0) {
+    return res.json({
+      code: 200,
+      data: {
+        list: [],
+        total: 0,
+        page: parseInt(page),
+        pageSize: parseInt(pageSize),
+        hasMore: false
+      },
+      message: 'success'
+    });
+  }
+
+  let filteredArticles = articles.filter(item => userFavorites.includes(item.id));
+
+  if (category && category !== 'all') {
+    filteredArticles = filteredArticles.filter(item => item.category === category);
+  }
+
+  if (keyword) {
+    const kw = keyword.toLowerCase();
+    filteredArticles = filteredArticles.filter(item =>
+      item.title.toLowerCase().includes(kw) ||
+      item.content.toLowerCase().includes(kw)
+    );
+  }
+
+  filteredArticles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+  const total = filteredArticles.length;
+  const start = (parseInt(page) - 1) * parseInt(pageSize);
+  const list = filteredArticles.slice(start, start + parseInt(pageSize));
+
+  res.json({
+    code: 200,
+    data: {
+      list,
+      total,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize),
+      hasMore: start + parseInt(pageSize) < total
+    },
+    message: 'success'
   });
 });
 
@@ -256,7 +459,7 @@ app.get('/api/category/list', (req, res) => {
 app.get('/api/user/info', (req, res) => {
   const { userId = 'user_001' } = req.query;
   const user = users[userId] || users['user_001'];
-  
+
   res.json({
     code: 200,
     data: user,
@@ -267,15 +470,15 @@ app.get('/api/user/info', (req, res) => {
 // 更新用户信息
 app.post('/api/user/update', (req, res) => {
   const { userId = 'user_001', nickname } = req.body;
-  
+
   if (!users[userId]) {
     users[userId] = { ...users['user_001'], id: userId };
   }
-  
+
   if (nickname) {
     users[userId].nickname = nickname;
   }
-  
+
   res.json({
     code: 200,
     data: users[userId],
@@ -286,11 +489,11 @@ app.post('/api/user/update', (req, res) => {
 // 获取用户统计
 app.get('/api/user/stats', (req, res) => {
   const { userId = 'user_001' } = req.query;
-  
+
   const myArticles = articles.filter(item => item.authorId === userId);
   const totalLikes = myArticles.reduce((sum, item) => sum + (item.likeCount || 0), 0);
   const totalViews = myArticles.reduce((sum, item) => sum + (item.viewCount || 0), 0);
-  
+
   res.json({
     code: 200,
     data: {
@@ -312,16 +515,22 @@ app.listen(PORT, () => {
 ║   服务地址: http://localhost:${PORT}                         ║
 ║                                                            ║
 ║   API 接口:                                                ║
-║   - GET  /api/health           健康检查                    ║
-║   - GET  /api/article/list     文章列表                    ║
-║   - GET  /api/article/detail/:id 文章详情                  ║
-║   - POST /api/article/publish  发布文章                    ║
-║   - GET  /api/article/my       我的文章                    ║
-║   - POST /api/article/like/:id 点赞文章                    ║
-║   - GET  /api/category/list    分类列表                    ║
-║   - GET  /api/user/info        用户信息                    ║
-║   - POST /api/user/update      更新用户                    ║
-║   - GET  /api/user/stats       用户统计                    ║
+║   - GET  /api/health               健康检查                ║
+║   - GET  /api/article/list         文章列表                ║
+║   - GET  /api/article/detail/:id   文章详情                ║
+║   - POST /api/article/publish      发布文章                ║
+║   - GET  /api/article/my           我的文章                ║
+║   - POST /api/article/like/:id     点赞文章                ║
+║   - POST /api/article/unlike/:id   取消点赞                ║
+║   - GET  /api/article/like/:id     检查点赞状态            ║
+║   - POST /api/article/favorite/:id 收藏文章                ║
+║   - POST /api/article/unfavorite/:id 取消收藏              ║
+║   - GET  /api/article/favorite/:id 检查收藏状态            ║
+║   - GET  /api/article/favorites    收藏列表                ║
+║   - GET  /api/category/list        分类列表                ║
+║   - GET  /api/user/info            用户信息                ║
+║   - POST /api/user/update          更新用户                ║
+║   - GET  /api/user/stats           用户统计                ║
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
   `);

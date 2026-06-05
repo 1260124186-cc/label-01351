@@ -1,23 +1,50 @@
 // app.js
+const api = require('./utils/api');
+
 App({
   globalData: {
     userInfo: null,
     isLoggedIn: false,
-    baseUrl: 'http://localhost:3000'
+    baseUrl: 'http://localhost:3000',
+    useRemote: false
   },
 
   onLaunch() {
-    // 初始化登录状态
+    this.initApiConfig();
     this.checkLoginStatus();
-    // 初始化 Mock 数据
     this.initMockData();
+  },
+
+  initApiConfig() {
+    api.setConfig({
+      useRemote: this.globalData.useRemote,
+      baseUrl: this.globalData.baseUrl
+    });
+    console.log('[API] 配置已初始化:', api.getConfig());
+  },
+
+  switchDataSource(useRemote) {
+    this.globalData.useRemote = useRemote;
+    api.setConfig({
+      useRemote: useRemote,
+      baseUrl: this.globalData.baseUrl
+    });
+    console.log('[API] 数据源已切换:', useRemote ? '远程服务' : '本地存储');
+  },
+
+  setBaseUrl(baseUrl) {
+    this.globalData.baseUrl = baseUrl;
+    api.setConfig({
+      baseUrl: baseUrl
+    });
+    console.log('[API] baseUrl 已更新:', baseUrl);
   },
 
   // 检查登录状态
   checkLoginStatus() {
     const isLoggedIn = wx.getStorageSync('isLoggedIn') || false;
     const userInfo = wx.getStorageSync('userInfo');
-    
+
     if (isLoggedIn && userInfo) {
       this.globalData.isLoggedIn = true;
       this.globalData.userInfo = userInfo;
@@ -36,12 +63,12 @@ App({
       phone: '',
       createTime: new Date().toISOString().split('T')[0]
     };
-    
+
     wx.setStorageSync('userInfo', user);
     wx.setStorageSync('isLoggedIn', true);
     this.globalData.userInfo = user;
     this.globalData.isLoggedIn = true;
-    
+
     return user;
   },
 

@@ -1,3 +1,5 @@
+const api = require('../utils/api');
+
 const storage = {};
 
 const wx = {
@@ -45,7 +47,8 @@ global.getApp = jest.fn(() => ({
   globalData: {
     userInfo: null,
     isLoggedIn: false,
-    baseUrl: 'http://localhost:3000'
+    baseUrl: 'http://localhost:3000',
+    useRemote: false
   },
   login(userInfo) {
     this.globalData.userInfo = userInfo;
@@ -83,6 +86,20 @@ global.getApp = jest.fn(() => ({
       this.globalData.isLoggedIn = true;
       this.globalData.userInfo = userInfo;
     }
+  },
+  initApiConfig() {
+    api.setConfig({
+      useRemote: this.globalData.useRemote,
+      baseUrl: this.globalData.baseUrl
+    });
+  },
+  switchDataSource(useRemote) {
+    this.globalData.useRemote = useRemote;
+    api.setConfig({ useRemote, baseUrl: this.globalData.baseUrl });
+  },
+  setBaseUrl(baseUrl) {
+    this.globalData.baseUrl = baseUrl;
+    api.setConfig({ baseUrl });
   }
 }));
 
@@ -92,4 +109,9 @@ global.App = jest.fn((options) => options);
 beforeEach(() => {
   wx._resetStorage();
   jest.clearAllMocks();
+  api.setConfig({
+    useRemote: false,
+    baseUrl: 'http://localhost:3000',
+    timeout: 10000
+  });
 });

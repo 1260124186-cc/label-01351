@@ -34,17 +34,23 @@ docker-compose down
 | 微信小程序前端 | 乡村文化库主应用 | - |
 | Mock Server | 本地模拟后端服务 | 8081 (Docker) / 3000 (本地) |
 
+### 前后端分离架构说明
+
+本项目采用完整的前后端分离架构设计，API 层支持双模式运行：
+
+- **本地存储模式（默认）**：使用 `wx.setStorageSync` 模拟后端，无需启动服务即可运行
+- **远程服务模式**：通过 `wx.request` 调用真实后端 API，支持 Mock Server 或实际后端服务
+
+两种模式共享相同的 API 接口签名，可无缝切换。当远程服务不可用时会自动降级到本地存储模式。
+
 ### Mock Server 接入说明
 
-本项目默认使用本地存储（wx.setStorageSync）模拟数据，无需启动 Mock Server 即可运行。
+**启动 Mock Server：**
 
-如需使用 Mock Server：
-
-**本地启动：**
 ```bash
 cd frontend-mp
 npm install
-node mock/server.js
+npm run mock
 # 服务运行在 http://localhost:3000
 ```
 
@@ -54,14 +60,24 @@ docker-compose up -d
 # 服务运行在 http://localhost:8081
 ```
 
-**接入小程序：**
+**接入小程序（开启远程模式）：**
 
-修改 `frontend-mp/app.js` 中的 `baseUrl`：
+修改 `frontend-mp/app.js` 中的配置：
 ```javascript
 globalData: {
-  baseUrl: 'http://localhost:8081'  // Docker 部署
-  // baseUrl: 'http://localhost:3000'  // 本地启动
+  baseUrl: 'http://localhost:8081',  // Docker 部署
+  // baseUrl: 'http://localhost:3000',  // 本地启动
+  useRemote: true  // 开启远程服务模式
 }
+```
+
+**运行时动态切换：**
+```javascript
+// 在代码中动态切换数据源
+const app = getApp();
+app.switchDataSource(true);   // 切换到远程服务
+app.switchDataSource(false);  // 切换到本地存储
+app.setBaseUrl('http://your-api-server.com');  // 动态修改 baseUrl
 ```
 
 **Mock API 接口列表：**
@@ -74,10 +90,33 @@ globalData: {
 | /api/article/publish | POST | 发布文章 |
 | /api/article/my | GET | 获取我的文章 |
 | /api/article/like/:id | POST | 点赞文章 |
+| /api/article/unlike/:id | POST | 取消点赞 |
+| /api/article/like/:id | GET | 检查点赞状态 |
+| /api/article/favorite/:id | POST | 收藏文章 |
+| /api/article/unfavorite/:id | POST | 取消收藏 |
+| /api/article/favorite/:id | GET | 检查收藏状态 |
+| /api/article/favorites | GET | 获取收藏列表 |
 | /api/category/list | GET | 获取分类列表 |
 | /api/user/info | GET | 获取用户信息 |
 | /api/user/update | POST | 更新用户信息 |
 | /api/user/stats | GET | 获取用户统计 |
+
+**API 配置说明：**
+
+`utils/api.js` 提供了完整的配置能力：
+```javascript
+const api = require('./utils/api');
+
+// 设置配置
+api.setConfig({
+  useRemote: true,
+  baseUrl: 'http://localhost:3000',
+  timeout: 10000
+});
+
+// 获取当前配置
+const config = api.getConfig();
+```
 
 ## 测试账号
 
