@@ -52,19 +52,19 @@
           <text class="stat-value">{{article.likeCount}} 点赞</text>
         </view>
       </view>
-    </view>
 
-    <!-- 底部操作栏 -->
-    <view class="article-footer">
-      <view class="footer-actions">
-        <button class="btn-favorite {{favorited ? 'favorited' : ''}}" bindtap="onFavorite">
-          <text class="favorite-icon">{{favorited ? '⭐' : '☆'}}</text>
-          <text class="favorite-text">{{favorited ? '已收藏' : '收藏'}}</text>
-        </button>
-        <button class="btn-like {{liked ? 'liked' : ''}}" bindtap="onLike">
-          <text class="like-icon">{{liked ? '❤️' : '🤍'}}</text>
-          <text class="like-text">{{liked ? '已点赞' : '点赞'}}</text>
-        </button>
+      <!-- 底部操作栏 -->
+      <view class="article-footer">
+        <view class="footer-actions">
+          <button class="btn-favorite {{favorited ? 'favorited' : ''}}" bindtap="onFavorite">
+            <text class="favorite-icon">{{favorited ? '⭐' : '☆'}}</text>
+            <text class="favorite-text">{{favorited ? '已收藏' : '收藏'}}</text>
+          </button>
+          <button class="btn-like {{liked ? 'liked' : ''}}" bindtap="onLike">
+            <text class="like-icon">{{liked ? '❤️' : '🤍'}}</text>
+            <text class="like-text">{{liked ? '已点赞' : '点赞'}}</text>
+          </button>
+        </view>
       </view>
     </view>
 
