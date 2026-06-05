@@ -469,6 +469,7 @@ describe('api.getFavoriteList', () => {
   beforeEach(() => {
     initStorage();
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
   });
 
   test('无收藏时返回空列表', async () => {

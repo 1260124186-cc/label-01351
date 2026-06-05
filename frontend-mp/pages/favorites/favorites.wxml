@@ -1,5 +1,16 @@
 <!--pages/favorites/favorites.wxml-->
 <view class="page-container">
+  <!-- 未登录状态 -->
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">⭐</text>
+      <text class="login-text">登录后查看我的收藏</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <!-- 已登录状态 -->
+  <block wx:else>
   <!-- 搜索栏 -->
   <view class="search-bar">
     <view class="search-input-wrap">
@@ -95,4 +106,5 @@
       <text wx:else bindtap="loadMore">点击加载更多</text>
     </view>
   </view>
+  </block>
 </view>

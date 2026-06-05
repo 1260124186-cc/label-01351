@@ -508,11 +508,24 @@ const getFavoriteList = async (params = {}) => {
   return withErrorHandler(async () => {
     await delay(500);
 
+    const isLoggedIn = wx.getStorageSync('isLoggedIn');
+    if (!isLoggedIn) {
+      return {
+        code: 401,
+        data: null,
+        message: '请先登录'
+      };
+    }
+
     const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
 
     let userInfo = wx.getStorageSync('userInfo');
     if (!userInfo) {
-      userInfo = { id: 'user_001' };
+      return {
+        code: 401,
+        data: null,
+        message: '请先登录'
+      };
     }
 
     const favorites = wx.getStorageSync('favorites') || {};

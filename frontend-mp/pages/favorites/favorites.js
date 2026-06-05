@@ -5,6 +5,7 @@ Page({
   behaviors: [articleListBehavior],
 
   data: {
+    isLoggedIn: false,
     favoriteList: []
   },
 
@@ -16,7 +17,32 @@ Page({
     return 'getFavoriteList';
   },
 
+  onLoad() {
+    if (!this.checkLoginStatus()) return;
+    this.loadCategories();
+    this.loadList();
+  },
+
+  onShow() {
+    if (!this.checkLoginStatus()) return;
+    this.refreshData();
+  },
+
+  checkLoginStatus() {
+    const app = getApp();
+    const isLoggedIn = app.getLoginStatus();
+    this.setData({ isLoggedIn });
+    return isLoggedIn;
+  },
+
+  goToLogin() {
+    wx.navigateTo({
+      url: '/pages/login/login'
+    });
+  },
+
   loadFavorites() {
+    if (!this.checkLoginStatus()) return;
     return this.loadList();
   },
 

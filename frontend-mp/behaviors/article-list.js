@@ -92,6 +92,11 @@ module.exports = Behavior({
             [listKey]: this.data.page === 1 ? list : [...this.data[listKey], ...list],
             hasMore: res.data.hasMore
           });
+        } else if (res.code === 401) {
+          wx.showToast({ title: res.message || '请先登录', icon: 'none' });
+          wx.navigateTo({
+            url: '/pages/login/login'
+          });
         } else {
           wx.showToast({ title: res.message || '加载失败', icon: 'none' });
         }

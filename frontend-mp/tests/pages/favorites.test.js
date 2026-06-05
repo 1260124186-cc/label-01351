@@ -1,6 +1,26 @@
 const api = require('../../utils/api');
 const { createPageInstance, initStorage, defaultUser } = require('../helpers');
 
+function createMockApp(loggedIn = true) {
+  return {
+    globalData: {
+      userInfo: loggedIn ? defaultUser : null,
+      isLoggedIn: loggedIn,
+      baseUrl: 'http://localhost:3000'
+    },
+    getLoginStatus: jest.fn(() => loggedIn),
+    getUserInfo: jest.fn(() => loggedIn ? defaultUser : null),
+    login(userInfo) {
+      this.globalData.userInfo = userInfo;
+      this.globalData.isLoggedIn = true;
+    },
+    logout() {
+      this.globalData.isLoggedIn = false;
+      this.globalData.userInfo = null;
+    }
+  };
+}
+
 describe('Favorites 收藏页', () => {
   let page;
   let favoritesPage;
@@ -14,10 +34,13 @@ describe('Favorites 收藏页', () => {
   beforeEach(() => {
     initStorage();
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    global.getApp = jest.fn(() => createMockApp(true));
     page = createPageInstance(favoritesPage);
   });
 
   test('初始 data 状态正确', () => {
+    expect(page.data.isLoggedIn).toBe(false);
     expect(page.data.categories).toEqual([]);
     expect(page.data.currentCategory).toBe('all');
     expect(page.data.favoriteList).toEqual([]);
@@ -27,6 +50,126 @@ describe('Favorites 收藏页', () => {
     expect(page.data.keyword).toBe('');
     expect(page.data.loading).toBe(false);
     expect(page.data.loadingMore).toBe(false);
+  });
+
+  describe('登录守卫', () => {
+    test('checkLoginStatus 已登录时返回 true 并更新状态', () => {
+      const result = page.checkLoginStatus();
+      expect(result).toBe(true);
+      expect(page.data.isLoggedIn).toBe(true);
+    });
+
+    test('checkLoginStatus 未登录时返回 false 并更新状态', () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      const result = page.checkLoginStatus();
+      expect(result).toBe(false);
+      expect(page.data.isLoggedIn).toBe(false);
+    });
+
+    test('onLoad 未登录时不加载数据', () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      page.loadCategories = jest.fn();
+      page.loadList = jest.fn();
+      page.checkLoginStatus = jest.fn(() => false);
+
+      page.onLoad();
+
+      expect(page.checkLoginStatus).toHaveBeenCalled();
+      expect(page.loadCategories).not.toHaveBeenCalled();
+      expect(page.loadList).not.toHaveBeenCalled();
+    });
+
+    test('onLoad 已登录时加载数据', () => {
+      page.loadCategories = jest.fn();
+      page.loadList = jest.fn();
+      page.checkLoginStatus = jest.fn(() => true);
+
+      page.onLoad();
+
+      expect(page.checkLoginStatus).toHaveBeenCalled();
+      expect(page.loadCategories).toHaveBeenCalled();
+      expect(page.loadList).toHaveBeenCalled();
+    });
+
+    test('onShow 未登录时不刷新数据', () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      page.refreshData = jest.fn();
+      page.checkLoginStatus = jest.fn(() => false);
+
+      page.onShow();
+
+      expect(page.checkLoginStatus).toHaveBeenCalled();
+      expect(page.refreshData).not.toHaveBeenCalled();
+    });
+
+    test('onShow 已登录时刷新数据', () => {
+      page.refreshData = jest.fn();
+      page.checkLoginStatus = jest.fn(() => true);
+
+      page.onShow();
+
+      expect(page.checkLoginStatus).toHaveBeenCalled();
+      expect(page.refreshData).toHaveBeenCalled();
+    });
+
+    test('goToLogin 跳转到登录页', () => {
+      page.goToLogin();
+      expect(wx.navigateTo).toHaveBeenCalledWith({
+        url: '/pages/login/login'
+      });
+    });
+
+    test('loadFavorites 未登录时不加载', () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      page.loadList = jest.fn();
+
+      page.loadFavorites();
+
+      expect(page.loadList).not.toHaveBeenCalled();
+    });
+
+    test('loadFavorites 已登录时调用 loadList', () => {
+      global.getApp = jest.fn(() => createMockApp(true));
+      page.loadList = jest.fn(() => Promise.resolve());
+
+      page.loadFavorites();
+
+      expect(page.loadList).toHaveBeenCalled();
+    });
+  });
+
+  describe('API 层未登录保护', () => {
+    test('getFavoriteList 未登录时返回 401', async () => {
+      wx.removeStorageSync('isLoggedIn');
+      wx.removeStorageSync('userInfo');
+
+      const res = await api.getFavoriteList();
+
+      expect(res.code).toBe(401);
+      expect(res.data).toBeNull();
+      expect(res.message).toBe('请先登录');
+    });
+
+    test('getFavoriteList 有 userInfo 但无 isLoggedIn 标记时返回 401', async () => {
+      wx.removeStorageSync('isLoggedIn');
+      wx.setStorageSync('userInfo', defaultUser);
+
+      const res = await api.getFavoriteList();
+
+      expect(res.code).toBe(401);
+      expect(res.message).toBe('请先登录');
+    });
+
+    test('getFavoriteList 已登录时正常返回数据', async () => {
+      wx.setStorageSync('isLoggedIn', true);
+      wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('favorites', { [defaultUser.id]: ['article_001'] });
+
+      const res = await api.getFavoriteList();
+
+      expect(res.code).toBe(200);
+      expect(res.data).toBeDefined();
+    });
   });
 
   describe('loadCategories', () => {
