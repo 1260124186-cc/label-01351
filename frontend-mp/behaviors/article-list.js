@@ -28,7 +28,6 @@ module.exports = Behavior({
 
     onLoad() {
       this.loadCategories();
-      this.loadList();
     },
 
     onShow() {

@@ -89,7 +89,7 @@ describe('Favorites 收藏页', () => {
       expect(page.loadList).not.toHaveBeenCalled();
     });
 
-    test('onLoad 已登录时加载数据', () => {
+    test('onLoad 已登录时只加载分类，不加载列表', () => {
       page.loadCategories = jest.fn();
       page.loadList = jest.fn();
       page.checkLoginStatus = jest.fn(() => true);
@@ -98,7 +98,7 @@ describe('Favorites 收藏页', () => {
 
       expect(page.checkLoginStatus).toHaveBeenCalled();
       expect(page.loadCategories).toHaveBeenCalled();
-      expect(page.loadList).toHaveBeenCalled();
+      expect(page.loadList).not.toHaveBeenCalled();
     });
 
     test('onShow 未登录时不刷新数据', () => {
@@ -120,6 +120,18 @@ describe('Favorites 收藏页', () => {
 
       expect(page.checkLoginStatus).toHaveBeenCalled();
       expect(page.refreshData).toHaveBeenCalled();
+    });
+
+    test('首屏 onLoad + onShow 只触发一次列表请求', () => {
+      page.loadCategories = jest.fn();
+      page.refreshData = jest.fn();
+      page.checkLoginStatus = jest.fn(() => true);
+
+      page.onLoad();
+      page.onShow();
+
+      expect(page.loadCategories).toHaveBeenCalledTimes(1);
+      expect(page.refreshData).toHaveBeenCalledTimes(1);
     });
 
     test('goToLogin 跳转到登录页', () => {

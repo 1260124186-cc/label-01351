@@ -117,6 +117,37 @@ describe('Index 首页', () => {
     });
   });
 
+  describe('生命周期', () => {
+    test('onLoad 只加载分类，不加载列表', () => {
+      page.loadCategories = jest.fn();
+      page.loadList = jest.fn();
+
+      page.onLoad();
+
+      expect(page.loadCategories).toHaveBeenCalled();
+      expect(page.loadList).not.toHaveBeenCalled();
+    });
+
+    test('onShow 刷新数据', () => {
+      page.refreshData = jest.fn();
+
+      page.onShow();
+
+      expect(page.refreshData).toHaveBeenCalled();
+    });
+
+    test('首屏 onLoad + onShow 只触发一次列表请求', () => {
+      page.loadCategories = jest.fn();
+      page.refreshData = jest.fn();
+
+      page.onLoad();
+      page.onShow();
+
+      expect(page.loadCategories).toHaveBeenCalledTimes(1);
+      expect(page.refreshData).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('refreshData', () => {
     test('重置分页并重新加载', async () => {
       page.data.page = 3;

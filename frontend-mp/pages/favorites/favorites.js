@@ -20,7 +20,6 @@ Page({
   onLoad() {
     if (!this.checkLoginStatus()) return;
     this.loadCategories();
-    this.loadList();
   },
 
   async onShow() {
