@@ -92,9 +92,42 @@ function initStorage(overrides = {}) {
   }
 }
 
+function mergeBehaviors(pageDef) {
+  if (!pageDef.behaviors || !pageDef.behaviors.length) return pageDef;
+
+  let mergedData = {};
+  let mergedMethods = {};
+
+  for (const behavior of pageDef.behaviors) {
+    if (behavior.data) {
+      mergedData = { ...mergedData, ...behavior.data };
+    }
+    if (behavior.methods) {
+      Object.keys(behavior.methods).forEach(key => {
+        if (typeof behavior.methods[key] === 'function') {
+          mergedMethods[key] = behavior.methods[key];
+        }
+      });
+    }
+  }
+
+  mergedData = { ...mergedData, ...pageDef.data };
+
+  const pageMethods = Object.keys(pageDef).filter(
+    key => typeof pageDef[key] === 'function' && key !== 'behaviors'
+  );
+  pageMethods.forEach(method => {
+    mergedMethods[method] = pageDef[method];
+  });
+
+  return { data: mergedData, ...mergedMethods };
+}
+
 function createPageInstance(pageDef, dataOverrides = {}) {
+  const merged = mergeBehaviors(pageDef);
+
   const instance = {
-    data: { ...pageDef.data, ...dataOverrides },
+    data: { ...merged.data, ...dataOverrides },
     setData(updates) {
       Object.keys(updates).forEach(key => {
         const parts = key.split('.');
@@ -107,12 +140,14 @@ function createPageInstance(pageDef, dataOverrides = {}) {
       });
     },
   };
-  const methods = Object.keys(pageDef).filter(
-    key => typeof pageDef[key] === 'function'
+
+  const methods = Object.keys(merged).filter(
+    key => typeof merged[key] === 'function'
   );
   methods.forEach(method => {
-    instance[method] = pageDef[method].bind(instance);
+    instance[method] = merged[method].bind(instance);
   });
+
   return instance;
 }
 

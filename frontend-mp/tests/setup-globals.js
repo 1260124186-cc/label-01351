@@ -88,3 +88,4 @@ global.getApp = jest.fn(() => ({
 
 global.Page = jest.fn((options) => options);
 global.App = jest.fn((options) => options);
+global.Behavior = jest.fn((options) => options);
