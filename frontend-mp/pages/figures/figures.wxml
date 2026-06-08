@@ -1,0 +1,214 @@
+<!--pages/figures/figures.wxml-->
+<view class="page-container">
+  <!-- 顶部标题区域 -->
+  <view class="header">
+    <view class="header-title">
+      <text class="title-main">传承人手谱</text>
+      <text class="title-sub">致敬银龄力量 · 传承文化薪火</text>
+    </view>
+  </view>
+
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input 
+        class="search-input" 
+        placeholder="搜索人物姓名、简介或技艺" 
+        placeholder-class="search-placeholder"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+    <view class="filter-btn" bindtap="toggleFilter">
+      <text class="filter-icon">⚙️</text>
+      <view class="filter-badge" wx:if="{{filterCount > 0}}">{{filterCount}}</view>
+    </view>
+  </view>
+
+  <!-- 筛选面板 -->
+  <view class="filter-panel {{showFilter ? 'show' : ''}}" wx:if="{{showFilter}}">
+    <view class="filter-tabs">
+      <view 
+        class="filter-tab {{activeFilterTab === 'identity' ? 'active' : ''}}"
+        bindtap="switchFilterTab"
+        data-tab="identity"
+      >
+        <text>身份</text>
+      </view>
+      <view 
+        class="filter-tab {{activeFilterTab === 'craft' ? 'active' : ''}}"
+        bindtap="switchFilterTab"
+        data-tab="craft"
+      >
+        <text>技艺</text>
+      </view>
+      <view 
+        class="filter-tab {{activeFilterTab === 'region' ? 'active' : ''}}"
+        bindtap="switchFilterTab"
+        data-tab="region"
+      >
+        <text>地区</text>
+      </view>
+      <view 
+        class="filter-tab {{activeFilterTab === 'era' ? 'active' : ''}}"
+        bindtap="switchFilterTab"
+        data-tab="era"
+      >
+        <text>年代</text>
+      </view>
+    </view>
+
+    <scroll-view class="filter-options" scroll-y>
+      <!-- 身份选项 -->
+      <view class="option-grid" wx:if="{{activeFilterTab === 'identity'}}">
+        <view 
+          class="option-item {{currentIdentity === item.id ? 'active' : ''}}"
+          wx:for="{{identityList}}"
+          wx:key="id"
+          bindtap="onFilterChange"
+          data-type="identity"
+          data-id="{{item.id}}"
+        >
+          <text class="option-icon" wx:if="{{item.icon}}">{{item.icon}}</text>
+          <text class="option-name">{{item.name}}</text>
+        </view>
+      </view>
+
+      <!-- 技艺选项 -->
+      <view class="option-grid" wx:if="{{activeFilterTab === 'craft'}}">
+        <view 
+          class="option-item {{currentCraft === item.id ? 'active' : ''}}"
+          wx:for="{{craftList}}"
+          wx:key="id"
+          bindtap="onFilterChange"
+          data-type="craft"
+          data-id="{{item.id}}"
+        >
+          <text class="option-name">{{item.name}}</text>
+        </view>
+      </view>
+
+      <!-- 地区选项 -->
+      <view class="option-grid" wx:if="{{activeFilterTab === 'region'}}">
+        <view 
+          class="option-item {{currentRegion === item.id ? 'active' : ''}}"
+          wx:for="{{regionList}}"
+          wx:key="id"
+          bindtap="onFilterChange"
+          data-type="region"
+          data-id="{{item.id}}"
+        >
+          <text class="option-name">{{item.name}}</text>
+        </view>
+      </view>
+
+      <!-- 年代选项 -->
+      <view class="option-grid" wx:if="{{activeFilterTab === 'era'}}">
+        <view 
+          class="option-item {{currentEra === item.id ? 'active' : ''}}"
+          wx:for="{{eraList}}"
+          wx:key="id"
+          bindtap="onFilterChange"
+          data-type="era"
+          data-id="{{item.id}}"
+        >
+          <text class="option-name">{{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="filter-actions">
+      <button class="btn-reset" bindtap="resetFilters">重置筛选</button>
+      <button class="btn-confirm" bindtap="toggleFilter">确定</button>
+    </view>
+  </view>
+
+  <!-- 蒙层 -->
+  <view class="filter-mask {{showFilter ? 'show' : ''}}" bindtap="toggleFilter" wx:if="{{showFilter}}"></view>
+
+  <!-- 人物列表 -->
+  <view class="figure-list">
+    <!-- 加载中 -->
+    <view class="loading-wrap" wx:if="{{loading && figureList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-wrap" wx:elif="{{!loading && figureList.length === 0}}">
+      <text class="empty-icon">👴</text>
+      <text class="empty-text">暂无传承人</text>
+      <text class="empty-hint">点击右下角按钮，添加你知道的传承人吧</text>
+    </view>
+
+    <!-- 人物卡片 -->
+    <view 
+      class="figure-card"
+      wx:for="{{figureList}}"
+      wx:key="id"
+      bindtap="goToDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="figure-avatar-wrap">
+        <image class="figure-avatar" src="{{item.avatar}}" mode="aspectFill" />
+        <view class="figure-deceased" wx:if="{{item.deathYear}}">
+          <text>已故</text>
+        </view>
+      </view>
+      
+      <view class="figure-content">
+        <view class="figure-header">
+          <text class="figure-name">{{item.name}}</text>
+          <view 
+            class="identity-tag"
+            style="background-color: {{item.identityInfo.color}}20; color: {{item.identityInfo.color}};"
+          >
+            <text class="tag-icon">{{item.identityInfo.icon}}</text>
+            <text class="tag-name">{{item.identityInfo.name}}</text>
+          </view>
+        </view>
+
+        <view class="figure-meta">
+          <text class="meta-item">📅 {{item.lifespan}}</text>
+          <text class="meta-item" wx:if="{{item.age}}">🎂 {{item.age}}岁</text>
+          <text class="meta-item">📍 {{item.regionName}}</text>
+        </view>
+
+        <view class="craft-tags">
+          <view class="craft-tag" wx:for="{{item.craftNames}}" wx:for-item="craft" wx:key="*this">
+            {{craft}}
+          </view>
+        </view>
+
+        <view class="figure-brief">{{item.briefIntroduction}}</view>
+
+        <view class="figure-stats">
+          <view class="stat-item">
+            <text class="stat-icon">👁</text>
+            <text class="stat-value">{{item.viewCount}}</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-icon">👍</text>
+            <text class="stat-value">{{item.likeCount}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="load-more" wx:if="{{figureList.length > 0}}">
+      <text wx:if="{{loadingMore}}">加载中...</text>
+      <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+      <text wx:else bindtap="loadMore">点击加载更多</text>
+    </view>
+  </view>
+
+  <!-- 悬浮按钮 - 新建人物 -->
+  <view class="fab" bindtap="goToCreateFigure">
+    <text class="fab-icon">+</text>
+    <text class="fab-text">新建人物</text>
+  </view>
+</view>

@@ -1,0 +1,196 @@
+<!--pages/figure-detail/figure-detail.wxml-->
+<view class="page-container" wx:if="{{!loading && figure}}">
+  <!-- 人物档案头部 -->
+  <view class="profile-header">
+    <view class="profile-avatar-wrap">
+      <image class="profile-avatar" src="{{figure.avatar}}" mode="aspectFill" />
+      <view class="profile-deceased" wx:if="{{figure.deathYear}}">
+        <text>已故</text>
+      </view>
+    </view>
+    
+    <view class="profile-info">
+      <view class="profile-name-row">
+        <text class="profile-name">{{figure.name}}</text>
+        <view 
+          class="identity-tag-large"
+          style="background-color: {{figure.identityInfo.color}}20; color: {{figure.identityInfo.color}};"
+        >
+          <text class="tag-icon">{{figure.identityInfo.icon}}</text>
+          <text class="tag-name">{{figure.identityInfo.name}}</text>
+        </view>
+      </view>
+
+      <view class="profile-lifespan">
+        <text>📅 {{figure.lifespan}}</text>
+        <text wx:if="{{figure.age}}" class="age-text">（{{figure.age}}岁）</text>
+      </view>
+
+      <view class="profile-region">
+        <text>📍 {{figure.regionName}}</text>
+        <text class="separator">·</text>
+        <text>🕐 {{figure.eraName}}</text>
+      </view>
+
+      <view class="profile-crafts">
+        <view class="craft-tag-large" wx:for="{{figure.craftNames}}" wx:for-item="craft" wx:key="*this">
+          {{craft}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 人物简介 -->
+  <view class="section-card">
+    <view class="section-title">
+      <text class="title-icon">📝</text>
+      <text class="title-text">人物简介</text>
+    </view>
+    <view class="intro-content">{{figure.detailedIntroduction}}</view>
+  </view>
+
+  <!-- Tab 切换 -->
+  <view class="tab-bar">
+    <view 
+      class="tab-item {{activeTab === 'timeline' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="timeline"
+    >
+      <text class="tab-icon">📜</text>
+      <text class="tab-text">生平时间轴</text>
+      <view class="tab-badge" wx:if="{{figure.timeline && figure.timeline.length > 0}}">{{figure.timeline.length}}</view>
+    </view>
+    <view 
+      class="tab-item {{activeTab === 'works' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="works"
+    >
+      <text class="tab-icon">📚</text>
+      <text class="tab-text">作品/故事</text>
+      <view class="tab-badge" wx:if="{{figure.works && figure.works.length > 0}}">{{figure.works.length}}</view>
+    </view>
+    <view 
+      class="tab-item {{activeTab === 'articles' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="articles"
+    >
+      <text class="tab-icon">📰</text>
+      <text class="tab-text">相关文章</text>
+      <view class="tab-badge" wx:if="{{figure.relatedArticleList && figure.relatedArticleList.length > 0}}">{{figure.relatedArticleList.length}}</view>
+    </view>
+  </view>
+
+  <!-- Tab 内容区域 -->
+  <view class="tab-content">
+    <!-- 生平时间轴 -->
+    <view class="timeline-container" wx:if="{{activeTab === 'timeline'}}">
+      <block wx:if="{{figure.timeline && figure.timeline.length > 0}}">
+        <view 
+          class="timeline-item"
+          wx:for="{{figure.timeline}}"
+          wx:key="year"
+        >
+          <view class="timeline-dot"></view>
+          <view class="timeline-line" wx:if="{{index < figure.timeline.length - 1}}"></view>
+          <view class="timeline-content">
+            <view class="timeline-year">{{item.year}}</view>
+            <view class="timeline-event">{{item.event}}</view>
+          </view>
+        </view>
+      </block>
+      <view class="empty-state" wx:else>
+        <text class="empty-icon">📜</text>
+        <text class="empty-text">暂无生平记录</text>
+      </view>
+    </view>
+
+    <!-- 作品/故事 -->
+    <view class="works-container" wx:if="{{activeTab === 'works'}}">
+      <block wx:if="{{figure.works && figure.works.length > 0}}">
+        <view 
+          class="work-card"
+          wx:for="{{figure.works}}"
+          wx:key="id"
+        >
+          <view class="work-header">
+            <text class="work-title">{{item.title}}</text>
+            <view class="work-type-tag type-{{item.type}}">
+              <text wx:if="{{item.type === 'work'}}">作品</text>
+              <text wx:elif="{{item.type === 'story'}}">故事</text>
+              <text wx:else>文章</text>
+            </view>
+          </view>
+          <view class="work-content">{{item.content}}</view>
+        </view>
+      </block>
+      <view class="empty-state" wx:else>
+        <text class="empty-icon">📚</text>
+        <text class="empty-text">暂无作品/故事</text>
+      </view>
+    </view>
+
+    <!-- 相关文章 -->
+    <view class="articles-container" wx:if="{{activeTab === 'articles'}}">
+      <block wx:if="{{figure.relatedArticleList && figure.relatedArticleList.length > 0}}">
+        <view 
+          class="article-card"
+          wx:for="{{figure.relatedArticleList}}"
+          wx:key="id"
+          bindtap="goToArticleDetail"
+          data-id="{{item.id}}"
+        >
+          <view class="article-category tag-{{item.category}}">{{item.categoryName || item.category}}</view>
+          <view class="article-title">{{item.title}}</view>
+          <view class="article-meta">
+            <text>👤 {{item.authorName}}</text>
+            <text class="separator">·</text>
+            <text>📅 {{item.createTime}}</text>
+          </view>
+        </view>
+      </block>
+      <view class="empty-state" wx:else>
+        <text class="empty-icon">📰</text>
+        <text class="empty-text">暂无相关文章</text>
+        <text class="empty-hint">快去投稿讲述TA的故事吧</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar">
+    <view class="stats-info">
+      <view class="stat-item">
+        <text class="stat-icon">👁</text>
+        <text class="stat-value">{{figure.viewCount}}</text>
+        <text class="stat-label">浏览</text>
+      </view>
+    </view>
+    <view class="action-buttons">
+      <view 
+        class="like-btn {{isLike ? 'liked' : ''}}"
+        bindtap="toggleLike"
+      >
+        <text class="like-icon">{{isLike ? '❤️' : '🤍'}}</text>
+        <text class="like-text">{{isLike ? '已点赞' : '点赞'}}</text>
+        <text class="like-count" wx:if="{{likeCount > 0}}">{{likeCount}}</text>
+      </view>
+      <button class="share-btn" open-type="share">
+        <text class="share-icon">📤</text>
+        <text class="share-text">分享</text>
+      </button>
+    </view>
+  </view>
+</view>
+
+<!-- 加载状态 -->
+<view class="loading-container" wx:if="{{loading}}">
+  <view class="loading-spinner"></view>
+  <text class="loading-text">加载中...</text>
+</view>
+
+<!-- 错误状态 -->
+<view class="error-container" wx:if="{{!loading && !figure}}">
+  <text class="error-icon">❌</text>
+  <text class="error-text">加载失败</text>
+  <button class="retry-btn" bindtap="loadFigureDetail">重新加载</button>
+</view>

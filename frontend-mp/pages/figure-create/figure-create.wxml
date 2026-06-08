@@ -1,0 +1,364 @@
+<!--pages/figure-create/figure-create.wxml-->
+<view class="page-container">
+  <!-- 未登录状态 -->
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">👤</text>
+      <text class="login-text">登录后即可新建人物</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <!-- 已登录状态 -->
+  <block wx:else>
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="header-title">记录传承人</text>
+      <text class="header-desc">让更多人了解他们的故事，传承文化薪火</text>
+    </view>
+
+    <!-- 表单区域 -->
+    <scroll-view class="form-container" scroll-y>
+      <!-- 基本信息 -->
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">📋</text>
+          <text class="title-text">基本信息</text>
+        </view>
+
+        <!-- 姓名 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">人物姓名</text>
+            <text class="label-required">*</text>
+          </view>
+          <view class="form-input-wrap">
+            <input 
+              class="form-input"
+              placeholder="请输入人物姓名（至少2字）"
+              placeholder-class="input-placeholder"
+              maxlength="20"
+              value="{{formData.name}}"
+              bindinput="onNameInput"
+            />
+            <text class="input-count">{{formData.name.length}}/20</text>
+          </view>
+        </view>
+
+        <!-- 生卒年 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">生卒年份</text>
+          </view>
+          <view class="lifespan-inputs">
+            <view class="lifespan-item">
+              <input 
+                class="form-input"
+                type="number"
+                placeholder="出生年"
+                placeholder-class="input-placeholder"
+                maxlength="4"
+                value="{{formData.birthYear}}"
+                bindinput="onBirthYearInput"
+              />
+              <text class="lifespan-label">出生</text>
+            </view>
+            <text class="lifespan-separator">—</text>
+            <view class="lifespan-item">
+              <input 
+                class="form-input"
+                type="number"
+                placeholder="逝世年（已故填写）"
+                placeholder-class="input-placeholder"
+                maxlength="4"
+                value="{{formData.deathYear}}"
+                bindinput="onDeathYearInput"
+              />
+              <text class="lifespan-label">逝世</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 身份选择 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">人物身份</text>
+            <text class="label-required">*</text>
+          </view>
+          <view class="identity-list">
+            <view 
+              class="identity-option {{formData.identity === item.id ? 'active' : ''}}"
+              wx:for="{{identityList}}"
+              wx:key="id"
+              bindtap="onIdentitySelect"
+              data-id="{{item.id}}"
+              style="{{formData.identity === item.id ? 'background-color: ' + item.color + '20; border-color: ' + item.color + '; color: ' + item.color + ';' : ''}}"
+            >
+              <text class="option-icon">{{item.icon}}</text>
+              <text class="option-name">{{item.name}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 地区选择 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">所属地区</text>
+          </view>
+          <view class="option-grid">
+            <view 
+              class="option-item {{formData.region === item.id ? 'active' : ''}}"
+              wx:for="{{regionList}}"
+              wx:key="id"
+              bindtap="onRegionSelect"
+              data-id="{{item.id}}"
+            >
+              {{item.name}}
+            </view>
+          </view>
+        </view>
+
+        <!-- 年代选择 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">出生年代</text>
+          </view>
+          <view class="option-grid">
+            <view 
+              class="option-item {{formData.era === item.id ? 'active' : ''}}"
+              wx:for="{{eraList}}"
+              wx:key="id"
+              bindtap="onEraSelect"
+              data-id="{{item.id}}"
+            >
+              {{item.name}}
+            </view>
+          </view>
+        </view>
+
+        <!-- 代表技艺 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">代表技艺</text>
+            <text class="label-hint">（可多选）</text>
+          </view>
+          <view class="option-grid">
+            <view 
+              class="option-item {{formData.crafts.indexOf(item.id) > -1 ? 'active' : ''}}"
+              wx:for="{{craftList}}"
+              wx:key="id"
+              bindtap="onCraftToggle"
+              data-id="{{item.id}}"
+            >
+              {{item.name}}
+            </view>
+          </view>
+        </view>
+
+        <!-- 人物简介 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">人物简介</text>
+            <text class="label-required">*</text>
+          </view>
+          <view class="form-textarea-wrap">
+            <textarea 
+              class="form-textarea"
+              placeholder="简要介绍人物的主要事迹和特点（至少10字）"
+              placeholder-class="input-placeholder"
+              maxlength="200"
+              value="{{formData.briefIntroduction}}"
+              bindinput="onBriefInput"
+              auto-height
+            />
+            <text class="textarea-count">{{formData.briefIntroduction.length}}/200</text>
+          </view>
+        </view>
+
+        <!-- 详细介绍 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">详细介绍</text>
+          </view>
+          <view class="form-textarea-wrap">
+            <textarea 
+              class="form-textarea"
+              placeholder="详细介绍人物的生平事迹（选填）"
+              placeholder-class="input-placeholder"
+              maxlength="2000"
+              value="{{formData.detailedIntroduction}}"
+              bindinput="onDetailedInput"
+              auto-height
+            />
+            <text class="textarea-count">{{formData.detailedIntroduction.length}}/2000</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 生平时间轴 -->
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">📜</text>
+          <text class="title-text">生平时间轴</text>
+          <text class="title-hint">（选填）</text>
+        </view>
+
+        <!-- 已添加的时间轴 -->
+        <view class="timeline-list" wx:if="{{formData.timeline.length > 0}}">
+          <view 
+            class="timeline-item"
+            wx:for="{{formData.timeline}}"
+            wx:key="year"
+          >
+            <view class="timeline-year">{{item.year}}</view>
+            <view class="timeline-event">{{item.event}}</view>
+            <view class="timeline-remove" bindtap="removeTimeline" data-index="{{index}}">
+              <text>✕</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 添加时间轴 -->
+        <view class="add-item-wrap">
+          <view class="add-item-row">
+            <input 
+              class="form-input year-input"
+              type="number"
+              placeholder="年份"
+              placeholder-class="input-placeholder"
+              maxlength="4"
+              value="{{newTimeline.year}}"
+              bindinput="onTimelineYearInput"
+            />
+            <input 
+              class="form-input flex-1"
+              placeholder="发生的事件"
+              placeholder-class="input-placeholder"
+              maxlength="100"
+              value="{{newTimeline.event}}"
+              bindinput="onTimelineEventInput"
+            />
+          </view>
+          <view class="add-btn" bindtap="addTimeline">
+            <text class="add-icon">+</text>
+            <text class="add-text">添加</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 作品/故事 -->
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">📚</text>
+          <text class="title-text">作品/故事</text>
+          <text class="title-hint">（选填）</text>
+        </view>
+
+        <!-- 已添加的作品 -->
+        <view class="works-list" wx:if="{{formData.works.length > 0}}">
+          <view 
+            class="work-item"
+            wx:for="{{formData.works}}"
+            wx:key="id"
+          >
+            <view class="work-header">
+              <text class="work-title">{{item.title}}</text>
+              <view class="work-type type-{{item.type}}">
+                <text wx:if="{{item.type === 'work'}}">作品</text>
+                <text wx:elif="{{item.type === 'story'}}">故事</text>
+                <text wx:else>文章</text>
+              </view>
+              <view class="work-remove" bindtap="removeWork" data-index="{{index}}">
+                <text>✕</text>
+              </view>
+            </view>
+            <view class="work-content">{{item.content}}</view>
+          </view>
+        </view>
+
+        <!-- 添加作品 -->
+        <view class="add-item-wrap">
+          <view class="add-item-row">
+            <input 
+              class="form-input flex-1"
+              placeholder="标题"
+              placeholder-class="input-placeholder"
+              maxlength="50"
+              value="{{newWork.title}}"
+              bindinput="onWorkTitleInput"
+            />
+          </view>
+          <view class="add-item-row">
+            <view class="type-selector">
+              <view 
+                class="type-option {{newWork.type === item.id ? 'active' : ''}}"
+                wx:for="{{workTypes}}"
+                wx:key="id"
+                bindtap="onWorkTypeSelect"
+                data-type="{{item.id}}"
+              >
+                {{item.name}}
+              </view>
+            </view>
+          </view>
+          <view class="add-item-row">
+            <textarea 
+              class="form-textarea"
+              placeholder="内容描述"
+              placeholder-class="input-placeholder"
+              maxlength="500"
+              value="{{newWork.content}}"
+              bindinput="onWorkContentInput"
+              auto-height
+            />
+          </view>
+          <view class="add-btn" bindtap="addWork">
+            <text class="add-icon">+</text>
+            <text class="add-text">添加</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 提示信息 -->
+      <view class="form-tips">
+        <view class="tip-item">
+          <text class="tip-icon">💡</text>
+          <text class="tip-text">提交后需要审核，审核通过后会在人物列表中展示</text>
+        </view>
+        <view class="tip-item">
+          <text class="tip-icon">📝</text>
+          <text class="tip-text">请确保信息真实准确，感谢你为文化传承做出的贡献</text>
+        </view>
+      </view>
+
+      <!-- 底部留白 -->
+      <view style="height: 160rpx;"></view>
+    </scroll-view>
+
+    <!-- 提交按钮 -->
+    <view class="form-actions">
+      <button 
+        class="btn-submit {{canSubmit ? '' : 'disabled'}}"
+        bindtap="onSubmit"
+      >
+        <text wx:if="{{submitting}}">提交中...</text>
+        <text wx:elif="{{!canSubmit}}">请完善信息</text>
+        <text wx:else>提交审核</text>
+      </button>
+    </view>
+  </block>
+</view>
+
+<!-- 提交成功弹窗 -->
+<view class="success-modal {{showSuccess ? 'show' : ''}}" wx:if="{{showSuccess}}">
+  <view class="success-mask"></view>
+  <view class="success-content">
+    <text class="success-icon">🎉</text>
+    <text class="success-title">提交成功</text>
+    <text class="success-desc">感谢你的贡献！人物信息已提交审核，审核通过后将在人物志中展示</text>
+    <view class="success-actions">
+      <button class="btn-continue" bindtap="continueCreate">继续添加</button>
+      <button class="btn-view" bindtap="goToFigureList">查看人物志</button>
+    </view>
+  </view>
+</view>

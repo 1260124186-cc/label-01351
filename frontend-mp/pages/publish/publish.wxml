@@ -59,6 +59,89 @@
         </view>
       </view>
 
+      <!-- 关联人物 -->
+      <view class="form-item">
+        <view class="form-label">
+          <text class="label-text">关联人物</text>
+          <text class="label-hint">（可选）</text>
+        </view>
+
+        <!-- 已选择的人物 -->
+        <view class="selected-figure" wx:if="{{selectedFigure}}">
+          <view class="figure-info">
+            <image class="figure-avatar" src="{{selectedFigure.avatar}}" mode="aspectFill" />
+            <view class="figure-detail">
+              <view class="figure-name-row">
+                <text class="figure-name">{{selectedFigure.name}}</text>
+                <view class="identity-tag" style="background-color: {{selectedFigure.identityInfo.color}}20; color: {{selectedFigure.identityInfo.color}};">
+                  <text class="tag-icon">{{selectedFigure.identityInfo.icon}}</text>
+                  <text>{{selectedFigure.identityInfo.name}}</text>
+                </view>
+              </view>
+              <text class="figure-brief">{{selectedFigure.briefIntroduction}}</text>
+            </view>
+          </view>
+          <view class="figure-remove" bindtap="clearSelectedFigure">
+            <text>✕</text>
+          </view>
+        </view>
+
+        <!-- 人物选择区域 -->
+        <block wx:else>
+          <!-- 搜索框 -->
+          <view class="figure-search-wrap" wx:if="{{showFigureSelector}}">
+            <view class="search-input-wrap">
+              <text class="search-icon">🔍</text>
+              <input 
+                class="search-input"
+                placeholder="搜索人物姓名"
+                placeholder-class="input-placeholder"
+                value="{{figureSearchKeyword}}"
+                bindinput="onFigureSearchInput"
+              />
+              <text class="search-clear" wx:if="{{figureSearchKeyword}}" bindtap="clearFigureSearch">✕</text>
+            </view>
+          </view>
+
+          <!-- 人物列表 -->
+          <view class="figure-list" wx:if="{{showFigureSelector}}">
+            <scroll-view scroll-y style="max-height: 400rpx;">
+              <view 
+                class="figure-option"
+                wx:for="{{filteredFigures}}"
+                wx:key="id"
+                bindtap="onFigureSelect"
+                data-figure="{{item}}"
+              >
+                <image class="option-avatar" src="{{item.avatar}}" mode="aspectFill" />
+                <view class="option-info">
+                  <view class="option-name-row">
+                    <text class="option-figure-name">{{item.name}}</text>
+                    <text class="option-identity" style="color: {{item.identityInfo.color}};">{{item.identityInfo.icon}} {{item.identityInfo.name}}</text>
+                  </view>
+                  <text class="option-figure-brief">{{item.briefIntroduction}}</text>
+                </view>
+              </view>
+              <view class="empty-figures" wx:if="{{filteredFigures.length === 0}}">
+                <text class="empty-text">未找到相关人物</text>
+              </view>
+            </scroll-view>
+          </view>
+
+          <!-- 操作按钮 -->
+          <view class="figure-actions">
+            <view class="action-btn primary" bindtap="toggleFigureSelector">
+              <text class="action-icon">👥</text>
+              <text class="action-text">{{showFigureSelector ? '收起选择' : '选择已有传承人'}}</text>
+            </view>
+            <view class="action-btn secondary" bindtap="goToCreateFigure">
+              <text class="action-icon">➕</text>
+              <text class="action-text">新建人物草稿</text>
+            </view>
+          </view>
+        </block>
+      </view>
+
       <!-- 内容输入 -->
       <view class="form-item">
         <view class="form-label">

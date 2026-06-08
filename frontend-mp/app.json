@@ -1,9 +1,12 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/figures/figures",
     "pages/publish/publish",
     "pages/mine/mine",
     "pages/detail/detail",
+    "pages/figure-detail/figure-detail",
+    "pages/figure-create/figure-create",
     "pages/login/login",
     "pages/favorites/favorites"
   ],
@@ -23,6 +26,12 @@
       {
         "pagePath": "pages/index/index",
         "text": "首页",
+        "iconPath": "assets/icons/home.png",
+        "selectedIconPath": "assets/icons/home-active.png"
+      },
+      {
+        "pagePath": "pages/figures/figures",
+        "text": "人物志",
         "iconPath": "assets/icons/home.png",
         "selectedIconPath": "assets/icons/home-active.png"
       },

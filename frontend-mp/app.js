@@ -1,5 +1,6 @@
 // app.js
 const api = require('./utils/api');
+const figureData = require('./utils/figure-data');
 
 App({
   globalData: {
@@ -109,6 +110,9 @@ App({
 
   // 初始化 Mock 数据
   initMockData() {
+    // 初始化人物数据
+    figureData.initFigureData();
+
     // 检查是否已有文章数据
     const articles = wx.getStorageSync('articles');
     if (!articles || articles.length === 0) {

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "传承人手谱",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50,
+  "backgroundColor": "#FFF8DC"
+}

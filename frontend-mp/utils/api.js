@@ -3,6 +3,7 @@
 // 所有接口返回统一格式: { code: number, data: any, message: string }
 
 const util = require('./util');
+const figureData = require('./figure-data');
 
 const config = {
   useRemote: false,
@@ -395,6 +396,230 @@ const storageApi = {
       data: { list, total, page, pageSize, hasMore: start + pageSize < total },
       message: 'success'
     };
+  },
+
+  getFigureList: async (params = {}) => {
+    await delay(500);
+    const { identity = 'all', craft = 'all', region = 'all', era = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    let figures = wx.getStorageSync('figures') || [];
+    figures = figures.filter(item => item.status === 1);
+
+    figures = figureData.filterFigures(figures, { identity, craft, region, era, keyword });
+    figures.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+
+    const total = figures.length;
+    const start = (page - 1) * pageSize;
+    const list = figures.slice(start, start + pageSize).map(item => ({
+      ...item,
+      identityInfo: figureData.getIdentityInfo(item.identity),
+      regionName: figureData.getRegionName(item.region),
+      eraName: figureData.getEraName(item.era),
+      craftNames: figureData.getCraftNames(item.crafts),
+      lifespan: figureData.formatLifespan(item.birthYear, item.deathYear),
+      age: figureData.getAge(item.birthYear, item.deathYear)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getFigureDetail: async (id) => {
+    await delay(300);
+    if (!id) {
+      return { code: 400, data: null, message: '人物ID不能为空' };
+    }
+    const figures = wx.getStorageSync('figures') || [];
+    const figure = figures.find(item => item.id === id);
+    if (!figure) {
+      return { code: 404, data: null, message: '人物不存在' };
+    }
+
+    figure.viewCount = (figure.viewCount || 0) + 1;
+    wx.setStorageSync('figures', figures);
+
+    const articles = wx.getStorageSync('articles') || [];
+    const relatedArticles = articles.filter(item =>
+      figure.relatedArticles && figure.relatedArticles.includes(item.id)
+    );
+
+    const result = {
+      ...figure,
+      identityInfo: figureData.getIdentityInfo(figure.identity),
+      regionName: figureData.getRegionName(figure.region),
+      eraName: figureData.getEraName(figure.era),
+      craftNames: figureData.getCraftNames(figure.crafts),
+      lifespan: figureData.formatLifespan(figure.birthYear, figure.deathYear),
+      age: figureData.getAge(figure.birthYear, figure.deathYear),
+      relatedArticleList: relatedArticles
+    };
+
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  getFigureOptions: async () => {
+    await delay(200);
+    let figures = wx.getStorageSync('figures') || [];
+    figures = figures.filter(item => item.status === 1);
+    const options = figures.map(item => ({
+      id: item.id,
+      name: item.name,
+      identity: item.identity,
+      identityInfo: figureData.getIdentityInfo(item.identity),
+      briefIntroduction: item.briefIntroduction
+    }));
+    return { code: 200, data: options, message: 'success' };
+  },
+
+  createFigureDraft: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!data.name || !data.name.trim()) {
+      return { code: 400, data: null, message: '人物姓名不能为空' };
+    }
+    if (!data.identity) {
+      return { code: 400, data: null, message: '请选择人物身份' };
+    }
+    if (!data.briefIntroduction || !data.briefIntroduction.trim()) {
+      return { code: 400, data: null, message: '请填写人物简介' };
+    }
+
+    const userInfo = wx.getStorageSync('userInfo');
+    const drafts = wx.getStorageSync('figureDrafts') || [];
+
+    const newDraft = {
+      id: util.generateId('figure_draft'),
+      name: data.name.trim(),
+      avatar: data.avatar || '',
+      birthYear: data.birthYear || null,
+      deathYear: data.deathYear || null,
+      identity: data.identity,
+      region: data.region || '',
+      era: data.era || '',
+      crafts: data.crafts || [],
+      briefIntroduction: data.briefIntroduction.trim(),
+      detailedIntroduction: data.detailedIntroduction || '',
+      timeline: data.timeline || [],
+      works: data.works || [],
+      submitterId: userInfo.id,
+      submitterName: userInfo.nickname,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      status: 0,
+      reviewStatus: 'pending'
+    };
+
+    drafts.unshift(newDraft);
+    wx.setStorageSync('figureDrafts', drafts);
+
+    return { code: 200, data: newDraft, message: '提交成功，等待审核' };
+  },
+
+  getMyFigureDrafts: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    let drafts = wx.getStorageSync('figureDrafts') || [];
+    drafts = drafts.filter(item => item.submitterId === userId);
+    drafts.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+    const list = drafts.map(item => ({
+      ...item,
+      identityInfo: figureData.getIdentityInfo(item.identity),
+      regionName: figureData.getRegionName(item.region),
+      eraName: figureData.getEraName(item.era)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total: list.length },
+      message: 'success'
+    };
+  },
+
+  getFilterOptions: async () => {
+    await delay(100);
+    const identityList = [{ id: 'all', name: '全部身份', icon: '👥' }, ...Object.values(figureData.IDENTITY_TYPES)];
+    const craftList = [{ id: 'all', name: '全部技艺' }, ...figureData.CRAFTS];
+    const regionList = [{ id: 'all', name: '全部地区' }, ...figureData.REGIONS];
+    const eraList = [{ id: 'all', name: '全部年代' }, ...figureData.ERA_TYPES];
+
+    return {
+      code: 200,
+      data: { identityList, craftList, regionList, eraList },
+      message: 'success'
+    };
+  },
+
+  likeFigure: async (id) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '人物ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const figures = wx.getStorageSync('figures') || [];
+    const figure = figures.find(item => item.id === id);
+    if (!figure) {
+      return { code: 404, data: null, message: '人物不存在' };
+    }
+    const likes = wx.getStorageSync('figureLikes') || {};
+    const userLikes = likes[userId] || [];
+    if (userLikes.includes(id)) {
+      return { code: 200, data: { isLike: true, likeCount: figure.likeCount }, message: '已点赞' };
+    }
+    figure.likeCount = (figure.likeCount || 0) + 1;
+    wx.setStorageSync('figures', figures);
+    userLikes.push(id);
+    likes[userId] = userLikes;
+    wx.setStorageSync('figureLikes', likes);
+    return { code: 200, data: { isLike: true, likeCount: figure.likeCount }, message: '点赞成功' };
+  },
+
+  unlikeFigure: async (id) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '人物ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const figures = wx.getStorageSync('figures') || [];
+    const figure = figures.find(item => item.id === id);
+    if (!figure) {
+      return { code: 404, data: null, message: '人物不存在' };
+    }
+    figure.likeCount = Math.max((figure.likeCount || 0) - 1, 0);
+    wx.setStorageSync('figures', figures);
+    const likes = wx.getStorageSync('figureLikes') || {};
+    const userLikes = likes[userId] || [];
+    const index = userLikes.indexOf(id);
+    if (index > -1) {
+      userLikes.splice(index, 1);
+      likes[userId] = userLikes;
+      wx.setStorageSync('figureLikes', likes);
+    }
+    return { code: 200, data: { isLike: false, likeCount: figure.likeCount }, message: '已取消点赞' };
+  },
+
+  checkFigureLike: async (id) => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '人物ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const likes = wx.getStorageSync('figureLikes') || {};
+    const userLikes = likes[userId] || [];
+    const isLike = userLikes.includes(id);
+    return { code: 200, data: { isLike }, message: 'success' };
   }
 };
 
@@ -573,6 +798,103 @@ const remoteApi = {
       url: '/api/article/favorites',
       method: 'GET',
       data: { userId, category, page, pageSize, keyword }
+    });
+  },
+
+  getFigureList: async (params = {}) => {
+    const { identity = 'all', craft = 'all', region = 'all', era = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    return request({
+      url: '/api/figure/list',
+      method: 'GET',
+      data: { identity, craft, region, era, page, pageSize, keyword }
+    });
+  },
+
+  getFigureDetail: async (id) => {
+    if (!id) {
+      return { code: 400, data: null, message: '人物ID不能为空' };
+    }
+    return request({
+      url: `/api/figure/detail/${id}`,
+      method: 'GET'
+    });
+  },
+
+  getFigureOptions: async () => {
+    return request({
+      url: '/api/figure/options',
+      method: 'GET'
+    });
+  },
+
+  createFigureDraft: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/figure/draft',
+      method: 'POST',
+      data: { ...data, submitterId: userId }
+    });
+  },
+
+  getMyFigureDrafts: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/figure/drafts',
+      method: 'GET',
+      data: { submitterId: userId }
+    });
+  },
+
+  getFilterOptions: async () => {
+    return request({
+      url: '/api/figure/filters',
+      method: 'GET'
+    });
+  },
+
+  likeFigure: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '人物ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/figure/like/${id}`,
+      method: 'POST',
+      data: { userId }
+    });
+  },
+
+  unlikeFigure: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '人物ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/figure/unlike/${id}`,
+      method: 'POST',
+      data: { userId }
+    });
+  },
+
+  checkFigureLike: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '人物ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/figure/like/${id}`,
+      method: 'GET',
+      data: { userId }
     });
   }
 };

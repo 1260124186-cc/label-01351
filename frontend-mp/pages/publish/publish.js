@@ -22,8 +22,16 @@ Page({
     formData: {
       title: '',
       category: '',
-      content: ''
+      content: '',
+      figureId: ''
     },
+
+    // 关联人物数据
+    selectedFigure: null,      // 已选择的人物
+    showFigureSelector: false, // 是否显示人物选择器
+    figureSearchKeyword: '',   // 人物搜索关键词
+    allFigures: [],            // 所有人物列表
+    filteredFigures: [],       // 筛选后的人物列表
 
     // 表单状态
     canSubmit: false,    // 是否可以提交
@@ -33,6 +41,7 @@ Page({
   },
 
   _categoriesLoaded: false,
+  _figuresLoaded: false,
 
   onLoad() {
     this.loadCategories();
@@ -49,6 +58,10 @@ Page({
         this.loadCategories();
         this._categoriesLoaded = true;
       }
+      if (!this._figuresLoaded) {
+        this.loadFigures();
+        this._figuresLoaded = true;
+      }
       this.checkCanSubmit();
     }
   },
@@ -56,6 +69,102 @@ Page({
   goToLogin() {
     wx.navigateTo({
       url: '/pages/login/login'
+    });
+  },
+
+  /**
+   * 加载人物列表
+   */
+  async loadFigures() {
+    try {
+      const res = await api.getFigureList({ page: 1, pageSize: 100 });
+      if (res.code === 200 && res.data && res.data.list) {
+        const figures = res.data.list.filter(item => item.status === 1);
+        this.setData({
+          allFigures: figures,
+          filteredFigures: figures
+        });
+      }
+    } catch (error) {
+      console.error('[Publish] 加载人物列表异常:', error);
+    }
+  },
+
+  /**
+   * 切换人物选择器显示
+   */
+  toggleFigureSelector() {
+    this.setData({
+      showFigureSelector: !this.data.showFigureSelector
+    });
+  },
+
+  /**
+   * 人物搜索输入
+   */
+  onFigureSearchInput(e) {
+    const keyword = e.detail.value;
+    this.setData({ figureSearchKeyword: keyword });
+    this.filterFigures(keyword);
+  },
+
+  /**
+   * 清空人物搜索
+   */
+  clearFigureSearch() {
+    this.setData({
+      figureSearchKeyword: '',
+      filteredFigures: this.data.allFigures
+    });
+  },
+
+  /**
+   * 筛选人物
+   */
+  filterFigures(keyword) {
+    if (!keyword) {
+      this.setData({ filteredFigures: this.data.allFigures });
+      return;
+    }
+    const keywordLower = keyword.toLowerCase();
+    const filtered = this.data.allFigures.filter(item =>
+      item.name.toLowerCase().includes(keywordLower) ||
+      (item.briefIntroduction && item.briefIntroduction.toLowerCase().includes(keywordLower))
+    );
+    this.setData({ filteredFigures: filtered });
+  },
+
+  /**
+   * 选择人物
+   */
+  onFigureSelect(e) {
+    const figure = e.currentTarget.dataset.figure;
+    this.setData({
+      selectedFigure: figure,
+      'formData.figureId': figure.id,
+      showFigureSelector: false,
+      figureSearchKeyword: ''
+    });
+    this.checkCanSubmit();
+  },
+
+  /**
+   * 清除已选人物
+   */
+  clearSelectedFigure() {
+    this.setData({
+      selectedFigure: null,
+      'formData.figureId': ''
+    });
+    this.checkCanSubmit();
+  },
+
+  /**
+   * 跳转到新建人物页面
+   */
+  goToCreateFigure() {
+    wx.navigateTo({
+      url: '/pages/figure-create/figure-create'
     });
   },
 
@@ -144,7 +253,7 @@ Page({
     // 防止重复提交
     if (this.data.submitting) return;
 
-    const { title, category, content } = this.data.formData;
+    const { title, category, content, figureId } = this.data.formData;
 
     // 表单验证并提示
     if (!title || title.trim().length < 2) {
@@ -166,11 +275,15 @@ Page({
     wx.showLoading({ title: '发布中...' });
 
     try {
-      const res = await api.publishArticle({
+      const articleData = {
         title: title.trim(),
         category,
         content: content.trim()
-      });
+      };
+      if (figureId) {
+        articleData.figureId = figureId;
+      }
+      const res = await api.publishArticle(articleData);
 
       wx.hideLoading();
 
@@ -207,8 +320,12 @@ Page({
       formData: {
         title: '',
         category: '',
-        content: ''
+        content: '',
+        figureId: ''
       },
+      selectedFigure: null,
+      showFigureSelector: false,
+      figureSearchKeyword: '',
       canSubmit: false
     });
   },
