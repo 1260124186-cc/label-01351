@@ -32,8 +32,8 @@
       {
         "pagePath": "pages/figures/figures",
         "text": "人物志",
-        "iconPath": "assets/icons/home.png",
-        "selectedIconPath": "assets/icons/home-active.png"
+        "iconPath": "assets/icons/people.png",
+        "selectedIconPath": "assets/icons/people-active.png"
       },
       {
         "pagePath": "pages/publish/publish",
