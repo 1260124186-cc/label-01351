@@ -21,31 +21,53 @@ Page({
   },
 
   onFilterChange(e) {
-    const result = this._superOnFilterChange(e);
+    const { type, id } = e.currentTarget.dataset;
+    const listKey = this.getListKey();
+
+    const updateData = {
+      page: 1,
+      [listKey]: [],
+      hasMore: true,
+      showFilter: false
+    };
+
+    if (type === 'identity') {
+      updateData.currentIdentity = id;
+    } else if (type === 'craft') {
+      updateData.currentCraft = id;
+    } else if (type === 'region') {
+      updateData.currentRegion = id;
+    } else if (type === 'era') {
+      updateData.currentEra = id;
+    }
+
+    this.setData(updateData);
     this.updateFilterCount();
-    return result;
+    return this.loadList();
   },
 
   resetFilters() {
-    const result = this._superResetFilters();
+    const listKey = this.getListKey();
+    this.setData({
+      currentIdentity: 'all',
+      currentCraft: 'all',
+      currentRegion: 'all',
+      currentEra: 'all',
+      page: 1,
+      [listKey]: [],
+      hasMore: true,
+      showFilter: false
+    });
     this.updateFilterCount();
-    return result;
-  },
-
-  _superOnFilterChange(e) {
-    return figureListBehavior.methods.onFilterChange.call(this, e);
-  },
-
-  _superResetFilters() {
-    return figureListBehavior.methods.resetFilters.call(this);
+    return this.loadList();
   },
 
   updateFilterCount() {
-    const count = this.getActiveFilterCount();
+    let count = 0;
+    if (this.data.currentIdentity !== 'all') count++;
+    if (this.data.currentCraft !== 'all') count++;
+    if (this.data.currentRegion !== 'all') count++;
+    if (this.data.currentEra !== 'all') count++;
     this.setData({ filterCount: count });
-  },
-
-  getActiveFilterCount() {
-    return figureListBehavior.methods.getActiveFilterCount.call(this);
   }
 });
