@@ -645,6 +645,322 @@ const storageApi = {
     const userLikes = likes[userId] || [];
     const isLike = userLikes.includes(id);
     return { code: 200, data: { isLike }, message: 'success' };
+  },
+
+  getTopicList: async (params = {}) => {
+    await delay(500);
+    const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    let topics = wx.getStorageSync('topics') || [];
+    topics = topics.filter(item => item.status === 1);
+
+    if (category && category !== 'all') {
+      topics = topics.filter(item => item.category === category);
+    }
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      topics = topics.filter(item =>
+        item.title.toLowerCase().includes(kw) ||
+        item.introduction.toLowerCase().includes(kw)
+      );
+    }
+    topics.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const total = topics.length;
+    const start = (page - 1) * pageSize;
+    const list = topics.slice(start, start + pageSize).map(item => ({
+      ...item,
+      articleCount: (item.articleIds || []).length
+    }));
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getTopicDetail: async (id) => {
+    await delay(300);
+    if (!id) {
+      return { code: 400, data: null, message: '专题ID不能为空' };
+    }
+    const topics = wx.getStorageSync('topics') || [];
+    const topic = topics.find(item => item.id === id);
+    if (!topic) {
+      return { code: 404, data: null, message: '专题不存在' };
+    }
+
+    topic.viewCount = (topic.viewCount || 0) + 1;
+    wx.setStorageSync('topics', topics);
+
+    const articles = wx.getStorageSync('articles') || [];
+    const articleList = articles.filter(item =>
+      (topic.articleIds || []).includes(item.id) && item.status === 1
+    ).map(item => ({
+      ...item,
+      categoryName: util.getCategoryName(item.category),
+      summary: util.truncateText(item.content, 100)
+    }));
+
+    const relatedTopics = topics
+      .filter(item => item.id !== id && item.status === 1 && item.category === topic.category)
+      .slice(0, 4)
+      .map(item => ({
+        id: item.id,
+        title: item.title,
+        cover: item.cover,
+        articleCount: (item.articleIds || []).length
+      }));
+
+    return {
+      code: 200,
+      data: { ...topic, articleList, relatedTopics, articleCount: articleList.length },
+      message: 'success'
+    };
+  },
+
+  createTopic: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!data.title || !data.title.trim()) {
+      return { code: 400, data: null, message: '专题标题不能为空' };
+    }
+    if (!data.category || !data.category.trim()) {
+      return { code: 400, data: null, message: '专题分类不能为空' };
+    }
+    if (!data.introduction || !data.introduction.trim()) {
+      return { code: 400, data: null, message: '专题导语不能为空' };
+    }
+    if (data.introduction.trim().length < 10) {
+      return { code: 400, data: null, message: '专题导语至少需要10个字符' };
+    }
+    const userInfo = wx.getStorageSync('userInfo');
+    const topics = wx.getStorageSync('topics') || [];
+    const newTopic = {
+      id: util.generateId('topic'),
+      title: data.title.trim(),
+      cover: data.cover || '',
+      introduction: data.introduction.trim(),
+      category: data.category || 'culture',
+      articleIds: data.articleIds || [],
+      extendedReading: data.extendedReading || [],
+      tags: data.tags || [],
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      viewCount: 0,
+      likeCount: 0,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      status: 1
+    };
+    topics.unshift(newTopic);
+    wx.setStorageSync('topics', topics);
+    return { code: 200, data: newTopic, message: '创建成功' };
+  },
+
+  updateTopic: async (id, data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '专题ID不能为空' };
+    }
+    const topics = wx.getStorageSync('topics') || [];
+    const index = topics.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '专题不存在' };
+    }
+    topics[index] = { ...topics[index], ...data };
+    wx.setStorageSync('topics', topics);
+    return { code: 200, data: topics[index], message: '更新成功' };
+  },
+
+  deleteTopic: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '专题ID不能为空' };
+    }
+    const topics = wx.getStorageSync('topics') || [];
+    const index = topics.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '专题不存在' };
+    }
+    topics.splice(index, 1);
+    wx.setStorageSync('topics', topics);
+    return { code: 200, data: null, message: '删除成功' };
+  },
+
+  getEncyclopediaList: async (params = {}) => {
+    await delay(500);
+    const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    let entries = wx.getStorageSync('encyclopedia') || [];
+    entries = entries.filter(item => item.status === 1);
+
+    if (category && category !== 'all') {
+      entries = entries.filter(item => item.category === category);
+    }
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      entries = entries.filter(item =>
+        item.title.toLowerCase().includes(kw) ||
+        item.summary.toLowerCase().includes(kw)
+      );
+    }
+    entries.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+    const total = entries.length;
+    const start = (page - 1) * pageSize;
+    const list = entries.slice(start, start + pageSize);
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getEncyclopediaDetail: async (id) => {
+    await delay(300);
+    if (!id) {
+      return { code: 400, data: null, message: '词条ID不能为空' };
+    }
+    const entries = wx.getStorageSync('encyclopedia') || [];
+    const entry = entries.find(item => item.id === id);
+    if (!entry) {
+      return { code: 404, data: null, message: '词条不存在' };
+    }
+
+    entry.viewCount = (entry.viewCount || 0) + 1;
+    wx.setStorageSync('encyclopedia', entries);
+
+    const articles = wx.getStorageSync('articles') || [];
+    const relatedArticles = articles.filter(item =>
+      (entry.relatedArticleIds || []).includes(item.id) && item.status === 1
+    ).map(item => ({
+      ...item,
+      categoryName: util.getCategoryName(item.category),
+      summary: util.truncateText(item.content, 80)
+    }));
+
+    const topics = wx.getStorageSync('topics') || [];
+    const relatedTopics = topics.filter(item =>
+      (entry.relatedTopicIds || []).includes(item.id) && item.status === 1
+    ).map(item => ({
+      id: item.id,
+      title: item.title,
+      cover: item.cover,
+      articleCount: (item.articleIds || []).length
+    }));
+
+    return {
+      code: 200,
+      data: { ...entry, relatedArticles, relatedTopics },
+      message: 'success'
+    };
+  },
+
+  createEncyclopedia: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!data.title || !data.title.trim()) {
+      return { code: 400, data: null, message: '词条标题不能为空' };
+    }
+    if (!data.category || !data.category.trim()) {
+      return { code: 400, data: null, message: '词条分类不能为空' };
+    }
+    if (!data.summary || !data.summary.trim()) {
+      return { code: 400, data: null, message: '词条摘要不能为空' };
+    }
+    if (data.summary.trim().length < 10) {
+      return { code: 400, data: null, message: '词条摘要至少需要10个字符' };
+    }
+    if (!data.content || !data.content.trim()) {
+      return { code: 400, data: null, message: '词条内容不能为空' };
+    }
+    if (data.content.trim().length < 20) {
+      return { code: 400, data: null, message: '词条内容至少需要20个字符' };
+    }
+    const userInfo = wx.getStorageSync('userInfo');
+    const entries = wx.getStorageSync('encyclopedia') || [];
+    const newEntry = {
+      id: util.generateId('encyclopedia'),
+      title: data.title.trim(),
+      cover: data.cover || '',
+      summary: data.summary.trim(),
+      content: data.content.trim(),
+      category: data.category || 'custom',
+      catalog: data.catalog || [],
+      relatedArticleIds: data.relatedArticleIds || [],
+      relatedTopicIds: data.relatedTopicIds || [],
+      tags: data.tags || [],
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      viewCount: 0,
+      likeCount: 0,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      status: 1
+    };
+    entries.unshift(newEntry);
+    wx.setStorageSync('encyclopedia', entries);
+    return { code: 200, data: newEntry, message: '创建成功' };
+  },
+
+  updateEncyclopedia: async (id, data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '词条ID不能为空' };
+    }
+    const entries = wx.getStorageSync('encyclopedia') || [];
+    const index = entries.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '词条不存在' };
+    }
+    entries[index] = { ...entries[index], ...data };
+    wx.setStorageSync('encyclopedia', entries);
+    return { code: 200, data: entries[index], message: '更新成功' };
+  },
+
+  deleteEncyclopedia: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '词条ID不能为空' };
+    }
+    const entries = wx.getStorageSync('encyclopedia') || [];
+    const index = entries.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '词条不存在' };
+    }
+    entries.splice(index, 1);
+    wx.setStorageSync('encyclopedia', entries);
+    return { code: 200, data: null, message: '删除成功' };
+  },
+
+  getEncyclopediaCategories: async () => {
+    await delay(200);
+    const categories = [
+      { id: 'all', name: '全部', icon: '📚' },
+      { id: 'festival', name: '节气节日', icon: '🎋' },
+      { id: 'craft', name: '传统技艺', icon: '🧵' },
+      { id: 'custom', name: '民俗文化', icon: '🎭' },
+      { id: 'history', name: '历史典故', icon: '📜' },
+      { id: 'art', name: '艺术形式', icon: '🎨' }
+    ];
+    return { code: 200, data: categories, message: 'success' };
+  },
+
+  getTopicCategories: async () => {
+    await delay(200);
+    const categories = [
+      { id: 'all', name: '全部', icon: '📚' },
+      { id: 'festival', name: '节日专题', icon: '🎋' },
+      { id: 'craft', name: '技艺专题', icon: '🧵' },
+      { id: 'custom', name: '民俗专题', icon: '🎭' },
+      { id: 'figure', name: '人物专题', icon: '👤' }
+    ];
+    return { code: 200, data: categories, message: 'success' };
   }
 };
 
@@ -920,6 +1236,130 @@ const remoteApi = {
       url: `/api/figure/like/${id}`,
       method: 'GET',
       data: { userId }
+    });
+  },
+
+  getTopicList: async (params = {}) => {
+    const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    return request({
+      url: '/api/topic/list',
+      method: 'GET',
+      data: { category, page, pageSize, keyword }
+    });
+  },
+
+  getTopicDetail: async (id) => {
+    if (!id) {
+      return { code: 400, data: null, message: '专题ID不能为空' };
+    }
+    return request({
+      url: `/api/topic/detail/${id}`,
+      method: 'GET'
+    });
+  },
+
+  createTopic: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/topic/create',
+      method: 'POST',
+      data: { ...data, authorId: userId }
+    });
+  },
+
+  updateTopic: async (id, data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '专题ID不能为空' };
+    }
+    return request({
+      url: `/api/topic/update/${id}`,
+      method: 'POST',
+      data
+    });
+  },
+
+  deleteTopic: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '专题ID不能为空' };
+    }
+    return request({
+      url: `/api/topic/delete/${id}`,
+      method: 'POST'
+    });
+  },
+
+  getEncyclopediaList: async (params = {}) => {
+    const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    return request({
+      url: '/api/encyclopedia/list',
+      method: 'GET',
+      data: { category, page, pageSize, keyword }
+    });
+  },
+
+  getEncyclopediaDetail: async (id) => {
+    if (!id) {
+      return { code: 400, data: null, message: '词条ID不能为空' };
+    }
+    return request({
+      url: `/api/encyclopedia/detail/${id}`,
+      method: 'GET'
+    });
+  },
+
+  createEncyclopedia: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/encyclopedia/create',
+      method: 'POST',
+      data: { ...data, authorId: userId }
+    });
+  },
+
+  updateEncyclopedia: async (id, data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '词条ID不能为空' };
+    }
+    return request({
+      url: `/api/encyclopedia/update/${id}`,
+      method: 'POST',
+      data
+    });
+  },
+
+  deleteEncyclopedia: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '词条ID不能为空' };
+    }
+    return request({
+      url: `/api/encyclopedia/delete/${id}`,
+      method: 'POST'
+    });
+  },
+
+  getEncyclopediaCategories: async () => {
+    return request({
+      url: '/api/encyclopedia/categories',
+      method: 'GET'
+    });
+  },
+
+  getTopicCategories: async () => {
+    return request({
+      url: '/api/topic/categories',
+      method: 'GET'
     });
   }
 };

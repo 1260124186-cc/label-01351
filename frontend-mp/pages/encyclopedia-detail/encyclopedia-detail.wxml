@@ -1,0 +1,164 @@
+<view class="page-container">
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:elif="{{entry}}">
+    <view class="entry-hero">
+      <view class="entry-header">
+        <view class="entry-category tag-{{entry.category}}">
+          {{entry.category === 'festival' ? '节气节日' : entry.category === 'craft' ? '传统技艺' : entry.category === 'custom' ? '民俗文化' : entry.category === 'history' ? '历史典故' : entry.category === 'art' ? '艺术形式' : '文化'}}
+        </view>
+        <view class="entry-stats">
+          <text class="stat-item">👁 {{entry.viewCount}}</text>
+          <text class="stat-item">👍 {{entry.likeCount}}</text>
+        </view>
+      </view>
+      <view class="entry-title">{{entry.title}}</view>
+      <view class="entry-summary">{{entry.summary}}</view>
+      <view class="entry-tags" wx:if="{{entry.tags && entry.tags.length > 0}}">
+        <view class="tag-item" wx:for="{{entry.tags}}" wx:key="*this">
+          #{{item}}
+        </view>
+      </view>
+      <view class="entry-meta">
+        <text class="meta-item">👤 {{entry.authorName}}</text>
+        <text class="meta-item">📅 {{entry.createTime}}</text>
+      </view>
+    </view>
+
+    <view class="catalog-section" wx:if="{{entry.catalog && entry.catalog.length > 0}}">
+      <view class="catalog-header" bindtap="toggleCatalog">
+        <text class="catalog-title">📑 目录</text>
+        <text class="catalog-toggle">{{catalogExpanded ? '收起 ▲' : '展开 ▼'}}</text>
+      </view>
+      <view class="catalog-content" wx:if="{{catalogExpanded}}">
+        <view 
+          class="catalog-item level-{{item.level}}"
+          wx:for="{{entry.catalog}}"
+          wx:key="id"
+          bindtap="scrollToSection"
+          data-id="{{item.id}}"
+        >
+          <text class="catalog-dot" wx:if="{{item.level === 1}}"></text>
+          <text class="catalog-text">{{item.title}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="tab-bar">
+      <view 
+        class="tab-item {{activeTab === 'content' ? 'active' : ''}}"
+        bindtap="switchTab"
+        data-tab="content"
+      >
+        词条内容
+      </view>
+      <view 
+        class="tab-item {{activeTab === 'articles' ? 'active' : ''}}"
+        bindtap="switchTab"
+        data-tab="articles"
+      >
+        相关文章
+      </view>
+      <view 
+        class="tab-item {{activeTab === 'topics' ? 'active' : ''}}"
+        bindtap="switchTab"
+        data-tab="topics"
+      >
+        相关专题
+      </view>
+    </view>
+
+    <view class="tab-content">
+      <block wx:if="{{activeTab === 'content'}}">
+        <view class="content-card">
+          <view class="section-title">词条内容</view>
+          <view class="content-text">
+            <text wx:for="{{entry.content.split('\\n\\n')}}" wx:key="*this">{{item}}\n\n</text>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'articles'}}">
+        <view wx:if="{{entry.relatedArticles && entry.relatedArticles.length > 0}}">
+          <view 
+            class="article-card"
+            wx:for="{{entry.relatedArticles}}"
+            wx:key="id"
+            bindtap="goToArticle"
+            data-id="{{item.id}}"
+          >
+            <view class="article-header">
+              <view class="article-category tag-{{item.category}}">
+                {{item.categoryName}}
+              </view>
+              <text class="article-date">{{item.createTime}}</text>
+            </view>
+            <view class="article-title">{{item.title}}</view>
+            <view class="article-content">{{item.summary}}</view>
+            <view class="article-footer">
+              <view class="article-author">
+                <text class="author-icon">👤</text>
+                <text class="author-name">{{item.authorName}}</text>
+              </view>
+              <view class="article-stats">
+                <text class="stat-icon">👁</text>
+                <text class="stat-value">{{item.viewCount}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="empty-wrap" wx:else>
+          <text class="empty-icon">📝</text>
+          <text class="empty-text">暂无相关文章</text>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'topics'}}">
+        <view wx:if="{{entry.relatedTopics && entry.relatedTopics.length > 0}}">
+          <view 
+            class="topic-card"
+            wx:for="{{entry.relatedTopics}}"
+            wx:key="id"
+            bindtap="goToTopic"
+            data-id="{{item.id}}"
+          >
+            <view class="topic-cover">
+              <text class="cover-emoji">📚</text>
+            </view>
+            <view class="topic-info">
+              <view class="topic-title">{{item.title}}</view>
+              <view class="topic-meta">{{item.articleCount}}篇文章</view>
+            </view>
+          </view>
+        </view>
+        <view class="empty-wrap" wx:else>
+          <text class="empty-icon">🔗</text>
+          <text class="empty-text">暂无相关专题</text>
+        </view>
+      </block>
+    </view>
+  </block>
+
+  <view class="empty-wrap" wx:else>
+    <text class="empty-icon">📖</text>
+    <text class="empty-text">词条不存在</text>
+  </view>
+
+  <view class="bottom-bar" wx:if="{{entry}}">
+    <view class="action-item" bindtap="onFavorite">
+      <text class="action-icon">⭐</text>
+      <text class="action-text">收藏</text>
+    </view>
+    <view class="action-item" bindtap="onLike">
+      <text class="action-icon">👍</text>
+      <text class="action-text">点赞</text>
+    </view>
+    <button class="share-btn" open-type="share">
+      <text class="share-icon">📤</text>
+      <text class="share-text">分享</text>
+    </button>
+  </view>
+</view>

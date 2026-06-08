@@ -1119,3 +1119,506 @@ describe('api.likeFigure 人物点赞', () => {
     expect(res.data.isLike).toBe(true);
   });
 });
+
+describe('api.getTopicList 专题列表', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('返回专题列表', async () => {
+    const res = await api.getTopicList();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    expect(res.data.list.every(item => item.status === 1)).toBe(true);
+  });
+
+  test('按分类筛选专题', async () => {
+    const res = await api.getTopicList({ category: 'folklore' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(item => item.category === 'folklore')).toBe(true);
+  });
+
+  test('按关键词搜索专题', async () => {
+    const res = await api.getTopicList({ keyword: '端午' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    expect(res.data.list[0].title).toContain('端午');
+  });
+
+  test('分页功能正常工作', async () => {
+    const res1 = await api.getTopicList({ page: 1, pageSize: 1 });
+    expect(res1.code).toBe(200);
+    expect(res1.data.list.length).toBe(1);
+    expect(res1.data.hasMore).toBe(true);
+  });
+
+  test('响应格式正确', async () => {
+    const res = await api.getTopicList();
+    expect(res).toHaveProperty('code');
+    expect(res).toHaveProperty('data.list');
+    expect(res).toHaveProperty('data.total');
+    expect(res).toHaveProperty('data.hasMore');
+  });
+});
+
+describe('api.getTopicDetail 专题详情', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('根据ID获取专题详情', async () => {
+    const res = await api.getTopicDetail('topic_001');
+    expect(res.code).toBe(200);
+    expect(res.data.id).toBe('topic_001');
+    expect(res.data.title).toBe('端午民俗专题');
+  });
+
+  test('每次获取详情浏览量自动递增', async () => {
+    const before = wx.getStorageSync('topics').find(t => t.id === 'topic_001');
+    const viewCountBefore = before.viewCount;
+
+    await api.getTopicDetail('topic_001');
+
+    const after = wx.getStorageSync('topics').find(t => t.id === 'topic_001');
+    expect(after.viewCount).toBe(viewCountBefore + 1);
+  });
+
+  test('专题ID为空返回400', async () => {
+    const res = await api.getTopicDetail('');
+    expect(res.code).toBe(400);
+  });
+
+  test('不存在的专题ID返回404', async () => {
+    const res = await api.getTopicDetail('topic_notexist');
+    expect(res.code).toBe(404);
+  });
+
+  test('返回文章列表数据', async () => {
+    const res = await api.getTopicDetail('topic_001');
+    expect(res.data.articleList).toBeDefined();
+    expect(Array.isArray(res.data.articleList)).toBe(true);
+  });
+});
+
+describe('api.createTopic 创建专题', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('成功创建专题', async () => {
+    const res = await api.createTopic({
+      title: '测试专题',
+      category: 'farming',
+      introduction: '这是一个测试专题的介绍内容，长度超过十个字符',
+      tags: ['测试', '专题'],
+      articleIds: [],
+      relatedTopicIds: []
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.title).toBe('测试专题');
+    expect(res.data.status).toBe(1);
+  });
+
+  test('新专题被添加到列表头部', async () => {
+    const before = wx.getStorageSync('topics');
+    const beforeLen = before.length;
+
+    await api.createTopic({
+      title: '新专题',
+      category: 'memory',
+      introduction: '新专题的介绍内容，长度超过十个字符',
+      tags: [],
+      articleIds: [],
+      relatedTopicIds: []
+    });
+
+    const after = wx.getStorageSync('topics');
+    expect(after.length).toBe(beforeLen + 1);
+    expect(after[0].title).toBe('新专题');
+  });
+
+  test('未登录时创建专题返回401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.createTopic({
+      title: '无用户专题',
+      category: 'folklore',
+      introduction: '内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(401);
+  });
+
+  test('标题为空返回400', async () => {
+    const res = await api.createTopic({
+      title: '',
+      category: 'folklore',
+      introduction: '内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('分类为空返回400', async () => {
+    const res = await api.createTopic({
+      title: '测试专题',
+      category: '',
+      introduction: '内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('导语少于10字返回400', async () => {
+    const res = await api.createTopic({
+      title: '测试专题',
+      category: 'folklore',
+      introduction: '太短'
+    });
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.updateTopic 更新专题', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('成功更新专题', async () => {
+    const res = await api.updateTopic('topic_001', {
+      title: '更新后的端午民俗',
+      category: 'folklore',
+      introduction: '更新后的介绍内容，长度超过十个字符',
+      tags: ['更新', '测试'],
+      articleIds: [],
+      relatedTopicIds: []
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.title).toBe('更新后的端午民俗');
+
+    const topics = wx.getStorageSync('topics');
+    const updated = topics.find(t => t.id === 'topic_001');
+    expect(updated.title).toBe('更新后的端午民俗');
+  });
+
+  test('专题ID为空返回400', async () => {
+    const res = await api.updateTopic('', {
+      title: '测试',
+      category: 'folklore',
+      introduction: '内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('不存在的专题ID返回404', async () => {
+    const res = await api.updateTopic('topic_notexist', {
+      title: '测试',
+      category: 'folklore',
+      introduction: '内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(404);
+  });
+});
+
+describe('api.deleteTopic 删除专题', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('成功删除专题', async () => {
+    const before = wx.getStorageSync('topics');
+    const beforeLen = before.length;
+
+    const res = await api.deleteTopic('topic_001');
+    expect(res.code).toBe(200);
+
+    const after = wx.getStorageSync('topics');
+    expect(after.length).toBe(beforeLen - 1);
+    expect(after.find(t => t.id === 'topic_001')).toBeUndefined();
+  });
+
+  test('专题ID为空返回400', async () => {
+    const res = await api.deleteTopic('');
+    expect(res.code).toBe(400);
+  });
+
+  test('不存在的专题ID返回404', async () => {
+    const res = await api.deleteTopic('topic_notexist');
+    expect(res.code).toBe(404);
+  });
+});
+
+describe('api.getEncyclopediaList 百科列表', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('返回百科词条列表', async () => {
+    const res = await api.getEncyclopediaList();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    expect(res.data.list.every(item => item.status === 1)).toBe(true);
+  });
+
+  test('按分类筛选词条', async () => {
+    const res = await api.getEncyclopediaList({ category: 'craft' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(item => item.category === 'craft')).toBe(true);
+  });
+
+  test('按关键词搜索词条', async () => {
+    const res = await api.getEncyclopediaList({ keyword: '节气' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    expect(res.data.list[0].title).toContain('节气');
+  });
+
+  test('分页功能正常工作', async () => {
+    const res1 = await api.getEncyclopediaList({ page: 1, pageSize: 1 });
+    expect(res1.code).toBe(200);
+    expect(res1.data.list.length).toBe(1);
+    expect(res1.data.hasMore).toBe(true);
+  });
+
+  test('响应格式正确', async () => {
+    const res = await api.getEncyclopediaList();
+    expect(res).toHaveProperty('code');
+    expect(res).toHaveProperty('data.list');
+    expect(res).toHaveProperty('data.total');
+    expect(res).toHaveProperty('data.hasMore');
+  });
+});
+
+describe('api.getEncyclopediaDetail 百科详情', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('根据ID获取词条详情', async () => {
+    const res = await api.getEncyclopediaDetail('encyclopedia_001');
+    expect(res.code).toBe(200);
+    expect(res.data.id).toBe('encyclopedia_001');
+    expect(res.data.title).toBe('二十四节气');
+  });
+
+  test('每次获取详情浏览量自动递增', async () => {
+    const before = wx.getStorageSync('encyclopedia').find(e => e.id === 'encyclopedia_001');
+    const viewCountBefore = before.viewCount;
+
+    await api.getEncyclopediaDetail('encyclopedia_001');
+
+    const after = wx.getStorageSync('encyclopedia').find(e => e.id === 'encyclopedia_001');
+    expect(after.viewCount).toBe(viewCountBefore + 1);
+  });
+
+  test('词条ID为空返回400', async () => {
+    const res = await api.getEncyclopediaDetail('');
+    expect(res.code).toBe(400);
+  });
+
+  test('不存在的词条ID返回404', async () => {
+    const res = await api.getEncyclopediaDetail('encyclopedia_notexist');
+    expect(res.code).toBe(404);
+  });
+
+  test('返回目录数据', async () => {
+    const res = await api.getEncyclopediaDetail('encyclopedia_001');
+    expect(res.data.catalog).toBeDefined();
+    expect(Array.isArray(res.data.catalog)).toBe(true);
+    expect(res.data.catalog.length).toBeGreaterThan(0);
+  });
+
+  test('返回相关文章列表', async () => {
+    const res = await api.getEncyclopediaDetail('encyclopedia_001');
+    expect(res.data.relatedArticles).toBeDefined();
+    expect(Array.isArray(res.data.relatedArticles)).toBe(true);
+  });
+
+  test('返回相关专题列表', async () => {
+    const res = await api.getEncyclopediaDetail('encyclopedia_002');
+    expect(res.data.relatedTopics).toBeDefined();
+    expect(Array.isArray(res.data.relatedTopics)).toBe(true);
+  });
+});
+
+describe('api.createEncyclopedia 创建百科', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('成功创建百科词条', async () => {
+    const res = await api.createEncyclopedia({
+      title: '测试词条',
+      category: 'folklore',
+      summary: '这是测试词条的摘要内容，长度超过十个字符',
+      content: '这是测试词条的详细内容，长度需要超过二十个字符才可以通过验证',
+      catalog: [{ id: 'cat_1', level: 1, title: '测试目录' }],
+      tags: ['测试', '百科'],
+      relatedArticleIds: [],
+      relatedTopicIds: []
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.title).toBe('测试词条');
+    expect(res.data.status).toBe(1);
+  });
+
+  test('新词条被添加到列表头部', async () => {
+    const before = wx.getStorageSync('encyclopedia');
+    const beforeLen = before.length;
+
+    await api.createEncyclopedia({
+      title: '新词条',
+      category: 'memory',
+      summary: '新词条的摘要内容，长度超过十个字符',
+      content: '新词条的详细内容，长度需要超过二十个字符才可以通过验证',
+      catalog: [],
+      tags: [],
+      relatedArticleIds: [],
+      relatedTopicIds: []
+    });
+
+    const after = wx.getStorageSync('encyclopedia');
+    expect(after.length).toBe(beforeLen + 1);
+    expect(after[0].title).toBe('新词条');
+  });
+
+  test('未登录时创建词条返回401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.createEncyclopedia({
+      title: '无用户词条',
+      category: 'folklore',
+      summary: '内容内容内容内容内容内容内容内容内容内容',
+      content: '内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(401);
+  });
+
+  test('标题为空返回400', async () => {
+    const res = await api.createEncyclopedia({
+      title: '',
+      category: 'folklore',
+      summary: '内容内容内容内容内容内容内容内容内容内容',
+      content: '内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('分类为空返回400', async () => {
+    const res = await api.createEncyclopedia({
+      title: '测试词条',
+      category: '',
+      summary: '内容内容内容内容内容内容内容内容内容内容',
+      content: '内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('摘要少于10字返回400', async () => {
+    const res = await api.createEncyclopedia({
+      title: '测试词条',
+      category: 'folklore',
+      summary: '太短',
+      content: '内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('内容少于20字返回400', async () => {
+    const res = await api.createEncyclopedia({
+      title: '测试词条',
+      category: 'folklore',
+      summary: '内容内容内容内容内容内容内容内容内容内容',
+      content: '太短了不够二十字'
+    });
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.updateEncyclopedia 更新百科', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('成功更新百科词条', async () => {
+    const res = await api.updateEncyclopedia('encyclopedia_001', {
+      title: '更新后的二十四节气',
+      category: 'farming',
+      summary: '更新后的摘要内容，长度超过十个字符',
+      content: '更新后的详细内容，长度需要超过二十个字符才可以通过验证',
+      catalog: [{ id: 'cat_1', level: 1, title: '更新目录' }],
+      tags: ['更新', '测试'],
+      relatedArticleIds: [],
+      relatedTopicIds: []
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.title).toBe('更新后的二十四节气');
+
+    const encyclopedias = wx.getStorageSync('encyclopedia');
+    const updated = encyclopedias.find(e => e.id === 'encyclopedia_001');
+    expect(updated.title).toBe('更新后的二十四节气');
+  });
+
+  test('词条ID为空返回400', async () => {
+    const res = await api.updateEncyclopedia('', {
+      title: '测试',
+      category: 'folklore',
+      summary: '内容内容内容内容内容内容内容内容内容内容',
+      content: '内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('不存在的词条ID返回404', async () => {
+    const res = await api.updateEncyclopedia('encyclopedia_notexist', {
+      title: '测试',
+      category: 'folklore',
+      summary: '内容内容内容内容内容内容内容内容内容内容',
+      content: '内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容内容'
+    });
+    expect(res.code).toBe(404);
+  });
+});
+
+describe('api.deleteEncyclopedia 删除百科', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('成功删除百科词条', async () => {
+    const before = wx.getStorageSync('encyclopedia');
+    const beforeLen = before.length;
+
+    const res = await api.deleteEncyclopedia('encyclopedia_001');
+    expect(res.code).toBe(200);
+
+    const after = wx.getStorageSync('encyclopedia');
+    expect(after.length).toBe(beforeLen - 1);
+    expect(after.find(e => e.id === 'encyclopedia_001')).toBeUndefined();
+  });
+
+  test('词条ID为空返回400', async () => {
+    const res = await api.deleteEncyclopedia('');
+    expect(res.code).toBe(400);
+  });
+
+  test('不存在的词条ID返回404', async () => {
+    const res = await api.deleteEncyclopedia('encyclopedia_notexist');
+    expect(res.code).toBe(404);
+  });
+});

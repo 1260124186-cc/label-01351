@@ -8,7 +8,13 @@
     "pages/figure-detail/figure-detail",
     "pages/figure-create/figure-create",
     "pages/login/login",
-    "pages/favorites/favorites"
+    "pages/favorites/favorites",
+    "pages/topics/topics",
+    "pages/topic-detail/topic-detail",
+    "pages/encyclopedia/encyclopedia",
+    "pages/encyclopedia-detail/encyclopedia-detail",
+    "pages/admin-topic/admin-topic",
+    "pages/admin-encyclopedia/admin-encyclopedia"
   ],
   "window": {
     "backgroundTextStyle": "dark",

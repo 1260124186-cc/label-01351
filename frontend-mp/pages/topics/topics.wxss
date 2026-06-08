@@ -1,14 +1,11 @@
-/* pages/index/index.wxss */
-
 .page-container {
   min-height: 100vh;
   background-color: var(--color-bg);
   padding-bottom: 120rpx;
 }
 
-/* 顶部标题 */
 .header {
-  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  background: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
   padding: 40rpx 32rpx;
   border-radius: 0 0 32rpx 32rpx;
 }
@@ -33,12 +30,15 @@
   letter-spacing: 2rpx;
 }
 
-/* 搜索栏 */
 .search-bar {
+  display: flex;
+  align-items: center;
   padding: 24rpx 24rpx;
+  gap: 16rpx;
 }
 
 .search-input-wrap {
+  flex: 1;
   display: flex;
   align-items: center;
   background-color: #FFFFFF;
@@ -69,64 +69,21 @@
   padding: 8rpx;
 }
 
-/* 金刚区入口 */
-.quick-entry {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 24rpx 32rpx;
-}
-
-.entry-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 22%;
-}
-
-.entry-icon-wrap {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 24rpx;
+.admin-btn {
+  width: 80rpx;
+  height: 80rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 12rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
 }
 
-.icon-topic {
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+.admin-icon {
+  font-size: 36rpx;
 }
 
-.icon-encyclopedia {
-  background: linear-gradient(135deg, #2E8B57 0%, #3CB371 100%);
-}
-
-.icon-figure {
-  background: linear-gradient(135deg, #4A90E2 0%, #67B8F7 100%);
-}
-
-.icon-publish {
-  background: linear-gradient(135deg, #9B59B6 0%, #BB8FCE 100%);
-}
-
-.entry-icon {
-  font-size: 40rpx;
-}
-
-.entry-name {
-  font-size: 26rpx;
-  font-weight: 500;
-  color: var(--color-text);
-  margin-bottom: 4rpx;
-}
-
-.entry-desc {
-  font-size: 20rpx;
-  color: var(--color-text-light);
-}
-
-/* 分类标签 */
 .category-scroll {
   white-space: nowrap;
   padding: 0 24rpx 24rpx;
@@ -148,8 +105,15 @@
   background-color: var(--color-primary);
 }
 
-.category-item.active .category-name {
+.category-item.active .category-name,
+.category-item.active .category-icon {
   color: #FFFFFF;
+}
+
+.category-icon {
+  font-size: 28rpx;
+  margin-right: 8rpx;
+  color: var(--color-text-secondary);
 }
 
 .category-name {
@@ -157,12 +121,10 @@
   color: var(--color-text-secondary);
 }
 
-/* 文章列表 */
-.article-list {
+.topic-list {
   padding: 0 24rpx;
 }
 
-/* 加载状态 */
 .loading-wrap {
   display: flex;
   flex-direction: column;
@@ -189,7 +151,6 @@
   color: var(--color-text-light);
 }
 
-/* 空状态 */
 .empty-wrap {
   display: flex;
   flex-direction: column;
@@ -213,23 +174,53 @@
   color: var(--color-text-light);
 }
 
-/* 文章卡片 */
-.article-card {
+.topic-card {
+  display: flex;
   background-color: #FFFFFF;
   border-radius: 16rpx;
-  padding: 28rpx;
+  padding: 24rpx;
   margin-bottom: 24rpx;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  transition: all 0.3s;
 }
 
-.article-header {
+.topic-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+}
+
+.topic-cover {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 12rpx;
+  background: linear-gradient(135deg, #DEB887 0%, #D2B48C 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+
+.cover-emoji {
+  font-size: 64rpx;
+}
+
+.topic-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.topic-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16rpx;
+  margin-bottom: 12rpx;
 }
 
-.article-category {
+.topic-category {
   display: inline-flex;
   padding: 6rpx 16rpx;
   border-radius: 6rpx;
@@ -237,14 +228,9 @@
   font-weight: 500;
 }
 
-.tag-folklore {
-  background-color: rgba(139, 69, 19, 0.1);
-  color: #8B4513;
-}
-
-.tag-farming {
-  background-color: rgba(34, 139, 34, 0.1);
-  color: #228B22;
+.tag-festival {
+  background-color: rgba(218, 165, 32, 0.1);
+  color: #B8860B;
 }
 
 .tag-craft {
@@ -252,59 +238,51 @@
   color: #4682B4;
 }
 
-.tag-memory {
-  background-color: rgba(218, 165, 32, 0.1);
-  color: #B8860B;
+.tag-custom {
+  background-color: rgba(139, 69, 19, 0.1);
+  color: #8B4513;
 }
 
-.article-date {
-  font-size: 24rpx;
+.tag-figure {
+  background-color: rgba(34, 139, 34, 0.1);
+  color: #228B22;
+}
+
+.topic-articles {
+  font-size: 22rpx;
   color: var(--color-text-light);
 }
 
-.article-title {
+.topic-title {
   font-size: 32rpx;
   font-weight: bold;
   color: var(--color-text);
   line-height: 1.4;
   margin-bottom: 12rpx;
-}
-
-.article-content {
-  font-size: 26rpx;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  margin-bottom: 20rpx;
 }
 
-.article-footer {
+.topic-summary {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-bottom: 16rpx;
+}
+
+.topic-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 16rpx;
-  border-top: 1rpx solid var(--color-border);
 }
 
-.article-author {
-  display: flex;
-  align-items: center;
-}
-
-.author-icon {
-  font-size: 28rpx;
-  margin-right: 8rpx;
-}
-
-.author-name {
-  font-size: 24rpx;
-  color: var(--color-text-secondary);
-}
-
-.article-stats {
+.topic-stats {
   display: flex;
   align-items: center;
 }
@@ -312,7 +290,7 @@
 .stat-item {
   display: flex;
   align-items: center;
-  margin-left: 24rpx;
+  margin-right: 24rpx;
 }
 
 .stat-icon {
@@ -325,7 +303,11 @@
   color: var(--color-text-light);
 }
 
-/* 加载更多 */
+.topic-date {
+  font-size: 24rpx;
+  color: var(--color-text-light);
+}
+
 .load-more {
   text-align: center;
   padding: 32rpx 0;

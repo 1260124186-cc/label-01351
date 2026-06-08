@@ -1,0 +1,204 @@
+<view class="page-container">
+  <!-- 未登录提示 -->
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <text class="login-icon">🔒</text>
+    <text class="login-text">请先登录后使用管理功能</text>
+    <view class="login-btn" bindtap="goToLogin">
+      <text>去登录</text>
+    </view>
+  </view>
+
+  <!-- 管理内容 -->
+  <block wx:else>
+    <!-- 顶部操作栏 -->
+    <view class="top-bar">
+      <view class="stats-item">
+        <text class="stats-label">词条总数</text>
+        <text class="stats-value">{{entryList.length}}</text>
+      </view>
+      <view class="create-btn" bindtap="openCreateForm">
+        <text class="create-icon">+</text>
+        <text>新建词条</text>
+      </view>
+    </view>
+
+    <!-- 加载中 -->
+    <view class="loading-wrap" wx:if="{{loading && entryList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-wrap" wx:elif="{{!loading && entryList.length === 0}}">
+      <text class="empty-icon">📖</text>
+      <text class="empty-text">暂无词条</text>
+      <text class="empty-hint">点击右上角创建第一个词条吧</text>
+    </view>
+
+    <!-- 词条列表 -->
+    <view class="entry-list" wx:else>
+      <view class="entry-card" wx:for="{{entryList}}" wx:key="id">
+        <view class="entry-hero">
+          <text class="entry-letter">{{item.title.charAt(0)}}</text>
+        </view>
+        <view class="entry-info">
+          <view class="entry-header">
+            <text class="entry-title">{{item.title}}</text>
+            <view class="entry-category">{{item.categoryName}}</view>
+          </view>
+          <view class="entry-desc">{{item.summary}}</view>
+          <view class="entry-meta">
+            <text class="meta-item">📑 {{item.catalog.length || 0}} 个目录</text>
+            <text class="meta-item">👁 {{item.viewCount || 0}}</text>
+          </view>
+          <view class="entry-actions">
+            <view class="action-btn action-view" bindtap="goToDetail" data-id="{{item.id}}">
+              <text>查看</text>
+            </view>
+            <view class="action-btn action-edit" bindtap="openEditForm" data-id="{{item.id}}">
+              <text>编辑</text>
+            </view>
+            <view class="action-btn action-delete" bindtap="onDelete" data-id="{{item.id}}">
+              <text>删除</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 编辑弹窗 -->
+  <view class="form-modal" wx:if="{{showForm}}" catchtouchmove="true">
+    <view class="form-container">
+      <view class="form-header">
+        <text class="form-title">{{editMode ? '编辑词条' : '新建词条'}}</text>
+        <text class="form-close" bindtap="closeForm">✕</text>
+      </view>
+
+      <scroll-view class="form-scroll" scroll-y>
+        <!-- 标题 -->
+        <view class="form-item">
+          <text class="form-label">词条标题 <text class="required">*</text></text>
+          <input 
+            class="form-input" 
+            placeholder="请输入词条标题"
+            value="{{formData.title}}"
+            bindinput="onTitleInput"
+            maxlength="50"
+          />
+        </view>
+
+        <!-- 分类 -->
+        <view class="form-item">
+          <text class="form-label">词条分类 <text class="required">*</text></text>
+          <view class="tag-group">
+            <view 
+              class="tag-item {{formData.category === item.id ? 'active' : ''}}"
+              wx:for="{{categories}}"
+              wx:key="id"
+              bindtap="onCategorySelect"
+              data-id="{{item.id}}"
+            >
+              {{item.name}}
+            </view>
+          </view>
+        </view>
+
+        <!-- 摘要 -->
+        <view class="form-item">
+          <text class="form-label">词条摘要 <text class="required">*</text></text>
+          <textarea 
+            class="form-textarea" 
+            placeholder="请输入词条摘要，简要介绍词条内容（至少10字）"
+            value="{{formData.summary}}"
+            bindinput="onSummaryInput"
+            maxlength="300"
+            auto-height
+          />
+        </view>
+
+        <!-- 目录 -->
+        <view class="form-item">
+          <text class="form-label">词条目录</text>
+          <view class="catalog-input-wrap">
+            <view class="catalog-level-select">
+              <view 
+                class="level-btn {{newCatalogItem.level === '1' ? 'active' : ''}}"
+                data-level="1"
+                bindtap="onCatalogLevelSelect"
+              >一级</view>
+              <view 
+                class="level-btn {{newCatalogItem.level === '2' ? 'active' : ''}}"
+                data-level="2"
+                bindtap="onCatalogLevelSelect"
+              >二级</view>
+            </view>
+            <view class="catalog-input-row">
+              <input 
+                class="catalog-input" 
+                placeholder="输入目录标题"
+                value="{{newCatalogItem.title}}"
+                bindinput="onCatalogTitleInput"
+                maxlength="50"
+              />
+              <view class="catalog-add-btn" bindtap="addCatalogItem">添加</view>
+            </view>
+          </view>
+          <view class="catalog-list" wx:if="{{formData.catalog.length > 0}}">
+            <view 
+              class="catalog-item level-{{item.level}}"
+              wx:for="{{formData.catalog}}"
+              wx:key="id"
+              data-index="{{index}}"
+              bindtap="removeCatalogItem"
+            >
+              <text class="catalog-title">{{item.title}}</text>
+              <text class="catalog-remove">✕</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 内容 -->
+        <view class="form-item">
+          <text class="form-label">词条内容 <text class="required">*</text></text>
+          <textarea 
+            class="form-textarea content-area" 
+            placeholder="请输入词条详细内容（至少20字，段落之间用空行分隔）"
+            value="{{formData.content}}"
+            bindinput="onContentInput"
+            maxlength="5000"
+            auto-height
+          />
+        </view>
+
+        <!-- 标签 -->
+        <view class="form-item">
+          <text class="form-label">词条标签</text>
+          <view class="tag-input-wrap">
+            <input 
+              class="tag-input" 
+              placeholder="输入标签后点击添加"
+              value="{{tagInput}}"
+              bindinput="onTagInput"
+              maxlength="20"
+            />
+            <view class="tag-add-btn" bindtap="addTag">添加</view>
+          </view>
+          <view class="tag-group" wx:if="{{formData.tags.length > 0}}">
+            <view class="tag-item active" wx:for="{{formData.tags}}" wx:key="index" data-index="{{index}}" bindtap="removeTag">
+              {{item}} ✕
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+
+      <!-- 底部按钮 -->
+      <view class="form-footer">
+        <view class="btn-cancel" bindtap="closeForm">取消</view>
+        <view class="btn-submit {{canSubmit ? '' : 'disabled'}}" bindtap="onSubmit">
+          {{submitting ? '提交中...' : (editMode ? '保存修改' : '创建词条')}}
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

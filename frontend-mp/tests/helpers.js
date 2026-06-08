@@ -129,6 +129,84 @@ const defaultUser = {
   createTime: '2024-01-01'
 };
 
+const defaultTopics = [
+  {
+    id: 'topic_001',
+    title: '端午民俗专题',
+    coverImage: '',
+    category: 'folklore',
+    categoryName: '民俗故事',
+    introduction: '端午节是中国传统节日之一，有着丰富的民俗文化内涵。本专题将带您深入了解端午节的起源、习俗和文化意义。',
+    tags: ['端午节', '传统节日', '民俗'],
+    articleIds: ['article_004'],
+    relatedTopicIds: ['topic_002'],
+    articleCount: 1,
+    viewCount: 256,
+    likeCount: 45,
+    createTime: '2024-12-10',
+    status: 1
+  },
+  {
+    id: 'topic_002',
+    title: '传统织布技艺',
+    coverImage: '',
+    category: 'craft',
+    categoryName: '传统技艺',
+    introduction: '传统织布技艺是中国非物质文化遗产的重要组成部分，承载着千年的文化传承。',
+    tags: ['织布', '非遗', '传统技艺'],
+    articleIds: ['article_002'],
+    relatedTopicIds: [],
+    articleCount: 1,
+    viewCount: 189,
+    likeCount: 32,
+    createTime: '2024-12-08',
+    status: 1
+  }
+];
+
+const defaultEncyclopedias = [
+  {
+    id: 'encyclopedia_001',
+    title: '二十四节气',
+    category: 'farming',
+    categoryName: '农耕智慧',
+    summary: '二十四节气是中国古代订立的一种用来指导农事的补充历法，是中华民族劳动人民长期经验的积累和智慧的结晶。',
+    content: '二十四节气，是干支历中表示自然节律变化以及确立"十二月建"的特定节令。\n\n最初是依据斗转星移制定，北斗七星循环旋转，斗柄绕东、南、西、北旋转一圈，为一周期，谓之一"岁"。',
+    catalog: [
+      { id: 'cat_001', level: 1, title: '节气起源' },
+      { id: 'cat_002', level: 1, title: '二十四节气详解' },
+      { id: 'cat_003', level: 2, title: '春季节气' },
+      { id: 'cat_004', level: 2, title: '夏季节气' }
+    ],
+    tags: ['节气', '农耕', '传统文化'],
+    relatedArticleIds: ['article_005'],
+    relatedTopicIds: [],
+    viewCount: 567,
+    likeCount: 89,
+    createTime: '2024-12-05',
+    status: 1
+  },
+  {
+    id: 'encyclopedia_002',
+    title: '榫卯',
+    category: 'craft',
+    categoryName: '传统技艺',
+    summary: '榫卯是古代中国建筑、家具及其它器械的主要结构方式，是在两个构件上采用凹凸部位相结合的一种连接方式。',
+    content: '榫卯是极为精巧的发明，这种构件连接方式，使得中国传统的木结构成为超越了当代建筑排架、框架或者刚架的特殊柔性结构体。\n\n不但可以承受较大的荷载，而且允许产生一定的变形，在地震荷载下通过变形抵消一定的地震能量，减小结构的地震响应。',
+    catalog: [
+      { id: 'cat_005', level: 1, title: '榫卯的定义' },
+      { id: 'cat_006', level: 1, title: '榫卯的历史' }
+    ],
+    tags: ['榫卯', '建筑', '传统技艺'],
+    relatedArticleIds: [],
+    relatedTopicIds: ['topic_002'],
+    viewCount: 423,
+    likeCount: 76,
+    createTime: '2024-12-03',
+    status: 1
+  }
+];
+
 function initStorage(overrides = {}) {
   wx._resetStorage();
   wx.setStorageSync('articles', overrides.articles || JSON.parse(JSON.stringify(defaultArticles)));
@@ -151,6 +229,16 @@ function initStorage(overrides = {}) {
   }
   if (overrides.figureDrafts) {
     wx.setStorageSync('figureDrafts', overrides.figureDrafts);
+  }
+  if (overrides.topics) {
+    wx.setStorageSync('topics', overrides.topics);
+  } else {
+    wx.setStorageSync('topics', JSON.parse(JSON.stringify(defaultTopics)));
+  }
+  if (overrides.encyclopedias) {
+    wx.setStorageSync('encyclopedia', overrides.encyclopedias);
+  } else {
+    wx.setStorageSync('encyclopedia', JSON.parse(JSON.stringify(defaultEncyclopedias)));
   }
 }
 
@@ -250,6 +338,8 @@ module.exports = {
   defaultCategories,
   defaultFigures,
   defaultUser,
+  defaultTopics,
+  defaultEncyclopedias,
   initStorage,
   createPageInstance
 };

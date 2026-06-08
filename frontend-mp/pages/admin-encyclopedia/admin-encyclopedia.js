@@ -1,0 +1,348 @@
+const api = require('../../utils/api');
+
+Page({
+  data: {
+    isLoggedIn: false,
+    entryList: [],
+    loading: false,
+    showForm: false,
+    editMode: false,
+    editId: null,
+    submitting: false,
+
+    categories: [],
+
+    formData: {
+      title: '',
+      category: '',
+      summary: '',
+      content: '',
+      catalog: [],
+      tags: [],
+      relatedArticleIds: [],
+      relatedTopicIds: []
+    },
+
+    tagInput: '',
+    newCatalogItem: {
+      level: '1',
+      title: ''
+    },
+    canSubmit: false
+  },
+
+  onLoad() {
+    this.checkLogin();
+    this.loadCategories();
+  },
+
+  onShow() {
+    if (this.data.isLoggedIn && this.data.entryList.length === 0) {
+      this.loadEntryList();
+    }
+  },
+
+  checkLogin() {
+    const app = getApp();
+    const isLoggedIn = app.getLoginStatus();
+    this.setData({ isLoggedIn });
+    if (!isLoggedIn) {
+      wx.showModal({
+        title: '需要登录',
+        content: '请先登录后再使用管理功能',
+        showCancel: false,
+        success: () => {
+          wx.navigateTo({
+            url: '/pages/login/login'
+          });
+        }
+      });
+    }
+  },
+
+  goToLogin() {
+    wx.navigateTo({
+      url: '/pages/login/login'
+    });
+  },
+
+  async loadCategories() {
+    try {
+      const res = await api.getEncyclopediaCategories();
+      if (res.code === 200) {
+        this.setData({
+          categories: res.data.filter(item => item.id !== 'all')
+        });
+      }
+    } catch (error) {
+      console.error('[AdminEncyclopedia] 加载分类失败:', error);
+    }
+  },
+
+  async loadEntryList() {
+    this.setData({ loading: true });
+
+    try {
+      const res = await api.getEncyclopediaList({ page: 1, pageSize: 100 });
+      if (res.code === 200) {
+        this.setData({ entryList: res.data.list });
+      } else {
+        wx.showToast({ title: res.message || '加载失败', icon: 'none' });
+      }
+    } catch (error) {
+      console.error('[AdminEncyclopedia] 加载列表失败:', error);
+      wx.showToast({ title: '网络错误，请重试', icon: 'none' });
+    } finally {
+      this.setData({ loading: false });
+    }
+  },
+
+  openCreateForm() {
+    this.setData({
+      showForm: true,
+      editMode: false,
+      editId: null,
+      formData: {
+        title: '',
+        category: '',
+        summary: '',
+        content: '',
+        catalog: [],
+        tags: [],
+        relatedArticleIds: [],
+        relatedTopicIds: []
+      },
+      tagInput: '',
+      newCatalogItem: { level: '1', title: '' },
+      canSubmit: false
+    });
+  },
+
+  openEditForm(e) {
+    const id = e.currentTarget.dataset.id;
+    const entry = this.data.entryList.find(item => item.id === id);
+    if (!entry) return;
+
+    this.setData({
+      showForm: true,
+      editMode: true,
+      editId: id,
+      formData: {
+        title: entry.title || '',
+        category: entry.category || '',
+        summary: entry.summary || '',
+        content: entry.content || '',
+        catalog: entry.catalog || [],
+        tags: entry.tags || [],
+        relatedArticleIds: entry.relatedArticleIds || [],
+        relatedTopicIds: entry.relatedTopicIds || []
+      },
+      tagInput: '',
+      newCatalogItem: { level: '1', title: '' },
+      canSubmit: true
+    });
+  },
+
+  closeForm() {
+    this.setData({ showForm: false });
+  },
+
+  onTitleInput(e) {
+    this.setData({ 'formData.title': e.detail.value });
+    this.checkCanSubmit();
+  },
+
+  onCategorySelect(e) {
+    const id = e.currentTarget.dataset.id;
+    this.setData({ 'formData.category': id });
+    this.checkCanSubmit();
+  },
+
+  onSummaryInput(e) {
+    this.setData({ 'formData.summary': e.detail.value });
+    this.checkCanSubmit();
+  },
+
+  onContentInput(e) {
+    this.setData({ 'formData.content': e.detail.value });
+    this.checkCanSubmit();
+  },
+
+  onTagInput(e) {
+    this.setData({ tagInput: e.detail.value });
+  },
+
+  addTag() {
+    const tag = this.data.tagInput.trim();
+    if (!tag) {
+      wx.showToast({ title: '请输入标签内容', icon: 'none' });
+      return;
+    }
+    if (this.data.formData.tags.includes(tag)) {
+      wx.showToast({ title: '标签已存在', icon: 'none' });
+      return;
+    }
+
+    const tags = [...this.data.formData.tags, tag];
+    this.setData({
+      'formData.tags': tags,
+      tagInput: ''
+    });
+  },
+
+  removeTag(e) {
+    const index = e.currentTarget.dataset.index;
+    const tags = [...this.data.formData.tags];
+    tags.splice(index, 1);
+    this.setData({ 'formData.tags': tags });
+  },
+
+  onCatalogLevelSelect(e) {
+    const level = e.currentTarget.dataset.level;
+    this.setData({ 'newCatalogItem.level': level });
+  },
+
+  onCatalogTitleInput(e) {
+    this.setData({ 'newCatalogItem.title': e.detail.value });
+  },
+
+  addCatalogItem() {
+    const { level, title } = this.data.newCatalogItem;
+    if (!title.trim()) {
+      wx.showToast({ title: '请输入目录标题', icon: 'none' });
+      return;
+    }
+
+    const catalog = [...this.data.formData.catalog];
+    catalog.push({
+      id: 'cat_' + Date.now(),
+      level: parseInt(level),
+      title: title.trim()
+    });
+
+    this.setData({
+      'formData.catalog': catalog,
+      newCatalogItem: { level: '1', title: '' }
+    });
+  },
+
+  removeCatalogItem(e) {
+    const index = e.currentTarget.dataset.index;
+    const catalog = [...this.data.formData.catalog];
+    catalog.splice(index, 1);
+    this.setData({ 'formData.catalog': catalog });
+  },
+
+  checkCanSubmit() {
+    const { title, category, summary, content } = this.data.formData;
+    const canSubmit = title.trim().length >= 2 &&
+                      category !== '' &&
+                      summary.trim().length >= 10 &&
+                      content.trim().length >= 20;
+    this.setData({ canSubmit });
+  },
+
+  async onSubmit() {
+    const app = getApp();
+    if (!app.checkLogin()) return;
+    if (this.data.submitting) return;
+
+    const { title, category, summary, content, catalog, tags, relatedArticleIds, relatedTopicIds } = this.data.formData;
+
+    if (!title || title.trim().length < 2) {
+      wx.showToast({ title: '请输入词条标题（至少2字）', icon: 'none' });
+      return;
+    }
+    if (!category) {
+      wx.showToast({ title: '请选择词条分类', icon: 'none' });
+      return;
+    }
+    if (!summary || summary.trim().length < 10) {
+      wx.showToast({ title: '请填写词条摘要（至少10字）', icon: 'none' });
+      return;
+    }
+    if (!content || content.trim().length < 20) {
+      wx.showToast({ title: '请填写词条内容（至少20字）', icon: 'none' });
+      return;
+    }
+
+    const submitData = {
+      title: title.trim(),
+      category,
+      summary: summary.trim(),
+      content: content.trim(),
+      catalog: catalog || [],
+      tags: tags || [],
+      relatedArticleIds: relatedArticleIds || [],
+      relatedTopicIds: relatedTopicIds || []
+    };
+
+    this.setData({ submitting: true });
+    wx.showLoading({ title: '提交中...' });
+
+    try {
+      let res;
+      if (this.data.editMode) {
+        res = await api.updateEncyclopedia(this.data.editId, submitData);
+      } else {
+        res = await api.createEncyclopedia(submitData);
+      }
+
+      wx.hideLoading();
+
+      if (res.code === 200) {
+        wx.showToast({
+          title: this.data.editMode ? '更新成功' : '创建成功',
+          icon: 'success'
+        });
+        this.setData({ showForm: false });
+        this.loadEntryList();
+      } else {
+        wx.showToast({ title: res.message || '提交失败', icon: 'none' });
+      }
+    } catch (error) {
+      console.error('[AdminEncyclopedia] 提交失败:', error);
+      wx.hideLoading();
+      wx.showToast({ title: '网络错误，请重试', icon: 'none' });
+    } finally {
+      this.setData({ submitting: false });
+    }
+  },
+
+  async onDelete(e) {
+    const app = getApp();
+    if (!app.checkLogin()) return;
+
+    const id = e.currentTarget.dataset.id;
+    const entry = this.data.entryList.find(item => item.id === id);
+
+    wx.showModal({
+      title: '确认删除',
+      content: `确定要删除词条「${entry.title}」吗？此操作不可恢复。`,
+      confirmColor: '#FF6B6B',
+      success: async (res) => {
+        if (res.confirm) {
+          try {
+            const result = await api.deleteEncyclopedia(id);
+            if (result.code === 200) {
+              wx.showToast({ title: '删除成功', icon: 'success' });
+              this.loadEntryList();
+            } else {
+              wx.showToast({ title: result.message || '删除失败', icon: 'none' });
+            }
+          } catch (error) {
+            console.error('[AdminEncyclopedia] 删除失败:', error);
+            wx.showToast({ title: '网络错误，请重试', icon: 'none' });
+          }
+        }
+      }
+    });
+  },
+
+  goToDetail(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({
+      url: `/pages/encyclopedia-detail/encyclopedia-detail?id=${id}`
+    });
+  }
+});

@@ -1,0 +1,468 @@
+.page-container {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  padding-bottom: 140rpx;
+}
+
+.loading-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 0;
+}
+
+.loading-spinner {
+  width: 60rpx;
+  height: 60rpx;
+  border: 4rpx solid var(--color-border);
+  border-top-color: #2E8B57;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  color: var(--color-text-light);
+}
+
+.empty-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 0;
+}
+
+.empty-icon {
+  font-size: 100rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: var(--color-text-secondary);
+}
+
+.entry-hero {
+  background: linear-gradient(135deg, #2E8B57 0%, #3CB371 100%);
+  padding: 40rpx 32rpx;
+  border-radius: 0 0 32rpx 32rpx;
+}
+
+.entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.entry-category {
+  display: inline-flex;
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+.entry-stats {
+  display: flex;
+  gap: 24rpx;
+}
+
+.stat-item {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.entry-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #FFFFFF;
+  line-height: 1.4;
+  margin-bottom: 16rpx;
+}
+
+.entry-summary {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.8;
+  margin-bottom: 24rpx;
+}
+
+.entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.tag-item {
+  padding: 8rpx 16rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6rpx;
+  font-size: 24rpx;
+  color: #FFFFFF;
+}
+
+.entry-meta {
+  display: flex;
+  gap: 32rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.meta-item {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.catalog-section {
+  background-color: #FFFFFF;
+  margin: 24rpx;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.catalog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.catalog-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: var(--color-text);
+}
+
+.catalog-toggle {
+  font-size: 24rpx;
+  color: var(--color-text-light);
+}
+
+.catalog-content {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid var(--color-border);
+}
+
+.catalog-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  transition: all 0.2s;
+}
+
+.catalog-item:active {
+  background-color: var(--color-bg);
+  border-radius: 8rpx;
+  padding-left: 8rpx;
+}
+
+.catalog-item.level-1 {
+  font-weight: 500;
+}
+
+.catalog-item.level-2 {
+  padding-left: 40rpx;
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+}
+
+.catalog-dot {
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background-color: #2E8B57;
+  margin-right: 16rpx;
+}
+
+.catalog-text {
+  font-size: 28rpx;
+  color: var(--color-text);
+}
+
+.tab-bar {
+  display: flex;
+  background-color: #FFFFFF;
+  margin: 0 24rpx;
+  border-radius: 16rpx;
+  padding: 8rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  font-size: 28rpx;
+  color: var(--color-text-secondary);
+  border-radius: 12rpx;
+  transition: all 0.3s;
+}
+
+.tab-item.active {
+  background-color: #2E8B57;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+.tab-content {
+  padding: 24rpx;
+}
+
+.content-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: var(--color-text);
+  margin-bottom: 24rpx;
+  padding-left: 16rpx;
+  border-left: 6rpx solid #2E8B57;
+}
+
+.content-text {
+  font-size: 28rpx;
+  color: var(--color-text-secondary);
+  line-height: 2;
+}
+
+.article-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+  transition: all 0.3s;
+}
+
+.article-card:active {
+  transform: scale(0.98);
+}
+
+.article-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.article-category {
+  display: inline-flex;
+  padding: 6rpx 16rpx;
+  border-radius: 6rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+.tag-folklore {
+  background-color: rgba(139, 69, 19, 0.1);
+  color: #8B4513;
+}
+
+.tag-farming {
+  background-color: rgba(34, 139, 34, 0.1);
+  color: #228B22;
+}
+
+.tag-craft {
+  background-color: rgba(70, 130, 180, 0.1);
+  color: #4682B4;
+}
+
+.tag-memory {
+  background-color: rgba(218, 165, 32, 0.1);
+  color: #B8860B;
+}
+
+.article-date {
+  font-size: 24rpx;
+  color: var(--color-text-light);
+}
+
+.article-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: var(--color-text);
+  line-height: 1.4;
+  margin-bottom: 12rpx;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.article-content {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-bottom: 16rpx;
+}
+
+.article-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16rpx;
+  border-top: 1rpx solid var(--color-border);
+}
+
+.article-author {
+  display: flex;
+  align-items: center;
+}
+
+.author-icon {
+  font-size: 28rpx;
+  margin-right: 8rpx;
+}
+
+.author-name {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
+.article-stats {
+  display: flex;
+  align-items: center;
+}
+
+.stat-icon {
+  font-size: 24rpx;
+  margin-right: 6rpx;
+}
+
+.stat-value {
+  font-size: 24rpx;
+  color: var(--color-text-light);
+}
+
+.topic-card {
+  display: flex;
+  align-items: center;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+  transition: all 0.3s;
+}
+
+.topic-card:active {
+  transform: scale(0.98);
+}
+
+.topic-cover {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 12rpx;
+  background: linear-gradient(135deg, #DEB887 0%, #D2B48C 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.cover-emoji {
+  font-size: 40rpx;
+}
+
+.topic-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.topic-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1.4;
+  margin-bottom: 8rpx;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.topic-meta {
+  font-size: 24rpx;
+  color: var(--color-text-light);
+}
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  background-color: #FFFFFF;
+  padding: 16rpx 24rpx;
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.08);
+  gap: 24rpx;
+}
+
+.action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8rpx 16rpx;
+}
+
+.action-icon {
+  font-size: 40rpx;
+  margin-bottom: 4rpx;
+}
+
+.action-text {
+  font-size: 22rpx;
+  color: var(--color-text-secondary);
+}
+
+.share-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  background: linear-gradient(135deg, #2E8B57 0%, #3CB371 100%);
+  border-radius: 40rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #FFFFFF;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.share-btn::after {
+  border: none;
+}
+
+.share-icon {
+  font-size: 36rpx;
+  margin-right: 8rpx;
+}
+
+.share-text {
+  font-size: 30rpx;
+}

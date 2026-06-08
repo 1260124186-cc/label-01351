@@ -1,0 +1,93 @@
+<view class="page-container">
+  <view class="header">
+    <view class="header-title">
+      <text class="title-main">文化专题</text>
+      <text class="title-sub">体系化解读 · 深度传承</text>
+    </view>
+  </view>
+
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input 
+        class="search-input" 
+        placeholder="搜索专题" 
+        placeholder-class="search-placeholder"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+    <view class="admin-btn" bindtap="goToAdmin">
+      <text class="admin-icon">✏️</text>
+    </view>
+  </view>
+
+  <scroll-view class="category-scroll" scroll-x enable-flex>
+    <view 
+      class="category-item {{currentCategory === item.id ? 'active' : ''}}"
+      wx:for="{{categories}}"
+      wx:key="id"
+      bindtap="onCategoryChange"
+      data-id="{{item.id}}"
+    >
+      <text class="category-icon">{{item.icon}}</text>
+      <text class="category-name">{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="topic-list">
+    <view class="loading-wrap" wx:if="{{loading && topicList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view class="empty-wrap" wx:elif="{{!loading && topicList.length === 0}}">
+      <text class="empty-icon">📚</text>
+      <text class="empty-text">暂无专题</text>
+      <text class="empty-hint">敬请期待更多精彩内容</text>
+    </view>
+
+    <view 
+      class="topic-card"
+      wx:for="{{topicList}}"
+      wx:key="id"
+      bindtap="goToDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="topic-cover">
+        <text class="cover-emoji">📖</text>
+      </view>
+      <view class="topic-content">
+        <view class="topic-header">
+          <view class="topic-category tag-{{item.category}}">
+            {{item.category === 'festival' ? '节日专题' : item.category === 'craft' ? '技艺专题' : item.category === 'custom' ? '民俗专题' : item.category === 'figure' ? '人物专题' : '文化专题'}}
+          </view>
+          <text class="topic-articles">{{item.articleCount}}篇文章</text>
+        </view>
+        <view class="topic-title">{{item.title}}</view>
+        <view class="topic-summary">{{item.summary}}</view>
+        <view class="topic-footer">
+          <view class="topic-stats">
+            <view class="stat-item">
+              <text class="stat-icon">👁</text>
+              <text class="stat-value">{{item.viewCount}}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-icon">👍</text>
+              <text class="stat-value">{{item.likeCount}}</text>
+            </view>
+          </view>
+          <text class="topic-date">{{item.createTime}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="load-more" wx:if="{{topicList.length > 0}}">
+      <text wx:if="{{loadingMore}}">加载中...</text>
+      <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+      <text wx:else bindtap="loadMore">点击加载更多</text>
+    </view>
+  </view>
+</view>

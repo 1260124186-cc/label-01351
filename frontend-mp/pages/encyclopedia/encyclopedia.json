@@ -1,0 +1,5 @@
+{
+  "navigationBarTitleText": "文化百科",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50
+}

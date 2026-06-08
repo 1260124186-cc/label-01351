@@ -1,0 +1,161 @@
+<view class="page-container">
+  <!-- 未登录提示 -->
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <text class="login-icon">🔒</text>
+    <text class="login-text">请先登录后使用管理功能</text>
+    <view class="login-btn" bindtap="goToLogin">
+      <text>去登录</text>
+    </view>
+  </view>
+
+  <!-- 管理内容 -->
+  <block wx:else>
+    <!-- 顶部操作栏 -->
+    <view class="top-bar">
+      <view class="stats-item">
+        <text class="stats-label">专题总数</text>
+        <text class="stats-value">{{topicList.length}}</text>
+      </view>
+      <view class="create-btn" bindtap="openCreateForm">
+        <text class="create-icon">+</text>
+        <text>新建专题</text>
+      </view>
+    </view>
+
+    <!-- 加载中 -->
+    <view class="loading-wrap" wx:if="{{loading && topicList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-wrap" wx:elif="{{!loading && topicList.length === 0}}">
+      <text class="empty-icon">📚</text>
+      <text class="empty-text">暂无专题</text>
+      <text class="empty-hint">点击右上角创建第一个专题吧</text>
+    </view>
+
+    <!-- 专题列表 -->
+    <view class="topic-list" wx:else>
+      <view class="topic-card" wx:for="{{topicList}}" wx:key="id">
+        <view class="topic-cover" style="background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);">
+          <text class="cover-title">{{item.title}}</text>
+        </view>
+        <view class="topic-info">
+          <view class="topic-header">
+            <text class="topic-title">{{item.title}}</text>
+            <view class="topic-category">{{item.categoryName}}</view>
+          </view>
+          <view class="topic-desc">{{item.introduction}}</view>
+          <view class="topic-meta">
+            <text class="meta-item">📄 {{item.articleCount || 0}} 篇文章</text>
+            <text class="meta-item">👁 {{item.viewCount || 0}}</text>
+          </view>
+          <view class="topic-actions">
+            <view class="action-btn action-view" bindtap="goToDetail" data-id="{{item.id}}">
+              <text>查看</text>
+            </view>
+            <view class="action-btn action-edit" bindtap="openEditForm" data-id="{{item.id}}">
+              <text>编辑</text>
+            </view>
+            <view class="action-btn action-delete" bindtap="onDelete" data-id="{{item.id}}">
+              <text>删除</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 编辑弹窗 -->
+  <view class="form-modal" wx:if="{{showForm}}" catchtouchmove="true">
+    <view class="form-container">
+      <view class="form-header">
+        <text class="form-title">{{editMode ? '编辑专题' : '新建专题'}}</text>
+        <text class="form-close" bindtap="closeForm">✕</text>
+      </view>
+
+      <scroll-view class="form-scroll" scroll-y>
+        <!-- 标题 -->
+        <view class="form-item">
+          <text class="form-label">专题标题 <text class="required">*</text></text>
+          <input 
+            class="form-input" 
+            placeholder="请输入专题标题"
+            value="{{formData.title}}"
+            bindinput="onTitleInput"
+            maxlength="50"
+          />
+        </view>
+
+        <!-- 封面图 -->
+        <view class="form-item">
+          <text class="form-label">封面图片URL</text>
+          <input 
+            class="form-input" 
+            placeholder="请输入封面图片链接（选填）"
+            value="{{formData.coverImage}}"
+            bindinput="onCoverImageInput"
+          />
+        </view>
+
+        <!-- 分类 -->
+        <view class="form-item">
+          <text class="form-label">专题分类 <text class="required">*</text></text>
+          <view class="tag-group">
+            <view 
+              class="tag-item {{formData.category === item.id ? 'active' : ''}}"
+              wx:for="{{categories}}"
+              wx:key="id"
+              bindtap="onCategorySelect"
+              data-id="{{item.id}}"
+            >
+              {{item.name}}
+            </view>
+          </view>
+        </view>
+
+        <!-- 导语 -->
+        <view class="form-item">
+          <text class="form-label">专题导语 <text class="required">*</text></text>
+          <textarea 
+            class="form-textarea" 
+            placeholder="请输入专题导语，介绍专题内容（至少10字）"
+            value="{{formData.introduction}}"
+            bindinput="onIntroductionInput"
+            maxlength="500"
+            auto-height
+          />
+        </view>
+
+        <!-- 标签 -->
+        <view class="form-item">
+          <text class="form-label">专题标签</text>
+          <view class="tag-input-wrap">
+            <input 
+              class="tag-input" 
+              placeholder="输入标签后点击添加"
+              value="{{tagInput}}"
+              bindinput="onTagInput"
+              maxlength="20"
+            />
+            <view class="tag-add-btn" bindtap="addTag">添加</view>
+          </view>
+          <view class="tag-group" wx:if="{{formData.tags.length > 0}}">
+            <view class="tag-item active" wx:for="{{formData.tags}}" wx:key="index" data-index="{{index}}" bindtap="removeTag">
+              {{item}} ✕
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+
+      <!-- 底部按钮 -->
+      <view class="form-footer">
+        <view class="btn-cancel" bindtap="closeForm">取消</view>
+        <view class="btn-submit {{canSubmit ? '' : 'disabled'}}" bindtap="onSubmit">
+          {{submitting ? '提交中...' : (editMode ? '保存修改' : '创建专题')}}
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
