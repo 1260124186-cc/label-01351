@@ -419,6 +419,8 @@ const remoteApi = {
   },
 
   publishArticle: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
     const userId = getCurrentUserId();
     return request({
       url: '/api/article/publish',
@@ -428,6 +430,8 @@ const remoteApi = {
   },
 
   getMyArticles: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
     const userId = getCurrentUserId();
     return request({
       url: '/api/article/my',
@@ -444,6 +448,8 @@ const remoteApi = {
   },
 
   getUserInfo: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
     const userId = getCurrentUserId();
     return request({
       url: '/api/user/info',
@@ -453,6 +459,8 @@ const remoteApi = {
   },
 
   updateUserInfo: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
     const userId = getCurrentUserId();
     return request({
       url: '/api/user/update',
@@ -462,6 +470,8 @@ const remoteApi = {
   },
 
   getUserStats: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
     const userId = getCurrentUserId();
     return request({
       url: '/api/user/stats',
@@ -471,6 +481,8 @@ const remoteApi = {
   },
 
   likeArticle: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -483,6 +495,8 @@ const remoteApi = {
   },
 
   unlikeArticle: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -495,6 +509,8 @@ const remoteApi = {
   },
 
   checkLike: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -507,6 +523,8 @@ const remoteApi = {
   },
 
   favoriteArticle: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -519,6 +537,8 @@ const remoteApi = {
   },
 
   unfavoriteArticle: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -531,6 +551,8 @@ const remoteApi = {
   },
 
   checkFavorite: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -543,6 +565,8 @@ const remoteApi = {
   },
 
   getFavoriteList: async (params = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
     const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
     const userId = getCurrentUserId();
     return request({

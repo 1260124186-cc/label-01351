@@ -101,6 +101,14 @@ const generateId = (prefix = '') => {
   return prefix ? `${prefix}_${timestamp}${random}` : `${timestamp}${random}`;
 };
 
+// 鉴权校验
+const requireAuth = (userId) => {
+  if (!userId) {
+    return { code: 401, data: null, message: '请先登录' };
+  }
+  return null;
+};
+
 // 健康检查
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -172,7 +180,12 @@ app.get('/api/article/detail/:id', (req, res) => {
 
 // 发布文章
 app.post('/api/article/publish', (req, res) => {
-  const { title, content, category, authorId = 'user_001' } = req.body;
+  const { title, content, category, authorId } = req.body;
+
+  const authError = requireAuth(authorId);
+  if (authError) {
+    return res.json(authError);
+  }
 
   if (!title || !content || !category) {
     return res.json({
@@ -182,7 +195,7 @@ app.post('/api/article/publish', (req, res) => {
     });
   }
 
-  const user = users[authorId] || users['user_001'];
+  const user = users[authorId] || { ...users['user_001'], id: authorId, nickname: '用户' };
 
   const newArticle = {
     id: generateId('article'),
@@ -208,7 +221,12 @@ app.post('/api/article/publish', (req, res) => {
 
 // 获取我的文章
 app.get('/api/article/my', (req, res) => {
-  const { authorId = 'user_001' } = req.query;
+  const { authorId } = req.query;
+
+  const authError = requireAuth(authorId);
+  if (authError) {
+    return res.json(authError);
+  }
 
   const myArticles = articles
     .filter(item => item.authorId === authorId)
@@ -227,7 +245,13 @@ app.get('/api/article/my', (req, res) => {
 // 点赞文章
 app.post('/api/article/like/:id', (req, res) => {
   const { id } = req.params;
-  const { userId = 'user_001' } = req.body;
+  const { userId } = req.body;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
+
   const article = articles.find(item => item.id === id);
 
   if (!article) {
@@ -261,7 +285,13 @@ app.post('/api/article/like/:id', (req, res) => {
 // 取消点赞文章
 app.post('/api/article/unlike/:id', (req, res) => {
   const { id } = req.params;
-  const { userId = 'user_001' } = req.body;
+  const { userId } = req.body;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
+
   const article = articles.find(item => item.id === id);
 
   if (!article) {
@@ -291,7 +321,12 @@ app.post('/api/article/unlike/:id', (req, res) => {
 // 检查点赞状态
 app.get('/api/article/like/:id', (req, res) => {
   const { id } = req.params;
-  const { userId = 'user_001' } = req.query;
+  const { userId } = req.query;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
 
   if (!id) {
     return res.json({
@@ -314,7 +349,12 @@ app.get('/api/article/like/:id', (req, res) => {
 // 收藏文章
 app.post('/api/article/favorite/:id', (req, res) => {
   const { id } = req.params;
-  const { userId = 'user_001' } = req.body;
+  const { userId } = req.body;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
 
   if (!id) {
     return res.json({
@@ -346,7 +386,12 @@ app.post('/api/article/favorite/:id', (req, res) => {
 // 取消收藏文章
 app.post('/api/article/unfavorite/:id', (req, res) => {
   const { id } = req.params;
-  const { userId = 'user_001' } = req.body;
+  const { userId } = req.body;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
 
   if (!id) {
     return res.json({
@@ -373,7 +418,12 @@ app.post('/api/article/unfavorite/:id', (req, res) => {
 // 检查收藏状态
 app.get('/api/article/favorite/:id', (req, res) => {
   const { id } = req.params;
-  const { userId = 'user_001' } = req.query;
+  const { userId } = req.query;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
 
   if (!id) {
     return res.json({
@@ -395,7 +445,12 @@ app.get('/api/article/favorite/:id', (req, res) => {
 
 // 获取收藏文章列表
 app.get('/api/article/favorites', (req, res) => {
-  const { userId = 'user_001', category = 'all', page = 1, pageSize = 10, keyword = '' } = req.query;
+  const { userId, category = 'all', page = 1, pageSize = 10, keyword = '' } = req.query;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
 
   const userFavorites = favorites[userId] || [];
 
@@ -457,8 +512,14 @@ app.get('/api/category/list', (req, res) => {
 
 // 获取用户信息
 app.get('/api/user/info', (req, res) => {
-  const { userId = 'user_001' } = req.query;
-  const user = users[userId] || users['user_001'];
+  const { userId } = req.query;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
+
+  const user = users[userId] || { ...users['user_001'], id: userId };
 
   res.json({
     code: 200,
@@ -469,7 +530,12 @@ app.get('/api/user/info', (req, res) => {
 
 // 更新用户信息
 app.post('/api/user/update', (req, res) => {
-  const { userId = 'user_001', nickname } = req.body;
+  const { userId, nickname } = req.body;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
 
   if (!users[userId]) {
     users[userId] = { ...users['user_001'], id: userId };
@@ -493,7 +559,12 @@ app.post('/api/user/update', (req, res) => {
 
 // 获取用户统计
 app.get('/api/user/stats', (req, res) => {
-  const { userId = 'user_001' } = req.query;
+  const { userId } = req.query;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
 
   const myArticles = articles.filter(item => item.authorId === userId);
   const totalLikes = myArticles.reduce((sum, item) => sum + (item.likeCount || 0), 0);
