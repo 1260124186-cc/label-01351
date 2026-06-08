@@ -34,7 +34,7 @@ describe('Publish 投稿页', () => {
   test('初始 data 状态正确', () => {
     expect(page.data.isLoggedIn).toBe(false);
     expect(page.data.categories).toEqual([]);
-    expect(page.data.formData).toEqual({ title: '', category: '', content: '' });
+    expect(page.data.formData).toEqual({ title: '', category: '', content: '', figureId: '' });
     expect(page.data.canSubmit).toBe(false);
     expect(page.data.submitting).toBe(false);
     expect(page.data.showSuccess).toBe(false);
@@ -156,10 +156,10 @@ describe('Publish 投稿页', () => {
   describe('continuePublish', () => {
     test('重置表单和成功状态', () => {
       page.data.showSuccess = true;
-      page.data.formData = { title: '旧标题', category: 'folklore', content: '旧内容' };
+      page.data.formData = { title: '旧标题', category: 'folklore', content: '旧内容', figureId: 'figure_001' };
       page.continuePublish();
       expect(page.data.showSuccess).toBe(false);
-      expect(page.data.formData).toEqual({ title: '', category: '', content: '' });
+      expect(page.data.formData).toEqual({ title: '', category: '', content: '', figureId: '' });
       expect(page.data.canSubmit).toBe(false);
     });
   });

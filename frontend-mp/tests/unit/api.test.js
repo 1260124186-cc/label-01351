@@ -719,3 +719,403 @@ describe('api.withErrorHandler 异常捕获', () => {
     wx.getStorageSync = original;
   });
 });
+
+describe('api.publishArticle 关联人物', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('投稿时关联人物，文章应保存 figureId', async () => {
+    const articleData = {
+      title: '我与王德福老人的对话',
+      content: '今天有幸采访了王德福老人，他讲述了很多关于传统农耕的故事...',
+      category: 'memory',
+      figureId: 'figure_001'
+    };
+
+    const res = await api.publishArticle(articleData);
+    expect(res.code).toBe(200);
+    expect(res.data.figureId).toBe('figure_001');
+
+    const articles = wx.getStorageSync('articles');
+    const newArticle = articles.find(item => item.id === res.data.id);
+    expect(newArticle).toBeDefined();
+    expect(newArticle.figureId).toBe('figure_001');
+  });
+
+  test('投稿时关联人物，人物的 relatedArticles 应更新', async () => {
+    const articleData = {
+      title: '李陈氏的刺绣人生',
+      content: '李陈氏老人的刺绣技艺精湛，每一件作品都倾注了她的心血...',
+      category: 'craft',
+      figureId: 'figure_002'
+    };
+
+    const res = await api.publishArticle(articleData);
+    expect(res.code).toBe(200);
+
+    const figures = wx.getStorageSync('figures');
+    const figure = figures.find(item => item.id === 'figure_002');
+    expect(figure).toBeDefined();
+    expect(figure.relatedArticles).toContain(res.data.id);
+  });
+
+  test('投稿时不关联人物，文章不应有 figureId', async () => {
+    const articleData = {
+      title: '乡村的春天',
+      content: '春天来了，乡村里一派生机勃勃的景象...',
+      category: 'folklore'
+    };
+
+    const res = await api.publishArticle(articleData);
+    expect(res.code).toBe(200);
+    expect(res.data.figureId).toBeUndefined();
+  });
+
+  test('关联无效人物ID时，不会报错', async () => {
+    const articleData = {
+      title: '测试文章',
+      content: '测试内容...',
+      category: 'memory',
+      figureId: 'invalid_figure_id'
+    };
+
+    const res = await api.publishArticle(articleData);
+    expect(res.code).toBe(200);
+    expect(res.data.figureId).toBe('invalid_figure_id');
+  });
+
+  test('同一人物关联多篇文章', async () => {
+    const article1 = {
+      title: '王德福的农耕智慧（上）',
+      content: '内容...',
+      category: 'farming',
+      figureId: 'figure_001'
+    };
+    const article2 = {
+      title: '王德福的农耕智慧（下）',
+      content: '内容...',
+      category: 'farming',
+      figureId: 'figure_001'
+    };
+
+    const res1 = await api.publishArticle(article1);
+    const res2 = await api.publishArticle(article2);
+
+    expect(res1.code).toBe(200);
+    expect(res2.code).toBe(200);
+
+    const figures = wx.getStorageSync('figures');
+    const figure = figures.find(item => item.id === 'figure_001');
+    expect(figure.relatedArticles).toContain(res1.data.id);
+    expect(figure.relatedArticles).toContain(res2.data.id);
+    expect(figure.relatedArticles.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('api.getFigureDetail 相关文章', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('应返回人物预设的 relatedArticles', async () => {
+    const res = await api.getFigureDetail('figure_001');
+    expect(res.code).toBe(200);
+    expect(res.data.relatedArticleList.length).toBeGreaterThan(0);
+    const articleIds = res.data.relatedArticleList.map(item => item.id);
+    expect(articleIds).toContain('article_005');
+  });
+
+  test('新投稿关联人物后，应出现在相关文章中', async () => {
+    const articleData = {
+      title: '新采访的王德福老人',
+      content: '最新的采访内容...',
+      category: 'memory',
+      figureId: 'figure_001'
+    };
+
+    const publishRes = await api.publishArticle(articleData);
+    expect(publishRes.code).toBe(200);
+
+    const detailRes = await api.getFigureDetail('figure_001');
+    expect(detailRes.code).toBe(200);
+
+    const articleIds = detailRes.data.relatedArticleList.map(item => item.id);
+    expect(articleIds).toContain(publishRes.data.id);
+  });
+
+  test('相关文章应按时间倒序排列', async () => {
+    const article1 = {
+      title: '旧文章',
+      content: '旧内容...',
+      category: 'memory',
+      figureId: 'figure_001'
+    };
+    const article2 = {
+      title: '新文章',
+      content: '新内容...',
+      category: 'memory',
+      figureId: 'figure_001'
+    };
+
+    await api.publishArticle(article1);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await api.publishArticle(article2);
+
+    const res = await api.getFigureDetail('figure_001');
+    expect(res.code).toBe(200);
+
+    const articles = res.data.relatedArticleList;
+    for (let i = 0; i < articles.length - 1; i++) {
+      const date1 = new Date(articles[i].createTime);
+      const date2 = new Date(articles[i + 1].createTime);
+      expect(date1 >= date2).toBe(true);
+    }
+  });
+
+  test('双向关联：通过 figureId 关联的文章也应显示', async () => {
+    const articles = wx.getStorageSync('articles');
+    articles[0].figureId = 'figure_001';
+    wx.setStorageSync('articles', articles);
+
+    const res = await api.getFigureDetail('figure_001');
+    expect(res.code).toBe(200);
+
+    const articleIds = res.data.relatedArticleList.map(item => item.id);
+    expect(articleIds).toContain(articles[0].id);
+  });
+
+  test('去重：两种关联方式都有时不重复显示', async () => {
+    const articles = wx.getStorageSync('articles');
+    articles[4].figureId = 'figure_001';
+    wx.setStorageSync('articles', articles);
+
+    const res = await api.getFigureDetail('figure_001');
+    expect(res.code).toBe(200);
+
+    const articleIds = res.data.relatedArticleList.map(item => item.id);
+    const uniqueIds = [...new Set(articleIds)];
+    expect(articleIds.length).toBe(uniqueIds.length);
+  });
+
+  test('未发布的文章（status !== 1）不应显示', async () => {
+    const articles = wx.getStorageSync('articles');
+    articles.push({
+      id: 'article_draft',
+      title: '草稿文章',
+      content: '草稿内容',
+      category: 'memory',
+      figureId: 'figure_001',
+      status: 0,
+      createTime: '2024-12-20'
+    });
+    wx.setStorageSync('articles', articles);
+
+    const res = await api.getFigureDetail('figure_001');
+    expect(res.code).toBe(200);
+
+    const articleIds = res.data.relatedArticleList.map(item => item.id);
+    expect(articleIds).not.toContain('article_draft');
+  });
+
+  test('人物不存在时返回 404', async () => {
+    const res = await api.getFigureDetail('invalid_id');
+    expect(res.code).toBe(404);
+    expect(res.data).toBeNull();
+  });
+
+  test('人物ID为空时返回 400', async () => {
+    const res = await api.getFigureDetail('');
+    expect(res.code).toBe(400);
+    expect(res.data).toBeNull();
+  });
+
+  test('应增加人物浏览量', async () => {
+    const figuresBefore = wx.getStorageSync('figures');
+    const figureBefore = figuresBefore.find(item => item.id === 'figure_001');
+    const viewCountBefore = figureBefore.viewCount;
+
+    await api.getFigureDetail('figure_001');
+
+    const figuresAfter = wx.getStorageSync('figures');
+    const figureAfter = figuresAfter.find(item => item.id === 'figure_001');
+    expect(figureAfter.viewCount).toBe(viewCountBefore + 1);
+  });
+});
+
+describe('api.getFigureList 人物列表', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('返回已审核人物列表', async () => {
+    const res = await api.getFigureList();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    expect(res.data.list.every(item => item.status === 1)).toBe(true);
+  });
+
+  test('按身份筛选人物', async () => {
+    const res = await api.getFigureList({ identity: 'farmer' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(item => item.identity === 'farmer')).toBe(true);
+  });
+
+  test('按技艺筛选人物', async () => {
+    const res = await api.getFigureList({ craft: 'weaving' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(item => item.crafts.includes('weaving'))).toBe(true);
+  });
+
+  test('按地区筛选人物', async () => {
+    const res = await api.getFigureList({ region: 'north' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(item => item.region === 'north')).toBe(true);
+  });
+
+  test('按年代筛选人物', async () => {
+    const res = await api.getFigureList({ era: '1930s' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(item => item.era === '1930s')).toBe(true);
+  });
+
+  test('按关键词搜索人物', async () => {
+    const res = await api.getFigureList({ keyword: '王德福' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    expect(res.data.list[0].name).toBe('王德福');
+  });
+
+  test('返回格式化的人物信息', async () => {
+    const res = await api.getFigureList();
+    expect(res.code).toBe(200);
+    const figure = res.data.list[0];
+    expect(figure).toHaveProperty('identityInfo');
+    expect(figure).toHaveProperty('regionName');
+    expect(figure).toHaveProperty('eraName');
+    expect(figure).toHaveProperty('craftNames');
+    expect(figure).toHaveProperty('lifespan');
+    expect(figure).toHaveProperty('age');
+  });
+});
+
+describe('api.createFigureDraft 新建人物草稿', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('成功创建人物草稿', async () => {
+    const draftData = {
+      name: '张匠人',
+      identity: 'craftsman',
+      briefIntroduction: '木工技艺传承人，从事木工工作50余年。',
+      birthYear: 1950,
+      region: 'north',
+      era: '1950s',
+      crafts: ['woodcarving']
+    };
+
+    const res = await api.createFigureDraft(draftData);
+    expect(res.code).toBe(200);
+    expect(res.data.status).toBe(0);
+    expect(res.data.reviewStatus).toBe('pending');
+    expect(res.data.submitterId).toBe(defaultUser.id);
+  });
+
+  test('姓名为空时返回 400', async () => {
+    const draftData = {
+      name: '',
+      identity: 'craftsman',
+      briefIntroduction: '简介...'
+    };
+
+    const res = await api.createFigureDraft(draftData);
+    expect(res.code).toBe(400);
+  });
+
+  test('未选择身份时返回 400', async () => {
+    const draftData = {
+      name: '张匠人',
+      identity: '',
+      briefIntroduction: '简介...'
+    };
+
+    const res = await api.createFigureDraft(draftData);
+    expect(res.code).toBe(400);
+  });
+
+  test('简介为空时返回 400', async () => {
+    const draftData = {
+      name: '张匠人',
+      identity: 'craftsman',
+      briefIntroduction: ''
+    };
+
+    const res = await api.createFigureDraft(draftData);
+    expect(res.code).toBe(400);
+  });
+
+  test('未登录时返回 401', async () => {
+    initStorage({ isLoggedIn: false });
+
+    const draftData = {
+      name: '张匠人',
+      identity: 'craftsman',
+      briefIntroduction: '简介...'
+    };
+
+    const res = await api.createFigureDraft(draftData);
+    expect(res.code).toBe(401);
+  });
+});
+
+describe('api.likeFigure 人物点赞', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('成功点赞人物', async () => {
+    const res = await api.likeFigure('figure_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isLike).toBe(true);
+    expect(res.data.likeCount).toBeGreaterThan(0);
+  });
+
+  test('重复点赞不重复计数', async () => {
+    await api.likeFigure('figure_001');
+    const res = await api.likeFigure('figure_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isLike).toBe(true);
+
+    const figures = wx.getStorageSync('figures');
+    const figure = figures.find(item => item.id === 'figure_001');
+    const initialCount = 127;
+    expect(figure.likeCount).toBe(initialCount + 1);
+  });
+
+  test('取消点赞', async () => {
+    await api.likeFigure('figure_001');
+    const res = await api.unlikeFigure('figure_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isLike).toBe(false);
+  });
+
+  test('检查点赞状态', async () => {
+    await api.likeFigure('figure_001');
+    const res = await api.checkFigureLike('figure_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isLike).toBe(true);
+  });
+});

@@ -169,8 +169,24 @@ const storageApi = {
       createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
       status: 1
     };
+    if (data.figureId) {
+      newArticle.figureId = data.figureId;
+    }
     articles.unshift(newArticle);
     wx.setStorageSync('articles', articles);
+    if (data.figureId) {
+      const figures = wx.getStorageSync('figures') || [];
+      const figureIndex = figures.findIndex(item => item.id === data.figureId);
+      if (figureIndex > -1) {
+        if (!figures[figureIndex].relatedArticles) {
+          figures[figureIndex].relatedArticles = [];
+        }
+        if (!figures[figureIndex].relatedArticles.includes(newArticle.id)) {
+          figures[figureIndex].relatedArticles.push(newArticle.id);
+        }
+        wx.setStorageSync('figures', figures);
+      }
+    }
     return { code: 200, data: newArticle, message: '发布成功' };
   },
 
@@ -441,9 +457,18 @@ const storageApi = {
     wx.setStorageSync('figures', figures);
 
     const articles = wx.getStorageSync('articles') || [];
-    const relatedArticles = articles.filter(item =>
-      figure.relatedArticles && figure.relatedArticles.includes(item.id)
-    );
+    const relatedArticleIds = new Set();
+    if (figure.relatedArticles && Array.isArray(figure.relatedArticles)) {
+      figure.relatedArticles.forEach(articleId => relatedArticleIds.add(articleId));
+    }
+    articles.forEach(item => {
+      if (item.figureId === id && item.status === 1) {
+        relatedArticleIds.add(item.id);
+      }
+    });
+    const relatedArticles = articles
+      .filter(item => relatedArticleIds.has(item.id) && item.status === 1)
+      .sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
 
     const result = {
       ...figure,

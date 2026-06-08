@@ -1,3 +1,55 @@
+const defaultFigures = [
+  {
+    id: 'figure_001',
+    name: '王德福',
+    avatar: 'https://picsum.photos/id/64/200/200',
+    birthYear: 1938,
+    deathYear: null,
+    identity: 'farmer',
+    region: 'north',
+    era: '1930s',
+    crafts: ['farming', 'herbal'],
+    briefIntroduction: '土生土长的老农民，种了一辈子地。',
+    detailedIntroduction: '王德福老人出生在一个普通农民家庭。',
+    timeline: [
+      { year: 1938, event: '出生于河北省一个普通农民家庭' },
+      { year: 1950, event: '开始跟着父亲学习种地' }
+    ],
+    works: [
+      { id: 'work_001', title: '我的种地经', type: 'story', content: '根据多年经验总结的耕作要点。' }
+    ],
+    relatedArticles: ['article_005'],
+    viewCount: 568,
+    likeCount: 127,
+    createTime: '2024-12-01',
+    status: 1
+  },
+  {
+    id: 'figure_002',
+    name: '李陈氏',
+    avatar: 'https://picsum.photos/id/91/200/200',
+    birthYear: 1935,
+    deathYear: 2022,
+    identity: 'craftsman',
+    region: 'east',
+    era: '1930s',
+    crafts: ['weaving', 'embroidery'],
+    briefIntroduction: '苏绣传承人，从艺七十余年。',
+    detailedIntroduction: '李陈氏闺名陈秀兰，嫁到李家后大家都叫她李陈氏。',
+    timeline: [
+      { year: 1935, event: '出生于苏州一个刺绣世家' }
+    ],
+    works: [
+      { id: 'work_003', title: '春燕图', type: 'work', content: '代表作品，两只春燕在桃花间飞舞。' }
+    ],
+    relatedArticles: ['article_002'],
+    viewCount: 892,
+    likeCount: 256,
+    createTime: '2024-12-05',
+    status: 1
+  }
+];
+
 const defaultArticles = [
   {
     id: 'article_001',
@@ -81,6 +133,7 @@ function initStorage(overrides = {}) {
   wx._resetStorage();
   wx.setStorageSync('articles', overrides.articles || JSON.parse(JSON.stringify(defaultArticles)));
   wx.setStorageSync('categories', overrides.categories || JSON.parse(JSON.stringify(defaultCategories)));
+  wx.setStorageSync('figures', overrides.figures || JSON.parse(JSON.stringify(defaultFigures)));
   if (overrides.userInfo) {
     wx.setStorageSync('userInfo', overrides.userInfo);
   }
@@ -92,6 +145,12 @@ function initStorage(overrides = {}) {
   }
   if (overrides.likes) {
     wx.setStorageSync('likes', overrides.likes);
+  }
+  if (overrides.figureLikes) {
+    wx.setStorageSync('figureLikes', overrides.figureLikes);
+  }
+  if (overrides.figureDrafts) {
+    wx.setStorageSync('figureDrafts', overrides.figureDrafts);
   }
 }
 
@@ -189,6 +248,7 @@ function createPageInstance(pageDef, dataOverrides = {}) {
 module.exports = {
   defaultArticles,
   defaultCategories,
+  defaultFigures,
   defaultUser,
   initStorage,
   createPageInstance
