@@ -178,6 +178,34 @@ describe('Publish 投稿页', () => {
     });
   });
 
+  describe('onShow', () => {
+    test('未登录时更新状态，显示登录引导（不跳转）', () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      page.loadCategories = jest.fn();
+      page.checkCanSubmit = jest.fn();
+
+      page.onShow();
+
+      expect(page.data.isLoggedIn).toBe(false);
+      expect(page.loadCategories).not.toHaveBeenCalled();
+      expect(page.checkCanSubmit).not.toHaveBeenCalled();
+      expect(wx.showToast).not.toHaveBeenCalled();
+      expect(wx.navigateTo).not.toHaveBeenCalled();
+    });
+
+    test('已登录时加载分类并检查提交状态', () => {
+      global.getApp = jest.fn(() => createMockApp(true));
+      page.loadCategories = jest.fn();
+      page.checkCanSubmit = jest.fn();
+
+      page.onShow();
+
+      expect(page.data.isLoggedIn).toBe(true);
+      expect(page.loadCategories).toHaveBeenCalled();
+      expect(page.checkCanSubmit).toHaveBeenCalled();
+    });
+  });
+
   describe('goToLogin', () => {
     test('跳转到登录页', () => {
       page.goToLogin();

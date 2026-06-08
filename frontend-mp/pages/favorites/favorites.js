@@ -18,23 +18,23 @@ Page({
   },
 
   onLoad() {
-    if (!this.checkLoginStatus()) return;
-    this.loadCategories();
+    this.checkLoginStatus();
+    if (this.data.isLoggedIn) {
+      this.loadCategories();
+    }
   },
 
   async onShow() {
-    if (!this.checkLoginStatus()) return;
-    return this.refreshData();
+    this.checkLoginStatus();
+    if (this.data.isLoggedIn) {
+      return this.refreshData();
+    }
   },
 
   checkLoginStatus() {
     const app = getApp();
     const isLoggedIn = app.getLoginStatus();
     this.setData({ isLoggedIn });
-    if (!isLoggedIn) {
-      wx.showToast({ title: '请先登录', icon: 'none' });
-      wx.navigateTo({ url: '/pages/login/login' });
-    }
     return isLoggedIn;
   },
 
@@ -45,7 +45,7 @@ Page({
   },
 
   async loadFavorites() {
-    if (!this.checkLoginStatus()) return { cancelled: false, success: false };
+    if (!this.checkLoginStatus()) return { cancelled: true, success: false };
     return this.loadList();
   },
 
