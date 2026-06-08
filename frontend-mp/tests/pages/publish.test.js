@@ -193,16 +193,103 @@ describe('Publish 投稿页', () => {
       expect(wx.navigateTo).not.toHaveBeenCalled();
     });
 
-    test('已登录时加载分类并检查提交状态', () => {
+    test('已登录但分类未加载时，加载分类并检查提交状态', () => {
       global.getApp = jest.fn(() => createMockApp(true));
       page.loadCategories = jest.fn();
       page.checkCanSubmit = jest.fn();
+      page._categoriesLoaded = false;
 
       page.onShow();
 
       expect(page.data.isLoggedIn).toBe(true);
-      expect(page.loadCategories).toHaveBeenCalled();
+      expect(page.loadCategories).toHaveBeenCalledTimes(1);
+      expect(page._categoriesLoaded).toBe(true);
       expect(page.checkCanSubmit).toHaveBeenCalled();
+    });
+
+    test('已登录且分类已加载时，不重复加载分类', () => {
+      global.getApp = jest.fn(() => createMockApp(true));
+      page.loadCategories = jest.fn();
+      page.checkCanSubmit = jest.fn();
+      page._categoriesLoaded = true;
+
+      page.onShow();
+
+      expect(page.data.isLoggedIn).toBe(true);
+      expect(page.loadCategories).not.toHaveBeenCalled();
+      expect(page._categoriesLoaded).toBe(true);
+      expect(page.checkCanSubmit).toHaveBeenCalled();
+    });
+  });
+
+  describe('首屏加载防重复', () => {
+    test('onLoad 调用后 _categoriesLoaded 标记为 true', () => {
+      page.loadCategories = jest.fn();
+      page._categoriesLoaded = false;
+
+      page.onLoad();
+
+      expect(page.loadCategories).toHaveBeenCalledTimes(1);
+      expect(page._categoriesLoaded).toBe(true);
+    });
+
+    test('onLoad 后紧接着 onShow 不会重复调用 loadCategories', () => {
+      page.loadCategories = jest.fn();
+      page.checkCanSubmit = jest.fn();
+      global.getApp = jest.fn(() => createMockApp(true));
+      page._categoriesLoaded = false;
+
+      page.onLoad();
+      page.onShow();
+
+      expect(page.loadCategories).toHaveBeenCalledTimes(1);
+      expect(page.checkCanSubmit).toHaveBeenCalled();
+      expect(page._categoriesLoaded).toBe(true);
+    });
+
+    test('多次调用 onShow 不会重复加载分类', () => {
+      page.loadCategories = jest.fn();
+      page.checkCanSubmit = jest.fn();
+      global.getApp = jest.fn(() => createMockApp(true));
+      page._categoriesLoaded = false;
+
+      page.onShow();
+      expect(page.loadCategories).toHaveBeenCalledTimes(1);
+      expect(page._categoriesLoaded).toBe(true);
+
+      page.onShow();
+      page.onShow();
+
+      expect(page.loadCategories).toHaveBeenCalledTimes(1);
+      expect(page.checkCanSubmit).toHaveBeenCalledTimes(3);
+    });
+
+    test('未登录时 onShow 不设置 _categoriesLoaded', () => {
+      page.loadCategories = jest.fn();
+      page.checkCanSubmit = jest.fn();
+      global.getApp = jest.fn(() => createMockApp(false));
+      page._categoriesLoaded = false;
+
+      page.onShow();
+
+      expect(page._categoriesLoaded).toBe(false);
+      expect(page.loadCategories).not.toHaveBeenCalled();
+    });
+
+    test('先未登录后登录时，登录后 onShow 会加载分类', () => {
+      page.loadCategories = jest.fn();
+      page.checkCanSubmit = jest.fn();
+      page._categoriesLoaded = false;
+
+      global.getApp = jest.fn(() => createMockApp(false));
+      page.onShow();
+      expect(page.loadCategories).not.toHaveBeenCalled();
+      expect(page._categoriesLoaded).toBe(false);
+
+      global.getApp = jest.fn(() => createMockApp(true));
+      page.onShow();
+      expect(page.loadCategories).toHaveBeenCalledTimes(1);
+      expect(page._categoriesLoaded).toBe(true);
     });
   });
 

@@ -32,8 +32,11 @@ Page({
     newArticleId: ''     // 新发布的文章ID
   },
 
+  _categoriesLoaded: false,
+
   onLoad() {
     this.loadCategories();
+    this._categoriesLoaded = true;
   },
 
   onShow() {
@@ -42,7 +45,10 @@ Page({
     this.setData({ isLoggedIn });
 
     if (isLoggedIn) {
-      this.loadCategories();
+      if (!this._categoriesLoaded) {
+        this.loadCategories();
+        this._categoriesLoaded = true;
+      }
       this.checkCanSubmit();
     }
   },
