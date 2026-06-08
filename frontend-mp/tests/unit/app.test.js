@@ -37,6 +37,7 @@ function createApp() {
 
     logout() {
       wx.removeStorageSync('isLoggedIn');
+      wx.removeStorageSync('userInfo');
       this.globalData.isLoggedIn = false;
       this.globalData.userInfo = null;
     },
@@ -115,10 +116,11 @@ describe('App - 全局状态管理', () => {
       expect(app.globalData.userInfo).toBeNull();
     });
 
-    test('退出登录后清除 Storage 中的登录状态', () => {
+    test('退出登录后清除 Storage 中的登录状态和用户信息', () => {
       app.login(defaultUser);
       app.logout();
       expect(wx.getStorageSync('isLoggedIn')).toBe('');
+      expect(wx.getStorageSync('userInfo')).toBe('');
     });
   });
 

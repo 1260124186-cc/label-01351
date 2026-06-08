@@ -75,6 +75,7 @@ App({
   // 退出登录
   logout() {
     wx.removeStorageSync('isLoggedIn');
+    wx.removeStorageSync('userInfo');
     this.globalData.isLoggedIn = false;
     this.globalData.userInfo = null;
   },

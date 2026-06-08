@@ -142,6 +142,7 @@ describe('api.publishArticle', () => {
 
   test('成功发布文章', async () => {
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.publishArticle({
       title: '测试投稿标题',
       content: '这是一篇测试投稿的内容，长度超过十个字符',
@@ -157,6 +158,7 @@ describe('api.publishArticle', () => {
 
   test('新文章被添加到列表头部', async () => {
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     const before = wx.getStorageSync('articles');
     const beforeLen = before.length;
 
@@ -171,39 +173,49 @@ describe('api.publishArticle', () => {
     expect(after[0].title).toBe('新投稿');
   });
 
-  test('标题为空返回 400', async () => {
-    const res = await api.publishArticle({ title: '', content: '内容内容内容', category: 'folklore' });
-    expect(res.code).toBe(400);
-  });
-
-  test('标题为空白字符串返回 400', async () => {
-    const res = await api.publishArticle({ title: '   ', content: '内容内容内容', category: 'folklore' });
-    expect(res.code).toBe(400);
-  });
-
-  test('内容为空返回 400', async () => {
-    const res = await api.publishArticle({ title: '标题', content: '', category: 'folklore' });
-    expect(res.code).toBe(400);
-  });
-
-  test('分类为空返回 400', async () => {
-    const res = await api.publishArticle({ title: '标题', content: '内容内容内容', category: '' });
-    expect(res.code).toBe(400);
-  });
-
-  test('无用户信息时使用默认用户', async () => {
+  test('未登录时发布文章返回 401', async () => {
     wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
     const res = await api.publishArticle({
       title: '无用户投稿',
       content: '无用户投稿内容，长度超过十个字符',
       category: 'farming'
     });
-    expect(res.code).toBe(200);
-    expect(res.data.authorId).toBe('user_001');
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
+  });
+
+  test('标题为空返回 400', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.publishArticle({ title: '', content: '内容内容内容', category: 'folklore' });
+    expect(res.code).toBe(400);
+  });
+
+  test('标题为空白字符串返回 400', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.publishArticle({ title: '   ', content: '内容内容内容', category: 'folklore' });
+    expect(res.code).toBe(400);
+  });
+
+  test('内容为空返回 400', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.publishArticle({ title: '标题', content: '', category: 'folklore' });
+    expect(res.code).toBe(400);
+  });
+
+  test('分类为空返回 400', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.publishArticle({ title: '标题', content: '内容内容内容', category: '' });
+    expect(res.code).toBe(400);
   });
 
   test('标题和内容自动 trim', async () => {
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.publishArticle({
       title: '  带空格标题  ',
       content: '  带空格内容，长度超过十个字符  ',
@@ -222,6 +234,7 @@ describe('api.getMyArticles', () => {
 
   test('获取当前用户的文章列表', async () => {
     wx.setStorageSync('userInfo', { id: 'user_001', nickname: '张大爷' });
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.getMyArticles();
     expect(res.code).toBe(200);
     expect(res.data.list.length).toBeGreaterThan(0);
@@ -232,10 +245,19 @@ describe('api.getMyArticles', () => {
 
   test('用户没有文章时返回空列表', async () => {
     wx.setStorageSync('userInfo', { id: 'user_new', nickname: '新用户' });
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.getMyArticles();
     expect(res.code).toBe(200);
     expect(res.data.list).toEqual([]);
     expect(res.data.total).toBe(0);
+  });
+
+  test('未登录时获取我的文章返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.getMyArticles();
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
   });
 });
 
@@ -267,17 +289,19 @@ describe('api.getUserInfo', () => {
 
   test('已存储用户信息时返回该信息', async () => {
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.getUserInfo();
     expect(res.code).toBe(200);
     expect(res.data.id).toBe('user_001');
     expect(res.data.nickname).toBe('测试用户');
   });
 
-  test('未存储用户信息时返回默认用户', async () => {
+  test('未登录时获取用户信息返回 401', async () => {
     wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
     const res = await api.getUserInfo();
-    expect(res.code).toBe(200);
-    expect(res.data.id).toBe('user_001');
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
   });
 });
 
@@ -288,6 +312,7 @@ describe('api.updateUserInfo', () => {
 
   test('更新用户昵称', async () => {
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.updateUserInfo({ nickname: '新昵称' });
     expect(res.code).toBe(200);
     expect(res.data.nickname).toBe('新昵称');
@@ -296,19 +321,32 @@ describe('api.updateUserInfo', () => {
   });
 
   test('昵称少于2个字符返回 400', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.updateUserInfo({ nickname: '一' });
     expect(res.code).toBe(400);
   });
 
   test('昵称超过20个字符返回 400', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.updateUserInfo({ nickname: 'a'.repeat(21) });
     expect(res.code).toBe(400);
   });
 
   test('昵称在2~20个字符之间更新成功', async () => {
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.updateUserInfo({ nickname: '合法昵称' });
     expect(res.code).toBe(200);
+  });
+
+  test('未登录时更新用户信息返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.updateUserInfo({ nickname: '测试' });
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
   });
 });
 
@@ -319,6 +357,7 @@ describe('api.getUserStats', () => {
 
   test('返回用户统计数据', async () => {
     wx.setStorageSync('userInfo', { id: 'user_001', nickname: '张大爷' });
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.getUserStats();
     expect(res.code).toBe(200);
     expect(res.data).toHaveProperty('articleCount');
@@ -328,6 +367,7 @@ describe('api.getUserStats', () => {
 
   test('统计数据计算正确', async () => {
     wx.setStorageSync('userInfo', { id: 'user_001', nickname: '张大爷' });
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.getUserStats();
     const articles = wx.getStorageSync('articles').filter(a => a.authorId === 'user_001');
     expect(res.data.articleCount).toBe(articles.length);
@@ -336,12 +376,45 @@ describe('api.getUserStats', () => {
     expect(res.data.likeCount).toBe(expectedLikes);
     expect(res.data.viewCount).toBe(expectedViews);
   });
+
+  test('未登录时获取用户统计返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.getUserStats();
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
+  });
 });
 
 describe('api.likeArticle / unlikeArticle / checkLike', () => {
   beforeEach(() => {
     initStorage();
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('未登录时点赞返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.likeArticle('article_001');
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
+  });
+
+  test('未登录时取消点赞返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.unlikeArticle('article_001');
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
+  });
+
+  test('未登录时检查点赞状态返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.checkLike('article_001');
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
   });
 
   test('点赞文章增加 likeCount', async () => {
@@ -446,9 +519,11 @@ describe('api.likeArticle / unlikeArticle / checkLike', () => {
 
   test('不同用户点赞互不影响', async () => {
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     await api.likeArticle('article_001');
 
     wx.setStorageSync('userInfo', { id: 'user_002', nickname: '另一个用户' });
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.checkLike('article_001');
     expect(res.data.isLike).toBe(false);
   });
@@ -458,6 +533,31 @@ describe('api.favoriteArticle / unfavoriteArticle / checkFavorite', () => {
   beforeEach(() => {
     initStorage();
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('未登录时收藏返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.favoriteArticle('article_001');
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
+  });
+
+  test('未登录时取消收藏返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.unfavoriteArticle('article_001');
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
+  });
+
+  test('未登录时检查收藏状态返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.checkFavorite('article_001');
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
   });
 
   test('收藏文章', async () => {
@@ -520,9 +620,11 @@ describe('api.favoriteArticle / unfavoriteArticle / checkFavorite', () => {
 
   test('不同用户收藏互不影响', async () => {
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     await api.favoriteArticle('article_001');
 
     wx.setStorageSync('userInfo', { id: 'user_002', nickname: '另一个用户' });
+    wx.setStorageSync('isLoggedIn', true);
     const res = await api.checkFavorite('article_001');
     expect(res.data.isFavorite).toBe(false);
   });

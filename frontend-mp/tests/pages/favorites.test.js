@@ -69,24 +69,26 @@ describe('Favorites 收藏页', () => {
       expect(page.data.isLoggedIn).toBe(true);
     });
 
-    test('checkLoginStatus 未登录时返回 false 并更新状态', () => {
+    test('checkLoginStatus 未登录时返回 false 并跳转登录页', () => {
       global.getApp = jest.fn(() => createMockApp(false));
       const result = page.checkLoginStatus();
       expect(result).toBe(false);
       expect(page.data.isLoggedIn).toBe(false);
+      expect(wx.showToast).toHaveBeenCalledWith({ title: '请先登录', icon: 'none' });
+      expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/login/login' });
     });
 
-    test('onLoad 未登录时不加载数据', () => {
+    test('onLoad 未登录时不加载数据并跳转登录页', () => {
       global.getApp = jest.fn(() => createMockApp(false));
       page.loadCategories = jest.fn();
       page.loadList = jest.fn();
-      page.checkLoginStatus = jest.fn(() => false);
 
       page.onLoad();
 
-      expect(page.checkLoginStatus).toHaveBeenCalled();
       expect(page.loadCategories).not.toHaveBeenCalled();
       expect(page.loadList).not.toHaveBeenCalled();
+      expect(wx.showToast).toHaveBeenCalledWith({ title: '请先登录', icon: 'none' });
+      expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/login/login' });
     });
 
     test('onLoad 已登录时只加载分类，不加载列表', () => {
@@ -101,15 +103,15 @@ describe('Favorites 收藏页', () => {
       expect(page.loadList).not.toHaveBeenCalled();
     });
 
-    test('onShow 未登录时不刷新数据', () => {
+    test('onShow 未登录时不刷新数据并跳转登录页', () => {
       global.getApp = jest.fn(() => createMockApp(false));
       page.refreshData = jest.fn();
-      page.checkLoginStatus = jest.fn(() => false);
 
       page.onShow();
 
-      expect(page.checkLoginStatus).toHaveBeenCalled();
       expect(page.refreshData).not.toHaveBeenCalled();
+      expect(wx.showToast).toHaveBeenCalledWith({ title: '请先登录', icon: 'none' });
+      expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/login/login' });
     });
 
     test('onShow 已登录时刷新数据', () => {
@@ -141,13 +143,15 @@ describe('Favorites 收藏页', () => {
       });
     });
 
-    test('loadFavorites 未登录时不加载', () => {
+    test('loadFavorites 未登录时不加载并跳转登录页', () => {
       global.getApp = jest.fn(() => createMockApp(false));
       page.loadList = jest.fn();
 
       page.loadFavorites();
 
       expect(page.loadList).not.toHaveBeenCalled();
+      expect(wx.showToast).toHaveBeenCalledWith({ title: '请先登录', icon: 'none' });
+      expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/login/login' });
     });
 
     test('loadFavorites 已登录时调用 loadList', () => {

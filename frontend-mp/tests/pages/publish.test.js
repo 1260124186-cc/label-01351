@@ -26,6 +26,7 @@ describe('Publish 投稿页', () => {
   beforeEach(() => {
     initStorage();
     wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     global.getApp = jest.fn(() => createMockApp(true));
     page = createPageInstance(publishPage);
   });

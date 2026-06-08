@@ -147,8 +147,10 @@ const config = api.getConfig();
 ### 技术栈
 
 - 微信小程序原生开发
-- 本地存储（wx.setStorageSync）模拟数据持久化
-- Express.js Mock Server（可选）
+- **前后端分离架构**：API 层支持本地存储模式和远程服务模式双模式
+- **自动降级机制**：远程服务不可用时自动切换到本地存储
+- Express.js Mock Server（完整 RESTful API）
+- 统一 API 响应格式：`{ code: number, data: any, message: string }`
 
 ### 目录结构
 

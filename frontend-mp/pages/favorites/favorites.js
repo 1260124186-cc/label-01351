@@ -31,6 +31,10 @@ Page({
     const app = getApp();
     const isLoggedIn = app.getLoginStatus();
     this.setData({ isLoggedIn });
+    if (!isLoggedIn) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      wx.navigateTo({ url: '/pages/login/login' });
+    }
     return isLoggedIn;
   },
 

@@ -56,6 +56,7 @@ global.getApp = jest.fn(() => ({
   },
   logout() {
     wx.removeStorageSync('isLoggedIn');
+    wx.removeStorageSync('userInfo');
     this.globalData.isLoggedIn = false;
     this.globalData.userInfo = null;
   },

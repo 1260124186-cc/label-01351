@@ -8,7 +8,7 @@ Page({
   data: {
     // 登录状态
     isLoggedIn: false,
-    
+
     // 分类数据
     categories: [],
     categoryIcons: {
@@ -17,14 +17,14 @@ Page({
       'craft': '🧵',
       'memory': '🏡'
     },
-    
+
     // 表单数据
     formData: {
       title: '',
       category: '',
       content: ''
     },
-    
+
     // 表单状态
     canSubmit: false,    // 是否可以提交
     submitting: false,   // 提交中状态
@@ -37,17 +37,18 @@ Page({
   },
 
   onShow() {
-    // 检查登录状态
     const app = getApp();
     const isLoggedIn = app.getLoginStatus();
     this.setData({ isLoggedIn });
-    
-    if (isLoggedIn) {
-      // 每次显示时重新加载分类（确保数据已初始化）
-      this.loadCategories();
-      // 重新检查表单状态
-      this.checkCanSubmit();
+
+    if (!isLoggedIn) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      wx.navigateTo({ url: '/pages/login/login' });
+      return;
     }
+
+    this.loadCategories();
+    this.checkCanSubmit();
   },
 
   goToLogin() {
@@ -126,10 +127,10 @@ Page({
     const { title, category, content } = this.data.formData;
     const titleLen = title.trim().length;
     const contentLen = content.trim().length;
-    const canSubmit = titleLen >= 2 && 
-                      category !== '' && 
+    const canSubmit = titleLen >= 2 &&
+                      category !== '' &&
                       contentLen >= 10;
-    
+
     console.log('[Publish] 表单检查:', { titleLen, category, contentLen, canSubmit });
     this.setData({ canSubmit });
   },
@@ -140,40 +141,40 @@ Page({
   async onSubmit() {
     // 防止重复提交
     if (this.data.submitting) return;
-    
+
     const { title, category, content } = this.data.formData;
-    
+
     // 表单验证并提示
     if (!title || title.trim().length < 2) {
       wx.showToast({ title: '请输入文章标题（至少2字）', icon: 'none' });
       return;
     }
-    
+
     if (!category) {
       wx.showToast({ title: '请选择文章分类', icon: 'none' });
       return;
     }
-    
+
     if (!content || content.trim().length < 10) {
       wx.showToast({ title: '请输入文章内容（至少10字）', icon: 'none' });
       return;
     }
-    
+
     this.setData({ submitting: true });
     wx.showLoading({ title: '发布中...' });
-    
+
     try {
       const res = await api.publishArticle({
         title: title.trim(),
         category,
         content: content.trim()
       });
-      
+
       wx.hideLoading();
-      
+
       if (res.code === 200) {
         // 发布成功，保存文章ID，清空表单
-        this.setData({ 
+        this.setData({
           showSuccess: true,
           newArticleId: res.data.id,
           formData: {
@@ -216,7 +217,7 @@ Page({
   goToHome() {
     const { newArticleId } = this.data;
     this.setData({ showSuccess: false });
-    
+
     if (newArticleId) {
       wx.navigateTo({ url: '/pages/detail/detail?id=' + newArticleId });
     } else {

@@ -78,10 +78,23 @@ const request = (options) => {
   });
 };
 
+const checkLogin = () => {
+  const isLoggedIn = wx.getStorageSync('isLoggedIn');
+  const userInfo = wx.getStorageSync('userInfo');
+  return !!(isLoggedIn && userInfo);
+};
+
+const requireLogin = () => {
+  if (!checkLogin()) {
+    return { code: 401, data: null, message: '请先登录' };
+  }
+  return null;
+};
+
 const getCurrentUserId = () => {
-  let userInfo = wx.getStorageSync('userInfo');
+  const userInfo = wx.getStorageSync('userInfo');
   if (!userInfo) {
-    userInfo = { id: 'user_001' };
+    return null;
   }
   return userInfo.id;
 };
@@ -130,6 +143,8 @@ const storageApi = {
 
   publishArticle: async (data) => {
     await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!data.title || !data.title.trim()) {
       return { code: 400, data: null, message: '标题不能为空' };
     }
@@ -139,10 +154,7 @@ const storageApi = {
     if (!data.category) {
       return { code: 400, data: null, message: '请选择分类' };
     }
-    let userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo) {
-      userInfo = { id: 'user_001', nickname: '乡村文化爱好者' };
-    }
+    const userInfo = wx.getStorageSync('userInfo');
     const articles = wx.getStorageSync('articles') || [];
     const newArticle = {
       id: util.generateId('article'),
@@ -163,6 +175,8 @@ const storageApi = {
 
   getMyArticles: async () => {
     await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
     const userId = getCurrentUserId();
     let articles = wx.getStorageSync('articles') || [];
     articles = articles.filter(item => item.authorId === userId);
@@ -182,34 +196,20 @@ const storageApi = {
 
   getUserInfo: async () => {
     await delay(200);
-    let userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo) {
-      userInfo = {
-        id: 'user_001',
-        nickname: '乡村文化爱好者',
-        avatar: '',
-        phone: '138****8888',
-        createTime: '2024-01-01'
-      };
-    }
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userInfo = wx.getStorageSync('userInfo');
     return { code: 200, data: userInfo, message: 'success' };
   },
 
   updateUserInfo: async (data) => {
     await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
     if (data.nickname && (data.nickname.length < 2 || data.nickname.length > 20)) {
       return { code: 400, data: null, message: '昵称需要2-20个字符' };
     }
-    let userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo) {
-      userInfo = {
-        id: 'user_001',
-        nickname: '乡村文化爱好者',
-        avatar: '',
-        phone: '138****8888',
-        createTime: '2024-01-01'
-      };
-    }
+    const userInfo = wx.getStorageSync('userInfo');
     const updatedInfo = { ...userInfo, ...data };
     wx.setStorageSync('userInfo', updatedInfo);
     return { code: 200, data: updatedInfo, message: '更新成功' };
@@ -217,6 +217,8 @@ const storageApi = {
 
   getUserStats: async () => {
     await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
     const userId = getCurrentUserId();
     const articles = wx.getStorageSync('articles') || [];
     const myArticles = articles.filter(item => item.authorId === userId);
@@ -231,6 +233,8 @@ const storageApi = {
 
   likeArticle: async (id) => {
     await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -255,6 +259,8 @@ const storageApi = {
 
   unlikeArticle: async (id) => {
     await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -279,6 +285,8 @@ const storageApi = {
 
   checkLike: async (id) => {
     await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -291,6 +299,8 @@ const storageApi = {
 
   favoriteArticle: async (id) => {
     await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -308,6 +318,8 @@ const storageApi = {
 
   unfavoriteArticle: async (id) => {
     await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -325,6 +337,8 @@ const storageApi = {
 
   checkFavorite: async (id) => {
     await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
     if (!id) {
       return { code: 400, data: null, message: '文章ID不能为空' };
     }
@@ -337,10 +351,8 @@ const storageApi = {
 
   getFavoriteList: async (params = {}) => {
     await delay(500);
-    const isLoggedIn = wx.getStorageSync('isLoggedIn');
-    if (!isLoggedIn) {
-      return { code: 401, data: null, message: '请先登录' };
-    }
+    const authError = requireLogin();
+    if (authError) return authError;
     const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
     const userId = getCurrentUserId();
     const favorites = wx.getStorageSync('favorites') || {};

@@ -33,6 +33,8 @@ describe('Detail 文章详情页', () => {
 
   beforeEach(() => {
     initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
     global.getApp = jest.fn(() => createMockApp(true));
     page = createPageInstance(detailPage);
   });
@@ -252,6 +254,7 @@ describe('Detail 文章详情页', () => {
   describe('checkFavoriteStatus', () => {
     beforeEach(() => {
       wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('isLoggedIn', true);
       wx.setStorageSync('favorites', {});
     });
 
@@ -270,6 +273,7 @@ describe('Detail 文章详情页', () => {
   describe('checkLikeStatus', () => {
     beforeEach(() => {
       wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('isLoggedIn', true);
       wx.setStorageSync('likes', {});
     });
 
@@ -288,6 +292,7 @@ describe('Detail 文章详情页', () => {
   describe('加载详情后恢复点赞状态', () => {
     beforeEach(() => {
       wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('isLoggedIn', true);
       wx.setStorageSync('likes', {});
     });
 
