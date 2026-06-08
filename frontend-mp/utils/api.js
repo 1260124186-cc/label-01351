@@ -212,6 +212,16 @@ const storageApi = {
     const userInfo = wx.getStorageSync('userInfo');
     const updatedInfo = { ...userInfo, ...data };
     wx.setStorageSync('userInfo', updatedInfo);
+    if (data.nickname) {
+      const userId = getCurrentUserId();
+      const articles = wx.getStorageSync('articles') || [];
+      const updatedArticles = articles.map(item =>
+        item.authorId === userId
+          ? { ...item, authorName: data.nickname }
+          : item
+      );
+      wx.setStorageSync('articles', updatedArticles);
+    }
     return { code: 200, data: updatedInfo, message: '更新成功' };
   },
 

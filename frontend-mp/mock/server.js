@@ -477,6 +477,11 @@ app.post('/api/user/update', (req, res) => {
 
   if (nickname) {
     users[userId].nickname = nickname;
+    articles.forEach(article => {
+      if (article.authorId === userId) {
+        article.authorName = nickname;
+      }
+    });
   }
 
   res.json({

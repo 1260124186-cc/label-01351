@@ -348,6 +348,31 @@ describe('api.updateUserInfo', () => {
     expect(res.code).toBe(401);
     expect(res.message).toBe('请先登录');
   });
+
+  test('修改昵称后历史文章作者名同步更新', async () => {
+    wx.setStorageSync('userInfo', { id: 'user_001', nickname: '张大爷' });
+    wx.setStorageSync('isLoggedIn', true);
+    const articlesBefore = wx.getStorageSync('articles');
+    const userArticlesBefore = articlesBefore.filter(a => a.authorId === 'user_001');
+    expect(userArticlesBefore.length).toBeGreaterThan(0);
+    userArticlesBefore.forEach(a => {
+      expect(a.authorName).toBe('张大爷');
+    });
+
+    const res = await api.updateUserInfo({ nickname: '张大爷新昵称' });
+    expect(res.code).toBe(200);
+
+    const articlesAfter = wx.getStorageSync('articles');
+    const userArticlesAfter = articlesAfter.filter(a => a.authorId === 'user_001');
+    userArticlesAfter.forEach(a => {
+      expect(a.authorName).toBe('张大爷新昵称');
+    });
+
+    const otherArticles = articlesAfter.filter(a => a.authorId !== 'user_001');
+    otherArticles.forEach(a => {
+      expect(a.authorName).not.toBe('张大爷新昵称');
+    });
+  });
 });
 
 describe('api.getUserStats', () => {
