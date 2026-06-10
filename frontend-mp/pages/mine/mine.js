@@ -15,8 +15,15 @@ Page({
       nickname: '',
       avatar: '',
       phone: '',
-      createTime: ''
+      createTime: '',
+      role: 'user'
     },
+
+    // 是否管理员
+    isAdmin: false,
+
+    // 角色调试
+    roleInput: 'admin',
 
     // 统计数据
     stats: {
@@ -49,10 +56,13 @@ Page({
     const app = getApp();
     const isLoggedIn = app.getLoginStatus();
     const userInfo = app.getUserInfo();
+    const isAdmin = app.isAdmin();
 
     this.setData({
       isLoggedIn,
-      userInfo: userInfo || {}
+      userInfo: userInfo || {},
+      isAdmin,
+      roleInput: isAdmin ? 'admin' : 'user'
     });
   },
 
@@ -145,5 +155,55 @@ Page({
     wx.navigateTo({
       url: '/pages/detail/detail?id=' + id
     });
+  },
+
+  // 进入管理后台（含权限校验）
+  goToAdmin() {
+    const app = getApp();
+    if (!app.checkLogin()) return;
+    if (!app.isAdmin()) {
+      wx.showModal({
+        title: '无权限访问',
+        content: '您当前不是管理员账号，无法访问管理后台。\n\n如需申请管理员权限，请联系系统管理员。',
+        showCancel: false,
+        confirmText: '我知道了'
+      });
+      return;
+    }
+    wx.navigateTo({
+      url: '/pages/admin/admin'
+    });
+  },
+
+  // 角色调试：输入 role
+  onRoleInput(e) {
+    this.setData({ roleInput: e.detail.value });
+  },
+
+  // 角色调试：写入 Storage
+  onSwitchRole() {
+    const app = getApp();
+    if (!app.checkLogin()) return;
+
+    const role = (this.data.roleInput || '').trim().toLowerCase();
+    if (role !== 'admin' && role !== 'user') {
+      wx.showToast({
+        title: '仅支持 admin / user',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const ok = app.updateUserRole(role);
+    if (ok) {
+      const isAdmin = role === 'admin';
+      this.setData({ isAdmin, 'userInfo.role': role });
+      wx.showToast({
+        title: isAdmin ? '已切换为管理员' : '已切换为普通用户',
+        icon: 'success'
+      });
+    } else {
+      wx.showToast({ title: '切换失败', icon: 'none' });
+    }
   }
 });

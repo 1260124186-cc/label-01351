@@ -47,12 +47,23 @@ App({
     const userInfo = wx.getStorageSync('userInfo');
 
     if (isLoggedIn && userInfo) {
+      // 严格校验 role：只有 'admin' 字符串才算管理员，其余降级为 user
+      const normalizedUserInfo = {
+        ...userInfo,
+        role: userInfo.role === 'admin' ? 'admin' : 'user'
+      };
       this.globalData.isLoggedIn = true;
-      this.globalData.userInfo = userInfo;
+      this.globalData.userInfo = normalizedUserInfo;
+      // 同步写回 Storage（规范化 role）
+      try { wx.setStorageSync('userInfo', normalizedUserInfo); } catch (e) {}
     } else {
       this.globalData.isLoggedIn = false;
       this.globalData.userInfo = null;
     }
+    console.log('[App] 登录状态校验:', {
+      isLoggedIn: this.globalData.isLoggedIn,
+      role: this.globalData.userInfo ? this.globalData.userInfo.role : 'guest'
+    });
   },
 
   // 登录
@@ -62,14 +73,18 @@ App({
       nickname: '乡村文化爱好者',
       avatar: '',
       phone: '',
-      createTime: new Date().toISOString().split('T')[0]
+      createTime: new Date().toISOString().split('T')[0],
+      role: 'user'
     };
+    // 默认 role 为 user，若显式传了 admin 则保留
+    if (!user.role) user.role = 'user';
 
     wx.setStorageSync('userInfo', user);
     wx.setStorageSync('isLoggedIn', true);
     this.globalData.userInfo = user;
     this.globalData.isLoggedIn = true;
 
+    console.log('[App] 登录成功, role:', user.role);
     return user;
   },
 
@@ -106,6 +121,34 @@ App({
   updateUserInfo(userInfo) {
     this.globalData.userInfo = userInfo;
     wx.setStorageSync('userInfo', userInfo);
+  },
+
+  // 判断是否管理员
+  isAdmin() {
+    const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+    return !!(userInfo && userInfo.role === 'admin');
+  },
+
+  // 获取当前角色
+  getUserRole() {
+    const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+    if (!userInfo) return 'guest';
+    return userInfo.role === 'admin' ? 'admin' : 'user';
+  },
+
+  // 调试：切换用户角色（写入 Storage 并同步 globalData）
+  updateUserRole(role) {
+    const normalizedRole = role === 'admin' ? 'admin' : 'user';
+    const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+    if (userInfo) {
+      const updated = { ...userInfo, role: normalizedRole };
+      this.globalData.userInfo = updated;
+      wx.setStorageSync('userInfo', updated);
+      console.log('[App] 角色已切换为:', normalizedRole);
+      return true;
+    }
+    console.warn('[App] 切换角色失败：用户未登录');
+    return false;
   },
 
   // 初始化 Mock 数据

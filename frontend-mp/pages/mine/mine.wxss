@@ -75,6 +75,35 @@
   white-space: nowrap;
 }
 
+.user-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.user-role-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.role-admin {
+  background: linear-gradient(135deg, rgba(218, 165, 32, 0.18) 0%, rgba(255, 193, 7, 0.14) 100%);
+  color: #B8860B;
+  border: 1rpx solid rgba(218, 165, 32, 0.3);
+}
+
+.role-user {
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.12) 0%, rgba(139, 69, 19, 0.08) 100%);
+  color: #8B4513;
+  border: 1rpx solid rgba(139, 69, 19, 0.2);
+}
+
 .user-welcome {
   font-size: 26rpx;
   color: #888888;
@@ -584,4 +613,160 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 管理后台入口卡片 */
+.admin-entry-card {
+  display: flex;
+  align-items: center;
+  margin: 0 32rpx 32rpx;
+  padding: 32rpx 36rpx;
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFEFD5 60%, #FFE4B5 100%);
+  border-radius: 28rpx;
+  border: 2rpx solid rgba(218, 165, 32, 0.25);
+  box-shadow: 0 10rpx 30rpx rgba(218, 165, 32, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-entry-card::before {
+  content: '';
+  position: absolute;
+  top: -40rpx;
+  right: -40rpx;
+  width: 160rpx;
+  height: 160rpx;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.admin-entry-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-icon-wrap {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 28rpx;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 8rpx 20rpx rgba(255, 165, 0, 0.3);
+}
+
+.admin-icon {
+  font-size: 52rpx;
+}
+
+.admin-entry-info {
+  flex: 1;
+  margin-left: 28rpx;
+  min-width: 0;
+}
+
+.admin-entry-title {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #8B4513;
+  margin-bottom: 10rpx;
+}
+
+.admin-badge {
+  display: inline-flex;
+  padding: 4rpx 14rpx;
+  border-radius: 10rpx;
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #FF4500 0%, #FF6347 100%);
+  letter-spacing: 1rpx;
+}
+
+.admin-entry-desc {
+  font-size: 24rpx;
+  color: #A0522D;
+  line-height: 1.4;
+}
+
+.admin-entry-arrow {
+  font-size: 56rpx;
+  color: rgba(139, 69, 19, 0.5);
+  flex-shrink: 0;
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* 角色调试区 */
+.role-debug-section {
+  margin: 0 32rpx 32rpx;
+  padding: 28rpx 32rpx;
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  border: 2rpx dashed rgba(139, 69, 19, 0.25);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
+}
+
+.debug-header {
+  margin-bottom: 20rpx;
+}
+
+.debug-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 6rpx;
+}
+
+.debug-hint {
+  display: block;
+  font-size: 22rpx;
+  color: #999999;
+  line-height: 1.4;
+}
+
+.debug-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.debug-input {
+  flex: 1;
+  height: 80rpx;
+  padding: 0 24rpx;
+  background: #FAFAF5;
+  border: 2rpx solid #E8DFD0;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: #333333;
+  box-sizing: border-box;
+}
+
+.debug-input:focus {
+  border-color: #8B4513;
+  background: #FFFFFF;
+}
+
+.btn-switch-role {
+  height: 80rpx;
+  padding: 0 32rpx;
+  background: linear-gradient(135deg, #555555 0%, #777777 100%);
+  color: #FFFFFF;
+  font-size: 26rpx;
+  font-weight: 600;
+  border-radius: 16rpx;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }

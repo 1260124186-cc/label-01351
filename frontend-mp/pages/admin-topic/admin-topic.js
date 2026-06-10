@@ -54,6 +54,7 @@ Page({
 
   checkLogin() {
     const app = getApp();
+    // 1. 先校验登录
     const isLoggedIn = app.getLoginStatus();
     this.setData({ isLoggedIn });
     if (!isLoggedIn) {
@@ -65,6 +66,19 @@ Page({
           wx.navigateTo({
             url: '/pages/login/login'
           });
+        }
+      });
+      return;
+    }
+    // 2. 再校验管理员权限
+    if (!app.isAdmin()) {
+      wx.showModal({
+        title: '无权限访问',
+        content: '您当前不是管理员账号，无法访问管理功能。',
+        showCancel: false,
+        confirmText: '返回我的',
+        success: () => {
+          wx.switchTab({ url: '/pages/mine/mine' });
         }
       });
     }

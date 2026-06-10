@@ -13,6 +13,7 @@
     "pages/topic-detail/topic-detail",
     "pages/encyclopedia/encyclopedia",
     "pages/encyclopedia-detail/encyclopedia-detail",
+    "pages/admin/admin",
     "pages/admin-topic/admin-topic",
     "pages/admin-encyclopedia/admin-encyclopedia"
   ],

@@ -65,6 +65,18 @@ Page({
           });
         }
       });
+      return;
+    }
+    if (!app.isAdmin()) {
+      wx.showModal({
+        title: '无权限访问',
+        content: '您当前不是管理员账号，无法访问管理功能。',
+        showCancel: false,
+        confirmText: '返回我的',
+        success: () => {
+          wx.switchTab({ url: '/pages/mine/mine' });
+        }
+      });
     }
   },
 

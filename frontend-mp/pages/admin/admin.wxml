@@ -1,0 +1,292 @@
+<view class="admin-page">
+  <!-- ============ 权限校验中 ============ -->
+  <view class="loading-mask" wx:if="{{checkingPermission}}">
+    <view class="loading-box">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">⏳ 权限校验中...</text>
+    </view>
+  </view>
+
+  <!-- ============ 无权限 ============ -->
+  <view class="forbidden-page" wx:elif="{{!hasPermission}}">
+    <text class="forbidden-icon">🔒</text>
+    <text class="forbidden-title">无权限访问</text>
+    <text class="forbidden-desc">您当前不是管理员账号（角色：{{userInfo.role || '普通用户'}}）</text>
+    <text class="forbidden-hint">如需申请管理员权限，请联系系统管理员</text>
+    <button class="btn-go-back" bindtap="goBack">返回我的页面</button>
+  </view>
+
+  <!-- ============ 正常管理后台 ============ -->
+  <block wx:else>
+    <!-- 顶部 Header -->
+    <view class="admin-header">
+      <view class="header-top">
+        <view class="header-title">
+          <text class="header-icon">🛠</text>
+          <text class="header-name">管理后台</text>
+        </view>
+        <view class="header-role">
+          <text class="role-label">🛡 管理员</text>
+          <text class="role-name">{{userInfo.nickname}}</text>
+        </view>
+      </view>
+
+      <!-- 自定义顶部 Tabs -->
+      <view class="admin-tabs">
+        <view
+          class="tab-item {{currentTab === item.id ? 'active' : ''}}"
+          wx:for="{{tabs}}"
+          wx:key="id"
+          bindtap="onTabChange"
+          data-id="{{item.id}}"
+        >
+          <text class="tab-icon">{{item.icon}}</text>
+          <text class="tab-name">{{item.name}}</text>
+          <view class="tab-badge" wx:if="{{item.badge && item.badge > 0}}">
+            {{item.badge > 99 ? '99+' : item.badge}}
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== Tab 0: 数据看板 ========== -->
+    <view class="tab-content" wx:if="{{currentTab === 0}}">
+      <view class="scroll-area">
+        <!-- 4 张统计卡片 -->
+        <view class="stat-grid">
+          <view class="stat-card card-user">
+            <text class="stat-emoji">👥</text>
+            <text class="stat-num">{{dashboard.totalUsers}}</text>
+            <text class="stat-label">总用户数</text>
+          </view>
+          <view class="stat-card card-article">
+            <text class="stat-emoji">📝</text>
+            <text class="stat-num">{{dashboard.totalArticles}}</text>
+            <text class="stat-label">文章总数</text>
+          </view>
+          <view class="stat-card card-topic">
+            <text class="stat-emoji">📖</text>
+            <text class="stat-num">{{dashboard.totalTopics}}</text>
+            <text class="stat-label">专题总数</text>
+          </view>
+          <view class="stat-card card-figure">
+            <text class="stat-emoji">👤</text>
+            <text class="stat-num">{{dashboard.totalFigures}}</text>
+            <text class="stat-label">人物总数</text>
+          </view>
+        </view>
+
+        <!-- 日活投稿柱状趋势图 -->
+        <view class="panel">
+          <view class="panel-title">📈 近7天日活投稿趋势</view>
+          <view class="chart-wrap">
+            <view class="chart-columns">
+              <view
+                class="chart-col"
+                wx:for="{{dashboard.dailySubmissions}}"
+                wx:key="date"
+              >
+                <text class="col-value">{{item.count}}</text>
+                <view class="col-bar-wrap">
+                  <view
+                    class="col-bar"
+                    style="height: {{item.count * 12}}rpx;"
+                  ></view>
+                </view>
+                <text class="col-date">{{item.date}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 分类占比 -->
+        <view class="panel">
+          <view class="panel-title">🎯 热门分类占比</view>
+          <view class="category-list">
+            <view
+              class="category-row"
+              wx:for="{{dashboard.categoryStats}}"
+              wx:key="id"
+            >
+              <view class="cat-left">
+                <text class="cat-name">{{item.name}}</text>
+                <text class="cat-count">{{item.count}} 篇</text>
+              </view>
+              <view class="cat-bar-wrap">
+                <view
+                  class="cat-bar bar-{{index}}"
+                  style="width: {{item.percent}}%;"
+                ></view>
+              </view>
+              <text class="cat-percent">{{item.percent}}%</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== Tab 1: 内容审核 ========== -->
+    <view class="tab-content" wx:elif="{{currentTab === 1}}">
+      <view class="scroll-area">
+        <!-- 筛选 -->
+        <scroll-view class="filter-bar" scroll-x enable-flex>
+          <view
+            class="filter-chip {{reviewFilter === item.id ? 'active' : ''}}"
+            wx:for="{{reviewFilters}}"
+            wx:key="id"
+            bindtap="onReviewFilterChange"
+            data-id="{{item.id}}"
+          >{{item.name}}</view>
+        </scroll-view>
+
+        <!-- 空状态 -->
+        <view class="empty-panel" wx:if="{{pendingReview.length === 0}}">
+          <text class="empty-emoji">🎉</text>
+          <text class="empty-title">暂无待审核内容</text>
+          <text class="empty-sub">所有内容均已处理完毕</text>
+        </view>
+
+        <!-- 审核列表 -->
+        <view class="review-list" wx:else>
+          <block wx:for="{{pendingReview}}" wx:key="id">
+            <view class="review-card" wx:if="{{reviewFilter === 'all' || reviewFilter === item.type}}">
+              <view class="review-head">
+                <view class="review-type type-{{item.type}}">
+                  {{item.type === 'figure' ? '人物志' : item.type === 'topic' ? '专题' : item.type === 'encyclopedia' ? '百科' : '文章'}}
+                </view>
+                <text class="review-time">{{item.createTime}}</text>
+              </view>
+              <view class="review-title">{{item.title}}</view>
+              <view class="review-desc">{{item.desc}}</view>
+              <view class="review-meta">
+                <text class="review-submitter">提交人：{{item.submitter}}</text>
+              </view>
+              <view class="review-actions">
+                <button class="btn-approve" bindtap="onApprove" data-id="{{item.id}}" data-type="{{item.type}}">✅ 通过</button>
+                <button class="btn-reject" bindtap="openRejectModal" data-id="{{item.id}}" data-type="{{item.type}}">❌ 驳回</button>
+              </view>
+            </view>
+          </block>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== Tab 2: 举报处理 ========== -->
+    <view class="tab-content" wx:elif="{{currentTab === 2}}">
+      <view class="scroll-area">
+        <!-- 筛选 -->
+        <scroll-view class="filter-bar" scroll-x enable-flex>
+          <view
+            class="filter-chip {{reportFilter === item.id ? 'active' : ''}}"
+            wx:for="{{reportFilters}}"
+            wx:key="id"
+            bindtap="onReportFilterChange"
+            data-id="{{item.id}}"
+          >{{item.name}}</view>
+        </scroll-view>
+
+        <!-- 空状态 -->
+        <view class="empty-panel" wx:if="{{reports.length === 0}}">
+          <text class="empty-emoji">👏</text>
+          <text class="empty-title">暂无举报</text>
+          <text class="empty-sub">暂无待处理举报</text>
+        </view>
+
+        <!-- 举报列表 -->
+        <view class="report-list" wx:else>
+          <block wx:for="{{reports}}" wx:key="id">
+            <view class="report-card {{item.status === 'handled' ? 'handled' : ''}}"
+                  wx:if="{{reportFilter === 'all' || reportFilter === item.type}}">
+              <view class="report-head">
+                <view class="report-type type-{{item.type}}">
+                  {{item.type === 'article' ? '文章举报' : '专题举报'}}
+                </view>
+                <view class="report-status status-{{item.status}}">
+                  {{item.status === 'pending' ? '待处理' : item.action === 'taken-down' ? '已下架' : '已忽略'}}
+                </view>
+              </view>
+              <view class="report-target-title">{{item.targetTitle}}</view>
+              <view class="report-row">
+                <text class="report-label">举报人：</text>
+                <text class="report-value">{{item.reporter}}</text>
+              </view>
+              <view class="report-row">
+                <text class="report-label">举报原因：</text>
+                <text class="report-value reason">{{item.reason}}</text>
+              </view>
+              <view class="report-row" wx:if="{{item.detail}}">
+                <text class="report-label">补充说明：</text>
+                <text class="report-value">{{item.detail}}</text>
+              </view>
+              <view class="report-row time-row">
+                <text class="report-time">{{item.createTime}}</text>
+              </view>
+              <view class="report-actions" wx:if="{{item.status === 'pending'}}">
+                <button class="btn-takedown" bindtap="onTakeDown" data-id="{{item.id}}">🚫 下架内容</button>
+                <button class="btn-ignore" bindtap="onIgnoreReport" data-id="{{item.id}}">⚪ 忽略举报</button>
+              </view>
+            </view>
+          </block>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== Tab 3: 运营配置 ========== -->
+    <view class="tab-content" wx:elif="{{currentTab === 3}}">
+      <view class="scroll-area">
+        <view class="config-grid">
+          <view
+            class="config-card"
+            wx:for="{{configSections}}"
+            wx:key="id"
+            bindtap="onConfigSectionTap"
+            data-id="{{item.id}}"
+          >
+            <view class="config-icon icon-{{item.id}}">
+              <text class="config-emoji">{{item.icon}}</text>
+            </view>
+            <view class="config-main">
+              <view class="config-head">
+                <text class="config-title">{{item.title}}</text>
+                <view class="config-count" wx:if="{{item.count !== undefined}}">{{item.count}} 条</view>
+              </view>
+              <text class="config-desc">{{item.desc}}</text>
+            </view>
+            <text class="config-arrow">›</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- ============ 驳回弹窗 ============ -->
+  <view class="reject-modal {{showRejectModal ? 'show' : ''}}" wx:if="{{hasPermission}}">
+    <view class="reject-mask" bindtap="closeRejectModal"></view>
+    <view class="reject-dialog">
+      <view class="reject-head">
+        <text class="reject-title">❌ 驳回原因</text>
+        <text class="reject-close" bindtap="closeRejectModal">✕</text>
+      </view>
+      <view class="reject-body">
+        <textarea
+          class="reject-textarea"
+          placeholder="请输入驳回原因（至少5字，提交者可见）"
+          placeholder-class="reject-placeholder"
+          value="{{rejectReason}}"
+          bindinput="onRejectReasonInput"
+          maxlength="200"
+          auto-height
+        ></textarea>
+        <view class="reject-count">已输入 {{rejectReason.length}} / 200</view>
+      </view>
+      <view class="reject-footer">
+        <button class="reject-btn-cancel" bindtap="closeRejectModal">取消</button>
+        <button
+          class="reject-btn-confirm {{rejectReason.length < 5 ? 'disabled' : ''}}"
+          bindtap="confirmReject"
+          disabled="{{rejectReason.length < 5}}"
+        >确认驳回</button>
+      </view>
+    </view>
+  </view>
+</view>
