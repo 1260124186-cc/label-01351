@@ -281,6 +281,20 @@ const storageApi = {
     userLikes.push(id);
     likes[userId] = userLikes;
     wx.setStorageSync('likes', likes);
+    if (article.authorId && article.authorId !== userId) {
+      const userInfo = wx.getStorageSync('userInfo');
+      storageApi.createNotification({
+        type: 'like',
+        fromUserId: userId,
+        fromUserName: userInfo ? userInfo.nickname : '',
+        targetUserId: article.authorId,
+        targetId: id,
+        targetTitle: article.title,
+        content: (userInfo ? userInfo.nickname : '有人') + ' 赞了你的文章',
+        jumpType: 'article',
+        jumpId: id
+      });
+    }
     return { code: 200, data: { isLike: true, likeCount: article.likeCount }, message: '点赞成功' };
   },
 
@@ -340,6 +354,22 @@ const storageApi = {
     userFavorites.push(id);
     favorites[userId] = userFavorites;
     wx.setStorageSync('favorites', favorites);
+    const articles = wx.getStorageSync('articles') || [];
+    const article = articles.find(item => item.id === id);
+    if (article && article.authorId && article.authorId !== userId) {
+      const userInfo = wx.getStorageSync('userInfo');
+      storageApi.createNotification({
+        type: 'favorite',
+        fromUserId: userId,
+        fromUserName: userInfo ? userInfo.nickname : '',
+        targetUserId: article.authorId,
+        targetId: id,
+        targetTitle: article.title,
+        content: (userInfo ? userInfo.nickname : '有人') + ' 收藏了你的文章',
+        jumpType: 'article',
+        jumpId: id
+      });
+    }
     return { code: 200, data: { isFavorite: true }, message: '收藏成功' };
   },
 
@@ -976,6 +1006,124 @@ const storageApi = {
       { id: 'figure', name: '人物专题', icon: '👤' }
     ];
     return { code: 200, data: categories, message: 'success' };
+  },
+
+  getNotificationList: async (params = {}) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { type = 'all', readStatus = 'all', page = 1, pageSize = 10 } = params;
+    const userId = getCurrentUserId();
+    const notifications = wx.getStorageSync('notifications') || {};
+    let list = notifications[userId] || [];
+    if (type && type !== 'all') {
+      list = list.filter(item => item.type === type);
+    }
+    if (readStatus === 'unread') {
+      list = list.filter(item => !item.isRead);
+    } else if (readStatus === 'read') {
+      list = list.filter(item => item.isRead);
+    }
+    list.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const allList = notifications[userId] || [];
+    const unreadCount = allList.filter(item => !item.isRead).length;
+    const total = list.length;
+    const start = (page - 1) * pageSize;
+    const pageList = list.slice(start, start + pageSize);
+    return {
+      code: 200,
+      data: { list: pageList, total, page, pageSize, unreadCount },
+      message: 'success'
+    };
+  },
+
+  getUnreadCount: async () => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const notifications = wx.getStorageSync('notifications') || {};
+    const list = notifications[userId] || [];
+    const count = list.filter(item => !item.isRead).length;
+    return { code: 200, data: { count }, message: 'success' };
+  },
+
+  markAsRead: async (id) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '通知ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const notifications = wx.getStorageSync('notifications') || {};
+    const list = notifications[userId] || [];
+    const notification = list.find(item => item.id === id);
+    if (!notification) {
+      return { code: 404, data: null, message: '通知不存在' };
+    }
+    notification.isRead = true;
+    wx.setStorageSync('notifications', notifications);
+    return { code: 200, data: null, message: 'success' };
+  },
+
+  markAllAsRead: async () => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const notifications = wx.getStorageSync('notifications') || {};
+    const list = notifications[userId] || [];
+    list.forEach(item => { item.isRead = true; });
+    wx.setStorageSync('notifications', notifications);
+    return { code: 200, data: null, message: 'success' };
+  },
+
+  deleteNotification: async (id) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '通知ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const notifications = wx.getStorageSync('notifications') || {};
+    const list = notifications[userId] || [];
+    const index = list.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '通知不存在' };
+    }
+    list.splice(index, 1);
+    wx.setStorageSync('notifications', notifications);
+    return { code: 200, data: null, message: '删除成功' };
+  },
+
+  createNotification: async (data) => {
+    await delay(200);
+    if (!data.targetUserId) {
+      return { code: 400, data: null, message: '目标用户ID不能为空' };
+    }
+    const notifications = wx.getStorageSync('notifications') || {};
+    const newNotification = {
+      id: util.generateId('ntf'),
+      type: data.type || 'system',
+      fromUserId: data.fromUserId || '',
+      fromUserName: data.fromUserName || '',
+      targetUserId: data.targetUserId,
+      targetId: data.targetId || '',
+      targetTitle: data.targetTitle || '',
+      content: data.content || '',
+      isRead: false,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      jumpType: data.jumpType || 'none',
+      jumpId: data.jumpId || ''
+    };
+    if (!notifications[data.targetUserId]) {
+      notifications[data.targetUserId] = [];
+    }
+    notifications[data.targetUserId].push(newNotification);
+    wx.setStorageSync('notifications', notifications);
+    return { code: 200, data: newNotification, message: 'success' };
   }
 };
 
@@ -1375,6 +1523,70 @@ const remoteApi = {
     return request({
       url: '/api/topic/categories',
       method: 'GET'
+    });
+  },
+
+  getNotificationList: async (params = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { type = 'all', readStatus = 'all', page = 1, pageSize = 10 } = params;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/notification/list',
+      method: 'GET',
+      data: { type, readStatus, page, pageSize, userId }
+    });
+  },
+
+  getUnreadCount: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/notification/unread-count',
+      method: 'GET',
+      data: { userId }
+    });
+  },
+
+  markAsRead: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '通知ID不能为空' };
+    }
+    return request({
+      url: `/api/notification/read/${id}`,
+      method: 'POST'
+    });
+  },
+
+  markAllAsRead: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/notification/read-all',
+      method: 'POST'
+    });
+  },
+
+  deleteNotification: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '通知ID不能为空' };
+    }
+    return request({
+      url: `/api/notification/delete/${id}`,
+      method: 'POST'
+    });
+  },
+
+  createNotification: async (data) => {
+    return request({
+      url: '/api/notification/create',
+      method: 'POST',
+      data
     });
   }
 };

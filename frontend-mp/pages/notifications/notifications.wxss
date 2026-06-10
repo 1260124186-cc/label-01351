@@ -1,0 +1,248 @@
+.page-container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5f0e8 0%, #faf8f5 100%);
+  padding-bottom: 40rpx;
+}
+
+.tab-bar {
+  display: flex;
+  padding: 20rpx 24rpx 0;
+  background-color: #FFFFFF;
+  border-bottom: 1rpx solid #f0ebe3;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 24rpx 16rpx;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.tab-text {
+  font-size: 28rpx;
+  color: #888888;
+  font-weight: 500;
+}
+
+.tab-active .tab-text {
+  color: #8B4513;
+  font-weight: 700;
+}
+
+.tab-indicator {
+  width: 40rpx;
+  height: 6rpx;
+  background: linear-gradient(90deg, #8B4513, #CD853F);
+  border-radius: 3rpx;
+  margin-top: 8rpx;
+}
+
+.action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 32rpx;
+  background-color: #FFFFFF;
+  border-bottom: 1rpx solid #f0ebe3;
+}
+
+.unread-hint {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+.mark-all-btn {
+  font-size: 26rpx;
+  color: #8B4513;
+  font-weight: 600;
+  padding: 8rpx 24rpx;
+  border: 1rpx solid #8B4513;
+  border-radius: 24rpx;
+}
+
+.mark-all-btn:active {
+  background: rgba(139, 69, 19, 0.08);
+}
+
+.loading-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 0;
+}
+
+.loading-spinner {
+  width: 64rpx;
+  height: 64rpx;
+  border: 6rpx solid #e0d5c8;
+  border-top-color: #8B4513;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #999999;
+  margin-top: 20rpx;
+}
+
+.empty-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 160rpx 0;
+}
+
+.empty-icon {
+  font-size: 100rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-text {
+  font-size: 30rpx;
+  color: #999999;
+}
+
+.notification-list {
+  padding: 16rpx 24rpx;
+}
+
+.notification-item {
+  background-color: #FFFFFF;
+  border-radius: 20rpx;
+  margin-bottom: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s;
+}
+
+.notification-unread {
+  background: linear-gradient(135deg, #FFFBF0 0%, #FFFFFF 100%);
+  border-left: 6rpx solid #8B4513;
+}
+
+.notification-main {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx;
+  position: relative;
+}
+
+.notification-icon-wrap {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 20rpx;
+}
+
+.type-like {
+  background: linear-gradient(135deg, rgba(255, 77, 79, 0.12) 0%, rgba(255, 77, 79, 0.06) 100%);
+}
+
+.type-favorite {
+  background: linear-gradient(135deg, rgba(250, 173, 20, 0.12) 0%, rgba(250, 173, 20, 0.06) 100%);
+}
+
+.type-comment {
+  background: linear-gradient(135deg, rgba(70, 130, 180, 0.12) 0%, rgba(70, 130, 180, 0.06) 100%);
+}
+
+.type-reply {
+  background: linear-gradient(135deg, rgba(34, 139, 34, 0.12) 0%, rgba(34, 139, 34, 0.06) 100%);
+}
+
+.type-system {
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.12) 0%, rgba(139, 69, 19, 0.06) 100%);
+}
+
+.notification-type-icon {
+  font-size: 36rpx;
+}
+
+.notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+
+.notification-type-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.notification-time {
+  font-size: 22rpx;
+  color: #bbbbbb;
+  flex-shrink: 0;
+}
+
+.notification-body {
+  margin-bottom: 8rpx;
+}
+
+.notification-text {
+  font-size: 28rpx;
+  color: #555555;
+  line-height: 1.6;
+}
+
+.notification-target {
+  background: #f8f5f0;
+  border-radius: 8rpx;
+  padding: 8rpx 16rpx;
+  display: inline-flex;
+}
+
+.notification-target-text {
+  font-size: 24rpx;
+  color: #8B4513;
+  max-width: 420rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unread-dot {
+  position: absolute;
+  top: 28rpx;
+  right: 24rpx;
+  width: 16rpx;
+  height: 16rpx;
+  background: #ff4d4f;
+  border-radius: 50%;
+}
+
+.notification-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 24rpx 16rpx;
+}
+
+.action-delete {
+  font-size: 24rpx;
+  color: #ff4d4f;
+  padding: 6rpx 16rpx;
+}
+
+.action-delete:active {
+  opacity: 0.7;
+}

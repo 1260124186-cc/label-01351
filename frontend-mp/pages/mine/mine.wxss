@@ -193,9 +193,38 @@
   padding: 20rpx 0;
 }
 
+.action-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .action-icon {
   font-size: 48rpx;
   margin-bottom: 12rpx;
+}
+
+.unread-badge {
+  position: absolute;
+  top: -10rpx;
+  right: -20rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  background: #ff4d4f;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8rpx;
+  box-shadow: 0 2rpx 8rpx rgba(255, 77, 79, 0.4);
+}
+
+.badge-text {
+  font-size: 20rpx;
+  color: #FFFFFF;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .action-text {

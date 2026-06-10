@@ -12,6 +12,7 @@ app.use(express.json());
 // Mock 数据存储
 let likes = {};
 let favorites = {};
+let notifications = {};
 
 let articles = [
   {
@@ -581,6 +582,178 @@ app.get('/api/user/stats', (req, res) => {
   });
 });
 
+// 获取通知列表
+app.get('/api/notification/list', (req, res) => {
+  const { userId, type = 'all', readStatus = 'all', page = 1, pageSize = 10 } = req.query;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
+
+  let userNotifications = notifications[userId] || [];
+
+  if (type && type !== 'all') {
+    userNotifications = userNotifications.filter(item => item.type === type);
+  }
+
+  if (readStatus && readStatus !== 'all') {
+    userNotifications = userNotifications.filter(item => item.readStatus === readStatus);
+  }
+
+  userNotifications.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+  const total = userNotifications.length;
+  const unreadCount = (notifications[userId] || []).filter(item => item.readStatus === 'unread').length;
+  const start = (parseInt(page) - 1) * parseInt(pageSize);
+  const list = userNotifications.slice(start, start + parseInt(pageSize));
+
+  res.json({
+    code: 200,
+    data: {
+      list,
+      total,
+      unreadCount,
+      page: parseInt(page),
+      pageSize: parseInt(pageSize)
+    },
+    message: 'success'
+  });
+});
+
+// 获取未读通知数量
+app.get('/api/notification/unread-count', (req, res) => {
+  const { userId } = req.query;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
+
+  const userNotifications = notifications[userId] || [];
+  const count = userNotifications.filter(item => item.readStatus === 'unread').length;
+
+  res.json({
+    code: 200,
+    data: { count },
+    message: 'success'
+  });
+});
+
+// 标记通知已读
+app.post('/api/notification/read/:id', (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
+
+  const userNotifications = notifications[userId] || [];
+  const notification = userNotifications.find(item => item.id === id);
+
+  if (!notification) {
+    return res.json({
+      code: 404,
+      data: null,
+      message: '通知不存在'
+    });
+  }
+
+  notification.readStatus = 'read';
+
+  res.json({
+    code: 200,
+    data: null,
+    message: '标记成功'
+  });
+});
+
+// 标记全部通知已读
+app.post('/api/notification/read-all', (req, res) => {
+  const { userId } = req.body;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
+
+  const userNotifications = notifications[userId] || [];
+  userNotifications.forEach(item => {
+    item.readStatus = 'read';
+  });
+
+  res.json({
+    code: 200,
+    data: null,
+    message: '全部标记已读成功'
+  });
+});
+
+// 删除通知
+app.post('/api/notification/delete/:id', (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
+
+  const userNotifications = notifications[userId] || [];
+  const index = userNotifications.findIndex(item => item.id === id);
+
+  if (index === -1) {
+    return res.json({
+      code: 404,
+      data: null,
+      message: '通知不存在'
+    });
+  }
+
+  userNotifications.splice(index, 1);
+  notifications[userId] = userNotifications;
+
+  res.json({
+    code: 200,
+    data: null,
+    message: '删除成功'
+  });
+});
+
+// 创建通知
+app.post('/api/notification/create', (req, res) => {
+  const { type, fromUserId, fromUserName, targetUserId, targetId, targetTitle, content, jumpType, jumpId } = req.body;
+
+  const newNotification = {
+    id: generateId('notification'),
+    type,
+    fromUserId,
+    fromUserName,
+    targetUserId,
+    targetId,
+    targetTitle,
+    content,
+    jumpType,
+    jumpId,
+    readStatus: 'unread',
+    createTime: new Date().toISOString()
+  };
+
+  if (!notifications[targetUserId]) {
+    notifications[targetUserId] = [];
+  }
+
+  notifications[targetUserId].push(newNotification);
+
+  res.json({
+    code: 200,
+    data: newNotification,
+    message: '创建成功'
+  });
+});
+
 // 启动服务器
 app.listen(PORT, () => {
   console.log(`
@@ -607,6 +780,13 @@ app.listen(PORT, () => {
 ║   - GET  /api/user/info            用户信息                ║
 ║   - POST /api/user/update          更新用户                ║
 ║   - GET  /api/user/stats           用户统计                ║
+║                                                            ║
+║   - GET  /api/notification/list             通知列表       ║
+║   - GET  /api/notification/unread-count     未读数量       ║
+║   - POST /api/notification/read/:id         标记已读       ║
+║   - POST /api/notification/read-all         全部已读       ║
+║   - POST /api/notification/delete/:id       删除通知       ║
+║   - POST /api/notification/create           创建通知       ║
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
   `);

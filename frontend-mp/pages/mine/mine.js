@@ -36,7 +36,9 @@ Page({
     myArticles: [],
 
     // 加载状态
-    loading: false
+    loading: false,
+
+    unreadNotificationCount: 0
   },
 
   onLoad() {
@@ -49,6 +51,7 @@ Page({
       this.loadUserInfo();
       this.loadStats();
       this.loadMyArticles();
+      this.loadUnreadCount();
     }
   },
 
@@ -148,6 +151,23 @@ Page({
     wx.navigateTo({
       url: '/pages/favorites/favorites'
     });
+  },
+
+  goToNotifications() {
+    wx.navigateTo({
+      url: '/pages/notifications/notifications'
+    });
+  },
+
+  async loadUnreadCount() {
+    try {
+      const res = await api.getUnreadCount();
+      if (res.code === 200) {
+        this.setData({ unreadNotificationCount: res.data.count });
+      }
+    } catch (error) {
+      console.error('[Mine] 加载未读通知数异常:', error);
+    }
   },
 
   goToDetail(e) {

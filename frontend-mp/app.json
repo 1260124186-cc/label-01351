@@ -15,7 +15,8 @@
     "pages/encyclopedia-detail/encyclopedia-detail",
     "pages/admin/admin",
     "pages/admin-topic/admin-topic",
-    "pages/admin-encyclopedia/admin-encyclopedia"
+    "pages/admin-encyclopedia/admin-encyclopedia",
+    "pages/notifications/notifications"
   ],
   "window": {
     "backgroundTextStyle": "dark",

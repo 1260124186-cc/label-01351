@@ -10,6 +10,7 @@ function createMockApp(loggedIn = true) {
     },
     getLoginStatus: jest.fn(() => loggedIn),
     getUserInfo: jest.fn(() => loggedIn ? defaultUser : null),
+    isAdmin: jest.fn(() => false),
     login(userInfo) {
       this.globalData.userInfo = userInfo;
       this.globalData.isLoggedIn = true;

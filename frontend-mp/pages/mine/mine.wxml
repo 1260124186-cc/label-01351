@@ -48,8 +48,19 @@
 
     <!-- 快捷入口 -->
     <view class="quick-actions">
+      <view class="action-item" bindtap="goToNotifications">
+        <view class="action-icon-wrap">
+          <text class="action-icon">🔔</text>
+          <view class="unread-badge" wx:if="{{unreadNotificationCount > 0}}">
+            <text class="badge-text">{{unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}}</text>
+          </view>
+        </view>
+        <text class="action-text">消息通知</text>
+      </view>
       <view class="action-item" bindtap="goToFavorites">
-        <text class="action-icon">⭐</text>
+        <view class="action-icon-wrap">
+          <text class="action-icon">⭐</text>
+        </view>
         <text class="action-text">我的收藏</text>
       </view>
     </view>

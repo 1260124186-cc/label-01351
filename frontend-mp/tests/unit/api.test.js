@@ -1622,3 +1622,423 @@ describe('api.deleteEncyclopedia 删除百科', () => {
     expect(res.code).toBe(404);
   });
 });
+
+describe('api.createNotification', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('should create a notification successfully', async () => {
+    const res = await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      fromUserName: '李阿姨',
+      targetUserId: 'user_001',
+      targetId: 'article_001',
+      targetTitle: '记忆中的农耕岁月',
+      content: '李阿姨 赞了你的文章',
+      jumpType: 'article',
+      jumpId: 'article_001'
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.type).toBe('like');
+    expect(res.data.fromUserId).toBe('user_002');
+    expect(res.data.targetUserId).toBe('user_001');
+    expect(res.data.content).toBe('李阿姨 赞了你的文章');
+  });
+
+  test('should return 400 if targetUserId is missing', async () => {
+    const res = await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      content: 'test'
+    });
+    expect(res.code).toBe(400);
+    expect(res.data).toBeNull();
+  });
+
+  test('should set isRead to false by default', async () => {
+    const res = await api.createNotification({
+      type: 'system',
+      targetUserId: 'user_001',
+      content: 'system notification'
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.isRead).toBe(false);
+  });
+
+  test('should generate id and createTime', async () => {
+    const res = await api.createNotification({
+      type: 'like',
+      targetUserId: 'user_001',
+      content: 'test'
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.id).toBeDefined();
+    expect(res.data.id).toMatch(/^ntf/);
+    expect(res.data.createTime).toBeDefined();
+    expect(typeof res.data.createTime).toBe('string');
+    expect(res.data.createTime.length).toBeGreaterThan(0);
+  });
+});
+
+describe('api.getNotificationList', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('should return 401 if not logged in', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.getNotificationList();
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
+  });
+
+  test('should return notification list for current user', async () => {
+    await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      fromUserName: '李阿姨',
+      targetUserId: 'user_001',
+      targetId: 'article_001',
+      targetTitle: '记忆中的农耕岁月',
+      content: '李阿姨 赞了你的文章',
+      jumpType: 'article',
+      jumpId: 'article_001'
+    });
+
+    const res = await api.getNotificationList();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+  });
+
+  test('should filter by type', async () => {
+    await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      fromUserName: '李阿姨',
+      targetUserId: 'user_001',
+      targetId: 'article_001',
+      targetTitle: '记忆中的农耕岁月',
+      content: '李阿姨 赞了你的文章',
+      jumpType: 'article',
+      jumpId: 'article_001'
+    });
+    await api.createNotification({
+      type: 'system',
+      targetUserId: 'user_001',
+      content: '系统通知'
+    });
+
+    const res = await api.getNotificationList({ type: 'like' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(item => item.type === 'like')).toBe(true);
+  });
+
+  test('should filter by readStatus (unread/read)', async () => {
+    await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      fromUserName: '李阿姨',
+      targetUserId: 'user_001',
+      targetId: 'article_001',
+      targetTitle: '记忆中的农耕岁月',
+      content: '李阿姨 赞了你的文章',
+      jumpType: 'article',
+      jumpId: 'article_001'
+    });
+    await api.createNotification({
+      type: 'system',
+      targetUserId: 'user_001',
+      content: '系统通知'
+    });
+
+    const resUnread = await api.getNotificationList({ readStatus: 'unread' });
+    expect(resUnread.code).toBe(200);
+    expect(resUnread.data.list.every(item => item.isRead === false)).toBe(true);
+
+    const notifications = wx.getStorageSync('notifications') || {};
+    const list = notifications['user_001'] || [];
+    list[0].isRead = true;
+    wx.setStorageSync('notifications', notifications);
+
+    const resRead = await api.getNotificationList({ readStatus: 'read' });
+    expect(resRead.code).toBe(200);
+    expect(resRead.data.list.every(item => item.isRead === true)).toBe(true);
+  });
+
+  test('should return unreadCount', async () => {
+    await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      fromUserName: '李阿姨',
+      targetUserId: 'user_001',
+      targetId: 'article_001',
+      targetTitle: '记忆中的农耕岁月',
+      content: '李阿姨 赞了你的文章',
+      jumpType: 'article',
+      jumpId: 'article_001'
+    });
+    await api.createNotification({
+      type: 'system',
+      targetUserId: 'user_001',
+      content: '系统通知'
+    });
+
+    const res = await api.getNotificationList();
+    expect(res.code).toBe(200);
+    expect(res.data.unreadCount).toBe(2);
+  });
+
+  test('should sort by createTime desc', async () => {
+    await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      fromUserName: '李阿姨',
+      targetUserId: 'user_001',
+      targetId: 'article_001',
+      targetTitle: '记忆中的农耕岁月',
+      content: 'first notification',
+      jumpType: 'article',
+      jumpId: 'article_001'
+    });
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await api.createNotification({
+      type: 'system',
+      targetUserId: 'user_001',
+      content: 'second notification'
+    });
+
+    const res = await api.getNotificationList();
+    expect(res.code).toBe(200);
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect(new Date(list[i].createTime) >= new Date(list[i + 1].createTime)).toBe(true);
+    }
+  });
+
+  test('should support pagination', async () => {
+    for (let i = 0; i < 5; i++) {
+      await api.createNotification({
+        type: 'system',
+        targetUserId: 'user_001',
+        content: `notification ${i}`
+      });
+    }
+
+    const res1 = await api.getNotificationList({ page: 1, pageSize: 2 });
+    expect(res1.code).toBe(200);
+    expect(res1.data.list.length).toBe(2);
+    expect(res1.data.total).toBe(5);
+
+    const res2 = await api.getNotificationList({ page: 2, pageSize: 2 });
+    expect(res2.code).toBe(200);
+    expect(res2.data.list.length).toBe(2);
+  });
+});
+
+describe('api.getUnreadCount', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('should return 401 if not logged in', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.getUnreadCount();
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
+  });
+
+  test('should return unread notification count', async () => {
+    await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      fromUserName: '李阿姨',
+      targetUserId: 'user_001',
+      targetId: 'article_001',
+      targetTitle: '记忆中的农耕岁月',
+      content: '李阿姨 赞了你的文章',
+      jumpType: 'article',
+      jumpId: 'article_001'
+    });
+    await api.createNotification({
+      type: 'system',
+      targetUserId: 'user_001',
+      content: '系统通知'
+    });
+
+    const res = await api.getUnreadCount();
+    expect(res.code).toBe(200);
+    expect(res.data.count).toBe(2);
+  });
+});
+
+describe('api.markAsRead', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('should return 401 if not logged in', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.markAsRead('ntf_001');
+    expect(res.code).toBe(401);
+    expect(res.message).toBe('请先登录');
+  });
+
+  test('should mark a notification as read', async () => {
+    const createRes = await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      fromUserName: '李阿姨',
+      targetUserId: 'user_001',
+      targetId: 'article_001',
+      targetTitle: '记忆中的农耕岁月',
+      content: '李阿姨 赞了你的文章',
+      jumpType: 'article',
+      jumpId: 'article_001'
+    });
+    const ntfId = createRes.data.id;
+    expect(createRes.data.isRead).toBe(false);
+
+    const res = await api.markAsRead(ntfId);
+    expect(res.code).toBe(200);
+
+    const notifications = wx.getStorageSync('notifications') || {};
+    const notification = notifications['user_001'].find(item => item.id === ntfId);
+    expect(notification.isRead).toBe(true);
+  });
+
+  test('should return 404 if notification not found', async () => {
+    const res = await api.markAsRead('ntf_notexist');
+    expect(res.code).toBe(404);
+    expect(res.data).toBeNull();
+  });
+});
+
+describe('api.markAllAsRead', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('should mark all notifications as read for current user', async () => {
+    await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      fromUserName: '李阿姨',
+      targetUserId: 'user_001',
+      targetId: 'article_001',
+      targetTitle: '记忆中的农耕岁月',
+      content: '李阿姨 赞了你的文章',
+      jumpType: 'article',
+      jumpId: 'article_001'
+    });
+    await api.createNotification({
+      type: 'system',
+      targetUserId: 'user_001',
+      content: '系统通知'
+    });
+
+    const res = await api.markAllAsRead();
+    expect(res.code).toBe(200);
+
+    const notifications = wx.getStorageSync('notifications') || {};
+    const list = notifications['user_001'] || [];
+    list.forEach(item => {
+      expect(item.isRead).toBe(true);
+    });
+  });
+});
+
+describe('api.deleteNotification', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('should delete a notification', async () => {
+    const createRes = await api.createNotification({
+      type: 'like',
+      fromUserId: 'user_002',
+      fromUserName: '李阿姨',
+      targetUserId: 'user_001',
+      targetId: 'article_001',
+      targetTitle: '记忆中的农耕岁月',
+      content: '李阿姨 赞了你的文章',
+      jumpType: 'article',
+      jumpId: 'article_001'
+    });
+    const ntfId = createRes.data.id;
+
+    const res = await api.deleteNotification(ntfId);
+    expect(res.code).toBe(200);
+
+    const notifications = wx.getStorageSync('notifications') || {};
+    const list = notifications['user_001'] || [];
+    expect(list.find(item => item.id === ntfId)).toBeUndefined();
+  });
+
+  test('should return 404 if notification not found', async () => {
+    const res = await api.deleteNotification('ntf_notexist');
+    expect(res.code).toBe(404);
+    expect(res.data).toBeNull();
+  });
+});
+
+describe('api notification triggers', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', { id: 'user_002', nickname: '李阿姨' });
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('likeArticle should create notification for article author', async () => {
+    await api.likeArticle('article_001');
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const notifications = wx.getStorageSync('notifications') || {};
+    const authorNotifications = notifications['user_001'] || [];
+    expect(authorNotifications.length).toBeGreaterThan(0);
+    const likeNotification = authorNotifications.find(item => item.type === 'like' && item.targetId === 'article_001');
+    expect(likeNotification).toBeDefined();
+    expect(likeNotification.fromUserId).toBe('user_002');
+    expect(likeNotification.targetUserId).toBe('user_001');
+  });
+
+  test('likeArticle should NOT create notification for self-like', async () => {
+    wx.setStorageSync('userInfo', { id: 'user_001', nickname: '张大爷' });
+    wx.setStorageSync('isLoggedIn', true);
+
+    await api.likeArticle('article_001');
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const notifications = wx.getStorageSync('notifications') || {};
+    const authorNotifications = notifications['user_001'] || [];
+    const likeNotification = authorNotifications.find(item => item.type === 'like' && item.targetId === 'article_001');
+    expect(likeNotification).toBeUndefined();
+  });
+
+  test('favoriteArticle should create notification for article author', async () => {
+    await api.favoriteArticle('article_001');
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const notifications = wx.getStorageSync('notifications') || {};
+    const authorNotifications = notifications['user_001'] || [];
+    expect(authorNotifications.length).toBeGreaterThan(0);
+    const favNotification = authorNotifications.find(item => item.type === 'favorite' && item.targetId === 'article_001');
+    expect(favNotification).toBeDefined();
+    expect(favNotification.fromUserId).toBe('user_002');
+    expect(favNotification.targetUserId).toBe('user_001');
+  });
+});
