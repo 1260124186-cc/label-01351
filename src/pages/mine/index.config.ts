@@ -1,5 +1,5 @@
 export default definePageConfig({
-  navigationBarTitleText: '内容审核',
+  navigationBarTitleText: '我的',
   navigationBarBackgroundColor: '#ffffff',
   navigationBarTextStyle: 'black'
 });

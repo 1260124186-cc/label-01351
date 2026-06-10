@@ -4,19 +4,15 @@ import { useAdminStore } from '@/store/admin';
 import './app.scss';
 
 function App(props) {
-  const setUserInfo = useAdminStore((state) => state.setUserInfo);
+  const initUserInfo = useAdminStore((state) => state.initUserInfo);
 
   useEffect(() => {
-    const defaultUser = {
-      id: 'admin001',
-      nickname: '管理员',
-      avatar: 'https://picsum.photos/id/64/200/200',
-      role: 'admin' as const
-    };
-    setUserInfo(defaultUser);
-  }, []);
+    initUserInfo();
+  }, [initUserInfo]);
 
-  useDidShow(() => {});
+  useDidShow(() => {
+    initUserInfo();
+  });
 
   useDidHide(() => {});
 

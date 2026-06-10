@@ -1,16 +1,15 @@
 export default defineAppConfig({
   pages: [
-    'pages/dashboard/index',
-    'pages/review/index',
-    'pages/reports/index',
-    'pages/config/index',
+    'pages/index/index',
+    'pages/mine/index',
+    'pages/admin/index',
     'pages/review-detail/index',
     'pages/report-detail/index'
   ],
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#ffffff',
-    navigationBarTitleText: '管理后台',
+    navigationBarTitleText: '乡村文化库',
     navigationBarTextStyle: 'black'
   },
   tabBar: {
@@ -20,20 +19,12 @@ export default defineAppConfig({
     borderStyle: 'white',
     list: [
       {
-        pagePath: 'pages/dashboard/index',
-        text: '看板'
+        pagePath: 'pages/index/index',
+        text: '首页'
       },
       {
-        pagePath: 'pages/review/index',
-        text: '审核'
-      },
-      {
-        pagePath: 'pages/reports/index',
-        text: '举报'
-      },
-      {
-        pagePath: 'pages/config/index',
-        text: '配置'
+        pagePath: 'pages/mine/index',
+        text: '我的'
       }
     ]
   }

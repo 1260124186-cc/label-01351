@@ -1,0 +1,192 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+}
+
+.header {
+  background: linear-gradient(135deg, #165dff 0%, #4080ff 100%);
+  padding: $spacing-xl $spacing-lg;
+  padding-bottom: 80rpx;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: $radius-round;
+  border: 4rpx solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+  @include flex-center;
+}
+
+.avatarIcon {
+  font-size: 56rpx;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  border-radius: $radius-round;
+}
+
+.userText {
+  flex: 1;
+  margin-left: $spacing-lg;
+  min-width: 0;
+}
+
+.nickname {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-semibold;
+  color: $color-text-white;
+  display: block;
+  @include text-ellipsis;
+}
+
+.roleTag {
+  display: inline-block;
+  margin-top: $spacing-xs;
+  padding: 2rpx 16rpx;
+  font-size: $font-size-xs;
+  border-radius: $radius-xs;
+  background: rgba(255, 255, 255, 0.25);
+  color: $color-text-white;
+}
+
+.roleTagAdmin {
+  background: rgba(255, 125, 0, 0.9);
+  color: $color-text-white;
+}
+
+.content {
+  padding: 0 $spacing-lg;
+  margin-top: -48rpx;
+  padding-bottom: 40rpx;
+}
+
+.card {
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-lg;
+  overflow: hidden;
+}
+
+.cardTitle {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  padding: $spacing-md $spacing-lg;
+  padding-bottom: $spacing-sm;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1rpx solid $color-divider;
+
+  &:active {
+    background: $color-bg-hover;
+  }
+}
+
+.menuIcon {
+  font-size: 36rpx;
+  margin-right: $spacing-md;
+  width: 48rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.menuText {
+  flex: 1;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+}
+
+.menuArrow {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+  flex-shrink: 0;
+}
+
+.menuBadge {
+  font-size: $font-size-xs;
+  padding: 2rpx 12rpx;
+  border-radius: $radius-round;
+  background: $color-error;
+  color: $color-text-white;
+  margin-right: $spacing-sm;
+}
+
+.adminEntry {
+  background: linear-gradient(135deg, rgba(22, 93, 255, 0.08) 0%, rgba(0, 180, 42, 0.08) 100%);
+  border: 2rpx solid rgba(22, 93, 255, 0.15);
+}
+
+.adminTag {
+  font-size: $font-size-xs;
+  padding: 2rpx 12rpx;
+  border-radius: $radius-xs;
+  background: $color-primary;
+  color: $color-text-white;
+  margin-right: $spacing-sm;
+  font-weight: $font-weight-medium;
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1rpx solid $color-divider;
+  gap: $spacing-md;
+}
+
+.switchLabel {
+  flex: 1;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.switchInput {
+  flex: 1;
+  height: 56rpx;
+  background: $color-bg-page;
+  border-radius: $radius-sm;
+  padding: 0 $spacing-md;
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  box-sizing: border-box;
+}
+
+.switchBtn {
+  @include button-reset;
+  height: 56rpx;
+  padding: 0 $spacing-md;
+  background: $color-primary;
+  border-radius: $radius-button;
+  border: 2rpx solid transparent;
+
+  &:active {
+    opacity: 0.9;
+  }
+
+  .switchBtnText {
+    font-size: $font-size-sm;
+    color: $color-text-white;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+  }
+}
+
+.switchBtnText {
+  font-size: $font-size-sm;
+  white-space: nowrap;
+}

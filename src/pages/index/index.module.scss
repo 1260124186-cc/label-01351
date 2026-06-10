@@ -1,0 +1,109 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+}
+
+.header {
+  background: linear-gradient(135deg, #165dff 0%, #4080ff 100%);
+  padding: $spacing-xl $spacing-lg;
+}
+
+.headerTitle {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+  display: block;
+}
+
+.headerSub {
+  font-size: $font-size-sm;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: $spacing-xs;
+  display: block;
+}
+
+.content {
+  padding: 0 $spacing-lg;
+  margin-top: -$spacing-md;
+}
+
+.card {
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  box-shadow: $shadow-card;
+  padding: $spacing-xl;
+  margin-bottom: $spacing-lg;
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+
+  &:active {
+    opacity: 0.95;
+  }
+}
+
+.iconWrap {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: $radius-lg;
+  background: rgba(22, 93, 255, 0.08);
+  @include flex-center;
+  flex-shrink: 0;
+}
+
+.icon {
+  font-size: 48rpx;
+}
+
+.cardInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  display: block;
+  margin-bottom: $spacing-xs;
+}
+
+.cardDesc {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  display: block;
+}
+
+.featureGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.featureItem {
+  width: calc(33.33% - #{$spacing-md} * 2 / 3);
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  box-shadow: $shadow-card;
+  padding: $spacing-lg $spacing-sm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  &:active {
+    opacity: 0.95;
+  }
+}
+
+.featureIcon {
+  font-size: 44rpx;
+  margin-bottom: $spacing-sm;
+}
+
+.featureText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
