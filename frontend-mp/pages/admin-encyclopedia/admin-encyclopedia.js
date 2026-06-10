@@ -32,6 +32,8 @@ Page({
     },
     showArticlePicker: false,
     showTopicPicker: false,
+    tempArticleIds: [],
+    tempTopicIds: [],
     selectedArticleTitles: [],
     selectedTopicTitles: [],
     canSubmit: false
@@ -144,6 +146,8 @@ Page({
       newCatalogItem: { level: '1', title: '' },
       showArticlePicker: false,
       showTopicPicker: false,
+      tempArticleIds: [],
+      tempTopicIds: [],
       selectedArticleTitles: [],
       selectedTopicTitles: [],
       canSubmit: false
@@ -175,6 +179,8 @@ Page({
       newCatalogItem: { level: '1', title: '' },
       showArticlePicker: false,
       showTopicPicker: false,
+      tempArticleIds: [],
+      tempTopicIds: [],
       canSubmit: true
     });
     await this.loadAllArticles();
@@ -186,7 +192,7 @@ Page({
   },
 
   closeForm() {
-    this.setData({ showForm: false });
+    this.setData({ showForm: false, showArticlePicker: false, showTopicPicker: false });
   },
 
   onTitleInput(e) {
@@ -275,23 +281,36 @@ Page({
     this.setData({ 'formData.catalog': catalog });
   },
 
-  toggleArticlePicker() {
-    this.setData({ showArticlePicker: !this.data.showArticlePicker });
+  openArticlePicker() {
+    this.setData({
+      showArticlePicker: true,
+      tempArticleIds: [...this.data.formData.relatedArticleIds]
+    });
   },
 
   toggleArticleSelect(e) {
     const id = e.currentTarget.dataset.id;
-    const relatedArticleIds = [...this.data.formData.relatedArticleIds];
-    const index = relatedArticleIds.indexOf(id);
+    const tempArticleIds = [...this.data.tempArticleIds];
+    const index = tempArticleIds.indexOf(id);
     if (index > -1) {
-      relatedArticleIds.splice(index, 1);
+      tempArticleIds.splice(index, 1);
     } else {
-      relatedArticleIds.push(id);
+      tempArticleIds.push(id);
     }
+    this.setData({ tempArticleIds });
+  },
+
+  confirmArticlePicker() {
+    const relatedArticleIds = [...this.data.tempArticleIds];
     this.setData({
       'formData.relatedArticleIds': relatedArticleIds,
-      selectedArticleTitles: relatedArticleIds.map(aid => this.getArticleTitle(aid))
+      selectedArticleTitles: relatedArticleIds.map(aid => this.getArticleTitle(aid)),
+      showArticlePicker: false
     });
+  },
+
+  cancelArticlePicker() {
+    this.setData({ showArticlePicker: false });
   },
 
   removeRelatedArticle(e) {
@@ -307,23 +326,36 @@ Page({
     }
   },
 
-  toggleTopicPicker() {
-    this.setData({ showTopicPicker: !this.data.showTopicPicker });
+  openTopicPicker() {
+    this.setData({
+      showTopicPicker: true,
+      tempTopicIds: [...this.data.formData.relatedTopicIds]
+    });
   },
 
   toggleTopicSelect(e) {
     const id = e.currentTarget.dataset.id;
-    const relatedTopicIds = [...this.data.formData.relatedTopicIds];
-    const index = relatedTopicIds.indexOf(id);
+    const tempTopicIds = [...this.data.tempTopicIds];
+    const index = tempTopicIds.indexOf(id);
     if (index > -1) {
-      relatedTopicIds.splice(index, 1);
+      tempTopicIds.splice(index, 1);
     } else {
-      relatedTopicIds.push(id);
+      tempTopicIds.push(id);
     }
+    this.setData({ tempTopicIds });
+  },
+
+  confirmTopicPicker() {
+    const relatedTopicIds = [...this.data.tempTopicIds];
     this.setData({
       'formData.relatedTopicIds': relatedTopicIds,
-      selectedTopicTitles: relatedTopicIds.map(tid => this.getTopicTitle(tid))
+      selectedTopicTitles: relatedTopicIds.map(tid => this.getTopicTitle(tid)),
+      showTopicPicker: false
     });
+  },
+
+  cancelTopicPicker() {
+    this.setData({ showTopicPicker: false });
   },
 
   removeRelatedTopic(e) {

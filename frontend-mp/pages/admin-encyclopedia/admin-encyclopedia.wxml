@@ -1,5 +1,4 @@
 <view class="page-container">
-  <!-- 未登录提示 -->
   <view class="login-wrap" wx:if="{{!isLoggedIn}}">
     <text class="login-icon">🔒</text>
     <text class="login-text">请先登录后使用管理功能</text>
@@ -8,9 +7,7 @@
     </view>
   </view>
 
-  <!-- 管理内容 -->
   <block wx:else>
-    <!-- 顶部操作栏 -->
     <view class="top-bar">
       <view class="stats-item">
         <text class="stats-label">词条总数</text>
@@ -22,20 +19,17 @@
       </view>
     </view>
 
-    <!-- 加载中 -->
     <view class="loading-wrap" wx:if="{{loading && entryList.length === 0}}">
       <view class="loading-spinner"></view>
       <text class="loading-text">加载中...</text>
     </view>
 
-    <!-- 空状态 -->
     <view class="empty-wrap" wx:elif="{{!loading && entryList.length === 0}}">
       <text class="empty-icon">📖</text>
       <text class="empty-text">暂无词条</text>
       <text class="empty-hint">点击右上角创建第一个词条吧</text>
     </view>
 
-    <!-- 词条列表 -->
     <view class="entry-list" wx:else>
       <view class="entry-card" wx:for="{{entryList}}" wx:key="id">
         <view class="entry-hero">
@@ -79,8 +73,8 @@
         <!-- 标题 -->
         <view class="form-item">
           <text class="form-label">词条标题 <text class="required">*</text></text>
-          <input 
-            class="form-input" 
+          <input
+            class="form-input"
             placeholder="请输入词条标题"
             value="{{formData.title}}"
             bindinput="onTitleInput"
@@ -92,7 +86,7 @@
         <view class="form-item">
           <text class="form-label">词条分类 <text class="required">*</text></text>
           <view class="tag-group">
-            <view 
+            <view
               class="tag-item {{formData.category === item.id ? 'active' : ''}}"
               wx:for="{{categories}}"
               wx:key="id"
@@ -107,8 +101,8 @@
         <!-- 摘要 -->
         <view class="form-item">
           <text class="form-label">词条摘要 <text class="required">*</text></text>
-          <textarea 
-            class="form-textarea" 
+          <textarea
+            class="form-textarea"
             placeholder="请输入词条摘要，简要介绍词条内容（至少10字）"
             value="{{formData.summary}}"
             bindinput="onSummaryInput"
@@ -122,20 +116,20 @@
           <text class="form-label">词条目录</text>
           <view class="catalog-input-wrap">
             <view class="catalog-level-select">
-              <view 
+              <view
                 class="level-btn {{newCatalogItem.level === '1' ? 'active' : ''}}"
                 data-level="1"
                 bindtap="onCatalogLevelSelect"
               >一级</view>
-              <view 
+              <view
                 class="level-btn {{newCatalogItem.level === '2' ? 'active' : ''}}"
                 data-level="2"
                 bindtap="onCatalogLevelSelect"
               >二级</view>
             </view>
             <view class="catalog-input-row">
-              <input 
-                class="catalog-input" 
+              <input
+                class="catalog-input"
                 placeholder="输入目录标题"
                 value="{{newCatalogItem.title}}"
                 bindinput="onCatalogTitleInput"
@@ -145,7 +139,7 @@
             </view>
           </view>
           <view class="catalog-list" wx:if="{{formData.catalog.length > 0}}">
-            <view 
+            <view
               class="catalog-item level-{{item.level}}"
               wx:for="{{formData.catalog}}"
               wx:key="id"
@@ -161,8 +155,8 @@
         <!-- 内容 -->
         <view class="form-item">
           <text class="form-label">词条内容 <text class="required">*</text></text>
-          <textarea 
-            class="form-textarea content-area" 
+          <textarea
+            class="form-textarea content-area"
             placeholder="请输入词条详细内容（至少20字，段落之间用空行分隔）"
             value="{{formData.content}}"
             bindinput="onContentInput"
@@ -175,8 +169,8 @@
         <view class="form-item">
           <text class="form-label">词条标签</text>
           <view class="tag-input-wrap">
-            <input 
-              class="tag-input" 
+            <input
+              class="tag-input"
               placeholder="输入标签后点击添加"
               value="{{tagInput}}"
               bindinput="onTagInput"
@@ -200,26 +194,8 @@
               <text class="selected-item-remove" data-id="{{item}}" bindtap="removeRelatedArticle">✕</text>
             </view>
           </view>
-          <view class="picker-toggle" bindtap="toggleArticlePicker">
-            <text class="picker-toggle-text">{{showArticlePicker ? '收起文章列表 ▲' : '选择文章 ▼'}}</text>
-          </view>
-          <view class="picker-list" wx:if="{{showArticlePicker}}">
-            <view 
-              class="picker-option {{formData.relatedArticleIds.indexOf(item.id) > -1 ? 'selected' : ''}}"
-              wx:for="{{allArticles}}"
-              wx:key="id"
-              data-id="{{item.id}}"
-              bindtap="toggleArticleSelect"
-            >
-              <view class="picker-checkbox">{{formData.relatedArticleIds.indexOf(item.id) > -1 ? '☑' : '☐'}}</view>
-              <view class="picker-option-info">
-                <text class="picker-option-title">{{item.title}}</text>
-                <text class="picker-option-meta">{{item.authorName}} · {{item.createTime}}</text>
-              </view>
-            </view>
-            <view class="picker-empty" wx:if="{{allArticles.length === 0}}">
-              <text>暂无可选文章</text>
-            </view>
+          <view class="select-btn" bindtap="openArticlePicker">
+            <text class="select-btn-text">+ 选择文章</text>
           </view>
         </view>
 
@@ -232,26 +208,8 @@
               <text class="selected-item-remove" data-id="{{item}}" bindtap="removeRelatedTopic">✕</text>
             </view>
           </view>
-          <view class="picker-toggle" bindtap="toggleTopicPicker">
-            <text class="picker-toggle-text">{{showTopicPicker ? '收起专题列表 ▲' : '选择专题 ▼'}}</text>
-          </view>
-          <view class="picker-list" wx:if="{{showTopicPicker}}">
-            <view 
-              class="picker-option {{formData.relatedTopicIds.indexOf(item.id) > -1 ? 'selected' : ''}}"
-              wx:for="{{allTopics}}"
-              wx:key="id"
-              data-id="{{item.id}}"
-              bindtap="toggleTopicSelect"
-            >
-              <view class="picker-checkbox">{{formData.relatedTopicIds.indexOf(item.id) > -1 ? '☑' : '☐'}}</view>
-              <view class="picker-option-info">
-                <text class="picker-option-title">{{item.title}}</text>
-                <text class="picker-option-meta">{{item.categoryName}}</text>
-              </view>
-            </view>
-            <view class="picker-empty" wx:if="{{allTopics.length === 0}}">
-              <text>暂无可选专题</text>
-            </view>
+          <view class="select-btn" bindtap="openTopicPicker">
+            <text class="select-btn-text">+ 选择专题</text>
           </view>
         </view>
       </scroll-view>
@@ -263,6 +221,66 @@
           {{submitting ? '提交中...' : (editMode ? '保存修改' : '创建词条')}}
         </view>
       </view>
+    </view>
+  </view>
+
+  <!-- 文章选择器 - 底部半屏弹窗 -->
+  <view class="picker-modal" wx:if="{{showArticlePicker}}" catchtouchmove="true">
+    <view class="picker-mask" bindtap="cancelArticlePicker"></view>
+    <view class="picker-panel">
+      <view class="picker-header">
+        <text class="picker-cancel" bindtap="cancelArticlePicker">取消</text>
+        <text class="picker-title">选择文章</text>
+        <text class="picker-confirm" bindtap="confirmArticlePicker">确定</text>
+      </view>
+      <scroll-view class="picker-scroll" scroll-y>
+        <view
+          class="picker-option {{tempArticleIds.indexOf(item.id) > -1 ? 'selected' : ''}}"
+          wx:for="{{allArticles}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="toggleArticleSelect"
+        >
+          <view class="picker-checkbox">{{tempArticleIds.indexOf(item.id) > -1 ? '☑' : '☐'}}</view>
+          <view class="picker-option-info">
+            <text class="picker-option-title">{{item.title}}</text>
+            <text class="picker-option-meta">{{item.authorName}} · {{item.createTime}}</text>
+          </view>
+        </view>
+        <view class="picker-empty" wx:if="{{allArticles.length === 0}}">
+          <text>暂无可选文章</text>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 专题选择器 - 底部半屏弹窗 -->
+  <view class="picker-modal" wx:if="{{showTopicPicker}}" catchtouchmove="true">
+    <view class="picker-mask" bindtap="cancelTopicPicker"></view>
+    <view class="picker-panel">
+      <view class="picker-header">
+        <text class="picker-cancel" bindtap="cancelTopicPicker">取消</text>
+        <text class="picker-title">选择专题</text>
+        <text class="picker-confirm" bindtap="confirmTopicPicker">确定</text>
+      </view>
+      <scroll-view class="picker-scroll" scroll-y>
+        <view
+          class="picker-option {{tempTopicIds.indexOf(item.id) > -1 ? 'selected' : ''}}"
+          wx:for="{{allTopics}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="toggleTopicSelect"
+        >
+          <view class="picker-checkbox">{{tempTopicIds.indexOf(item.id) > -1 ? '☑' : '☐'}}</view>
+          <view class="picker-option-info">
+            <text class="picker-option-title">{{item.title}}</text>
+            <text class="picker-option-meta">{{item.categoryName}}</text>
+          </view>
+        </view>
+        <view class="picker-empty" wx:if="{{allTopics.length === 0}}">
+          <text>暂无可选专题</text>
+        </view>
+      </scroll-view>
     </view>
   </view>
 </view>

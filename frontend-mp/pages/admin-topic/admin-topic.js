@@ -31,8 +31,11 @@ Page({
       source: '',
       url: ''
     },
+
     showArticlePicker: false,
     showTopicPicker: false,
+    tempArticleIds: [],
+    tempTopicIds: [],
     selectedArticleTitles: [],
     selectedTopicTitles: [],
     canSubmit: false
@@ -145,6 +148,8 @@ Page({
       newExtendedReading: { title: '', source: '', url: '' },
       showArticlePicker: false,
       showTopicPicker: false,
+      tempArticleIds: [],
+      tempTopicIds: [],
       selectedArticleTitles: [],
       selectedTopicTitles: [],
       canSubmit: false
@@ -187,7 +192,7 @@ Page({
   },
 
   closeForm() {
-    this.setData({ showForm: false });
+    this.setData({ showForm: false, showArticlePicker: false, showTopicPicker: false });
   },
 
   onTitleInput(e) {
@@ -239,23 +244,36 @@ Page({
     this.setData({ 'formData.tags': tags });
   },
 
-  toggleArticlePicker() {
-    this.setData({ showArticlePicker: !this.data.showArticlePicker });
+  openArticlePicker() {
+    this.setData({
+      showArticlePicker: true,
+      tempArticleIds: [...this.data.formData.articleIds]
+    });
   },
 
   toggleArticleSelect(e) {
     const id = e.currentTarget.dataset.id;
-    const articleIds = [...this.data.formData.articleIds];
-    const index = articleIds.indexOf(id);
+    const tempArticleIds = [...this.data.tempArticleIds];
+    const index = tempArticleIds.indexOf(id);
     if (index > -1) {
-      articleIds.splice(index, 1);
+      tempArticleIds.splice(index, 1);
     } else {
-      articleIds.push(id);
+      tempArticleIds.push(id);
     }
+    this.setData({ tempArticleIds });
+  },
+
+  confirmArticlePicker() {
+    const articleIds = [...this.data.tempArticleIds];
     this.setData({
       'formData.articleIds': articleIds,
-      selectedArticleTitles: articleIds.map(aid => this.getArticleTitle(aid))
+      selectedArticleTitles: articleIds.map(aid => this.getArticleTitle(aid)),
+      showArticlePicker: false
     });
+  },
+
+  cancelArticlePicker() {
+    this.setData({ showArticlePicker: false });
   },
 
   removeArticle(e) {
@@ -307,8 +325,11 @@ Page({
     this.setData({ 'formData.extendedReading': extendedReading });
   },
 
-  toggleTopicPicker() {
-    this.setData({ showTopicPicker: !this.data.showTopicPicker });
+  openTopicPicker() {
+    this.setData({
+      showTopicPicker: true,
+      tempTopicIds: [...this.data.formData.relatedTopicIds]
+    });
   },
 
   toggleTopicSelect(e) {
@@ -317,17 +338,27 @@ Page({
       wx.showToast({ title: '不能关联自身', icon: 'none' });
       return;
     }
-    const relatedTopicIds = [...this.data.formData.relatedTopicIds];
-    const index = relatedTopicIds.indexOf(id);
+    const tempTopicIds = [...this.data.tempTopicIds];
+    const index = tempTopicIds.indexOf(id);
     if (index > -1) {
-      relatedTopicIds.splice(index, 1);
+      tempTopicIds.splice(index, 1);
     } else {
-      relatedTopicIds.push(id);
+      tempTopicIds.push(id);
     }
+    this.setData({ tempTopicIds });
+  },
+
+  confirmTopicPicker() {
+    const relatedTopicIds = [...this.data.tempTopicIds];
     this.setData({
       'formData.relatedTopicIds': relatedTopicIds,
-      selectedTopicTitles: relatedTopicIds.map(tid => this.getTopicTitle(tid))
+      selectedTopicTitles: relatedTopicIds.map(tid => this.getTopicTitle(tid)),
+      showTopicPicker: false
     });
+  },
+
+  cancelTopicPicker() {
+    this.setData({ showTopicPicker: false });
   },
 
   removeRelatedTopic(e) {

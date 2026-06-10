@@ -12,9 +12,9 @@
   <view class="search-bar">
     <view class="search-input-wrap">
       <text class="search-icon">🔍</text>
-      <input 
-        class="search-input" 
-        placeholder="搜索文章标题或内容" 
+      <input
+        class="search-input"
+        placeholder="搜索文章标题或内容"
         placeholder-class="search-placeholder"
         value="{{keyword}}"
         bindinput="onSearchInput"
@@ -58,7 +58,7 @@
 
   <!-- 分类标签 -->
   <scroll-view class="category-scroll" scroll-x enable-flex>
-    <view 
+    <view
       class="category-item {{currentCategory === item.id ? 'active' : ''}}"
       wx:for="{{categories}}"
       wx:key="id"
@@ -85,7 +85,7 @@
     </view>
 
     <!-- 文章卡片 -->
-    <view 
+    <view
       class="article-card"
       wx:for="{{articleList}}"
       wx:key="id"
@@ -98,11 +98,11 @@
         </view>
         <text class="article-date">{{item.createTime}}</text>
       </view>
-      
+
       <view class="article-title">{{item.title}}</view>
-      
+
       <view class="article-content">{{item.summary}}</view>
-      
+
       <view class="article-footer">
         <view class="article-author">
           <text class="author-icon">👤</text>
