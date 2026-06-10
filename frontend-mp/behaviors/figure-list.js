@@ -32,33 +32,30 @@ module.exports = Behavior({
     activeFilterTab: 'identity'
   },
 
-  created() {
+  onLoad() {
     this._loadRequestId = 0;
+    this.loadFilterOptions();
+  },
+
+  onShow() {
+    this.refreshData();
+  },
+
+  onPullDownRefresh() {
+    this.refreshData().then(() => {
+      wx.stopPullDownRefresh();
+    });
+  },
+
+  onReachBottom() {
+    if (this.data.hasMore && !this.data.loadingMore) {
+      this.loadMore();
+    }
   },
 
   methods: {
     getListKey() {
       throw new Error('getListKey must be implemented by page');
-    },
-
-    onLoad() {
-      this.loadFilterOptions();
-    },
-
-    onShow() {
-      this.refreshData();
-    },
-
-    onPullDownRefresh() {
-      this.refreshData().then(() => {
-        wx.stopPullDownRefresh();
-      });
-    },
-
-    onReachBottom() {
-      if (this.data.hasMore && !this.data.loadingMore) {
-        this.loadMore();
-      }
     },
 
     async loadFilterOptions() {

@@ -13,8 +13,25 @@ module.exports = Behavior({
     loadingMore: false
   },
 
-  created() {
+  onLoad() {
     this._loadRequestId = 0;
+    this.loadCategories();
+  },
+
+  onShow() {
+    this.refreshData();
+  },
+
+  onPullDownRefresh() {
+    this.refreshData().then(() => {
+      wx.stopPullDownRefresh();
+    });
+  },
+
+  onReachBottom() {
+    if (this.data.hasMore && !this.data.loadingMore) {
+      this.loadMore();
+    }
   },
 
   methods: {
@@ -24,26 +41,6 @@ module.exports = Behavior({
 
     getApiMethod() {
       throw new Error('getApiMethod must be implemented by page');
-    },
-
-    onLoad() {
-      this.loadCategories();
-    },
-
-    onShow() {
-      this.refreshData();
-    },
-
-    onPullDownRefresh() {
-      this.refreshData().then(() => {
-        wx.stopPullDownRefresh();
-      });
-    },
-
-    onReachBottom() {
-      if (this.data.hasMore && !this.data.loadingMore) {
-        this.loadMore();
-      }
     },
 
     async refreshData() {
