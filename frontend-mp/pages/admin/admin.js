@@ -417,7 +417,16 @@ Page({
           data: a
         }));
 
-      const pendingReview = [...pendingFigureDrafts, ...pendingArticles];
+      const typeMap = {
+        figure: '人物志',
+        topic: '文化专题',
+        encyclopedia: '文化百科',
+        article: '文章'
+      };
+      const pendingReview = [...pendingFigureDrafts, ...pendingArticles].map(item => ({
+        ...item,
+        typeName: typeMap[item.type] || '文章'
+      }));
       const reviewBadge = pendingReview.length;
 
       this.setData({
@@ -432,7 +441,23 @@ Page({
   // === 举报 ===
   loadReports() {
     try {
-      const reports = wx.getStorageSync('reports') || [];
+      const typeMap = {
+        article: '文章举报',
+        topic: '专题举报'
+      };
+      const processReports = (reports) => reports.map(r => {
+        let statusName = '待处理';
+        if (r.status === 'handled') {
+          statusName = r.action === 'taken-down' ? '已下架' : '已忽略';
+        }
+        return {
+          ...r,
+          typeName: typeMap[r.type] || '举报',
+          statusName
+        };
+      });
+
+      let reports = wx.getStorageSync('reports') || [];
       // 若空，初始化一批 mock 举报
       if (reports.length === 0) {
         const mockReports = [
@@ -471,14 +496,16 @@ Page({
           }
         ];
         wx.setStorageSync('reports', mockReports);
+        const processedReports = processReports(mockReports);
         this.setData({
-          reports: mockReports,
-          'tabs[2].badge': mockReports.filter(r => r.status === 'pending').length
+          reports: processedReports,
+          'tabs[2].badge': processedReports.filter(r => r.status === 'pending').length
         });
       } else {
+        const processedReports = processReports(reports);
         this.setData({
-          reports,
-          'tabs[2].badge': reports.filter(r => r.status === 'pending').length
+          reports: processedReports,
+          'tabs[2].badge': processedReports.filter(r => r.status === 'pending').length
         });
       }
     } catch (error) {
@@ -696,10 +723,7 @@ Page({
             reports[rIdx].handleTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm');
             wx.setStorageSync('reports', reports);
           }
-          this.setData({
-            reports,
-            'tabs[2].badge': reports.filter(r => r.status === 'pending').length
-          });
+          this.loadReports();
           wx.showToast({ title: '已下架', icon: 'success' });
         } catch (error) {
           console.error('[Admin] 下架异常:', error);
@@ -720,10 +744,7 @@ Page({
         reports[idx].handleTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm');
         wx.setStorageSync('reports', reports);
       }
-      this.setData({
-        reports,
-        'tabs[2].badge': reports.filter(r => r.status === 'pending').length
-      });
+      this.loadReports();
       wx.showToast({ title: '已忽略', icon: 'success' });
     } catch (error) {
       console.error('[Admin] 忽略举报异常:', error);

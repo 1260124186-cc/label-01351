@@ -51,6 +51,35 @@
       </view>
     </view>
 
+    <!-- ========== 筛选栏（常驻 DOM，供 selectorQuery 测量真实高度，未激活时移出视口） ========== -->
+    <view
+      class="filter-wrapper review-filter-wrap {{currentTab !== 1 ? 'filter-offscreen' : ''}}"
+    >
+      <scroll-view class="filter-bar" scroll-x enable-flex>
+        <view
+          class="filter-chip {{reviewFilter === item.id ? 'active' : ''}}"
+          wx:for="{{reviewFilters}}"
+          wx:key="id"
+          bindtap="onReviewFilterChange"
+          data-id="{{item.id}}"
+        >{{item.name}}</view>
+      </scroll-view>
+    </view>
+
+    <view
+      class="filter-wrapper report-filter-wrap {{currentTab !== 2 ? 'filter-offscreen' : ''}}"
+    >
+      <scroll-view class="filter-bar" scroll-x enable-flex>
+        <view
+          class="filter-chip {{reportFilter === item.id ? 'active' : ''}}"
+          wx:for="{{reportFilters}}"
+          wx:key="id"
+          bindtap="onReportFilterChange"
+          data-id="{{item.id}}"
+        >{{item.name}}</view>
+      </scroll-view>
+    </view>
+
     <!-- ========== Tab 0: 数据看板 ========== -->
     <view class="tab-content" wx:if="{{currentTab === 0}}">
       <view class="scroll-area">
@@ -127,35 +156,6 @@
       </view>
     </view>
 
-    <!-- ========== 筛选栏（常驻 DOM，供 selectorQuery 测量真实高度，未激活时移出视口） ========== -->
-    <view
-      class="filter-wrapper review-filter-wrap {{currentTab !== 1 ? 'filter-offscreen' : ''}}"
-    >
-      <scroll-view class="filter-bar" scroll-x enable-flex>
-        <view
-          class="filter-chip {{reviewFilter === item.id ? 'active' : ''}}"
-          wx:for="{{reviewFilters}}"
-          wx:key="id"
-          bindtap="onReviewFilterChange"
-          data-id="{{item.id}}"
-        >{{item.name}}</view>
-      </scroll-view>
-    </view>
-
-    <view
-      class="filter-wrapper report-filter-wrap {{currentTab !== 2 ? 'filter-offscreen' : ''}}"
-    >
-      <scroll-view class="filter-bar" scroll-x enable-flex>
-        <view
-          class="filter-chip {{reportFilter === item.id ? 'active' : ''}}"
-          wx:for="{{reportFilters}}"
-          wx:key="id"
-          bindtap="onReportFilterChange"
-          data-id="{{item.id}}"
-        >{{item.name}}</view>
-      </scroll-view>
-    </view>
-
     <!-- ========== Tab 1: 内容审核 ========== -->
     <view
       class="tab-content tab-layout"
@@ -187,7 +187,7 @@
             <view class="review-card" wx:if="{{reviewFilter === 'all' || reviewFilter === item.type}}">
               <view class="review-head">
                 <view class="review-type type-{{item.type}}">
-                  {{item.type === 'figure' ? '人物志' : item.type === 'topic' ? '专题' : item.type === 'encyclopedia' ? '百科' : '文章'}}
+                  {{item.typeName}}
                 </view>
                 <text class="review-time">{{item.createTime}}</text>
               </view>
@@ -238,10 +238,10 @@
                   wx:if="{{reportFilter === 'all' || reportFilter === item.type}}">
               <view class="report-head">
                 <view class="report-type type-{{item.type}}">
-                  {{item.type === 'article' ? '文章举报' : '专题举报'}}
+                  {{item.typeName}}
                 </view>
                 <view class="report-status status-{{item.status}}">
-                  {{item.status === 'pending' ? '待处理' : item.action === 'taken-down' ? '已下架' : '已忽略'}}
+                  {{item.statusName}}
                 </view>
               </view>
               <view class="report-target-title">{{item.targetTitle}}</view>
@@ -316,14 +316,14 @@
           maxlength="200"
           auto-height
         ></textarea>
-        <view class="reject-count">已输入 {{rejectReason.length}} / 200</view>
+        <view class="reject-count">已输入 {{rejectReason ? rejectReason.length : 0}} / 200</view>
       </view>
       <view class="reject-footer">
         <button class="reject-btn-cancel" bindtap="closeRejectModal">取消</button>
         <button
-          class="reject-btn-confirm {{rejectReason.length < 5 ? 'disabled' : ''}}"
+          class="reject-btn-confirm {{(rejectReason ? rejectReason.length : 0) < 5 ? 'disabled' : ''}}"
           bindtap="confirmReject"
-          disabled="{{rejectReason.length < 5}}"
+          disabled="{{(rejectReason ? rejectReason.length : 0) < 5}}"
         >确认驳回</button>
       </view>
     </view>
