@@ -77,6 +77,7 @@
           <input
             class="form-input"
             placeholder="请输入专题标题"
+            placeholder-class="input-placeholder"
             value="{{formData.title}}"
             bindinput="onTitleInput"
             maxlength="50"
@@ -89,6 +90,7 @@
           <input
             class="form-input"
             placeholder="请输入封面图片链接（选填）"
+            placeholder-class="input-placeholder"
             value="{{formData.coverImage}}"
             bindinput="onCoverImageInput"
           />
@@ -116,6 +118,7 @@
           <textarea
             class="form-textarea"
             placeholder="请输入专题导语，介绍专题内容（至少10字）"
+            placeholder-class="input-placeholder"
             value="{{formData.introduction}}"
             bindinput="onIntroductionInput"
             maxlength="500"
@@ -130,6 +133,7 @@
             <input
               class="tag-input"
               placeholder="输入标签后点击添加"
+              placeholder-class="input-placeholder"
               value="{{tagInput}}"
               bindinput="onTagInput"
               maxlength="20"
@@ -164,6 +168,7 @@
             <input
               class="form-input"
               placeholder="标题（必填）"
+              placeholder-class="input-placeholder"
               value="{{newExtendedReading.title}}"
               bindinput="onExtendedReadingTitleInput"
               maxlength="50"
@@ -171,6 +176,7 @@
             <input
               class="form-input"
               placeholder="来源（选填）"
+              placeholder-class="input-placeholder"
               value="{{newExtendedReading.source}}"
               bindinput="onExtendedReadingSourceInput"
               maxlength="30"
@@ -178,6 +184,7 @@
             <input
               class="form-input"
               placeholder="链接（选填）"
+              placeholder-class="input-placeholder"
               value="{{newExtendedReading.url}}"
               bindinput="onExtendedReadingUrlInput"
               maxlength="200"
