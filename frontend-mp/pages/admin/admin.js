@@ -89,12 +89,37 @@ Page({
         desc: '维护敏感词库用于内容过滤',
         count: 0
       }
-    ]
+    ],
+
+    // 动态高度（px，用于列表区精确计算）
+    windowHeight: 0,
+    statusBarHeight: 0,
+    navBarHeight: 44,        // 小程序默认导航栏 44px
+    headerHeight: 0,         // 顶部管理员头 + 四主 Tab 总高
+    reviewFilterHeight: 0,   // 审核 Tab 的筛选栏高度
+    reportFilterHeight: 0,   // 举报 Tab 的筛选栏高度
+    reviewListHeight: 0,     // 审核 Tab 列表可滚动高度
+    reportListHeight: 0,     // 举报 Tab 列表可滚动高度
+    layoutReady: false
   },
 
   // =============== 生命周期 ===============
   onLoad() {
+    // 1. 先拿窗口信息（精确 px）
+    this.initWindowMetrics();
+    // 2. 权限校验
     this.checkPermission();
+  },
+
+  onReady() {
+    // 渲染后测量各区域真实高度
+    const app = getApp();
+    if (app.isAdmin()) {
+      // 稍微延迟等 DOM 树渲染
+      setTimeout(() => {
+        this.measureAllRegions();
+      }, 120);
+    }
   },
 
   onShow() {
@@ -103,6 +128,10 @@ Page({
     }
     if (this.data.hasPermission) {
       this.refreshAllData();
+      // 回到页面再补一次测量，防止 tab 切换后高度变
+      if (!this.data.layoutReady) {
+        setTimeout(() => this.measureAllRegions(), 100);
+      }
     }
   },
 
@@ -155,11 +184,94 @@ Page({
       hasPermission: true,
       userInfo: userInfo || null
     });
+    // 权限通过后：首次已 onReady 测量；若还没准备好，这里补触发一次
+    if (!this.data.layoutReady) {
+      setTimeout(() => this.measureAllRegions(), 80);
+    }
     this.refreshAllData();
   },
 
   goBack() {
     wx.switchTab({ url: '/pages/mine/mine' });
+  },
+
+  // =============== 动态高度计算 ===============
+  initWindowMetrics() {
+    let winInfo = null;
+    try {
+      // 优先使用 wx.getWindowInfo（基础库 2.21.3+）
+      if (typeof wx.getWindowInfo === 'function') {
+        winInfo = wx.getWindowInfo();
+      } else {
+        winInfo = wx.getSystemInfoSync();
+      }
+    } catch (e) {
+      winInfo = wx.getSystemInfoSync();
+    }
+    // 小程序可渲染区域高度：不包含胶囊导航栏，但 windowHeight 在微信里通常=屏幕-系统状态栏-导航栏，这里直接取 windowHeight
+    const windowHeight = winInfo.windowHeight || 667;
+    const statusBarHeight = winInfo.statusBarHeight || 20;
+
+    // 自定义导航栏标题栏高度（ios 44 / Android 48 / 鸿蒙 44，统一 44 安全）
+    let navBarHeight = 44;
+    if (winInfo.system && /android/i.test(winInfo.system)) {
+      navBarHeight = 48;
+    }
+
+    this.setData({
+      windowHeight,
+      statusBarHeight,
+      navBarHeight
+    });
+    console.log('[Admin] 窗口信息:', { windowHeight, statusBarHeight, navBarHeight });
+  },
+
+  // 通过 selectorQuery 测量 Header + 筛选栏 真实高度
+  measureAllRegions() {
+    const query = wx.createSelectorQuery();
+    query.select('.admin-header').boundingClientRect();
+    query.select('.review-filter-wrap').boundingClientRect();
+    query.select('.report-filter-wrap').boundingClientRect();
+    query.exec((res) => {
+      const headerRect = (res && res[0]) || null;
+      const reviewFilterRect = (res && res[1]) || null;
+      const reportFilterRect = (res && res[2]) || null;
+
+      const headerHeight = headerRect ? headerRect.height : 0;
+      const reviewFilterHeight = reviewFilterRect ? reviewFilterRect.height : 0;
+      const reportFilterHeight = reportFilterRect ? reportFilterRect.height : 0;
+
+      this.setData({
+        headerHeight,
+        reviewFilterHeight,
+        reportFilterHeight
+      });
+
+      this.recalcListHeights();
+    });
+  },
+
+  recalcListHeights() {
+    const { windowHeight, navBarHeight, headerHeight, reviewFilterHeight, reportFilterHeight } = this.data;
+    // 公式：列表可用高 = 窗口高 - 导航栏 - 顶部 Header + 4Tab总高 - 筛选栏 - 20px安全边距
+    const baseRemain = windowHeight - headerHeight - 20; // 扣除header + 安全边距
+
+    const reviewListHeight = Math.max(baseRemain - reviewFilterHeight, 240);
+    const reportListHeight = Math.max(baseRemain - reportFilterHeight, 240);
+
+    this.setData({
+      reviewListHeight,
+      reportListHeight,
+      layoutReady: true
+    });
+    console.log('[Admin] 动态高度计算:', {
+      windowHeight,
+      headerHeight,
+      reviewFilterHeight,
+      reportFilterHeight,
+      reviewListHeight,
+      reportListHeight
+    });
   },
 
   // =============== 数据刷新 ===============

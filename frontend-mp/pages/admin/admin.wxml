@@ -128,9 +128,9 @@
     </view>
 
     <!-- ========== Tab 1: 内容审核 ========== -->
-    <view class="tab-content tab-layout" wx:elif="{{currentTab === 1}}">
+    <view class="tab-content tab-layout" style="{{layoutReady ? '' : 'visibility: hidden;'}}" wx:elif="{{currentTab === 1}}">
       <!-- 筛选栏（固定在顶部） -->
-      <view class="filter-wrapper">
+      <view class="filter-wrapper review-filter-wrap">
         <scroll-view class="filter-bar" scroll-x enable-flex>
           <view
             class="filter-chip {{reviewFilter === item.id ? 'active' : ''}}"
@@ -143,7 +143,14 @@
       </view>
 
       <!-- 列表区（独立滚动） -->
-      <scroll-view class="list-scroll" scroll-y enable-flex>
+      <scroll-view
+        class="list-scroll"
+        scroll-y
+        enable-flex
+        enhanced
+        show-scrollbar="{{false}}"
+        style="height: {{reviewListHeight}}px;"
+      >
         <!-- 空状态 -->
         <view class="empty-panel" wx:if="{{pendingReview.length === 0}}">
           <text class="empty-emoji">🎉</text>
@@ -177,9 +184,9 @@
     </view>
 
     <!-- ========== Tab 2: 举报处理 ========== -->
-    <view class="tab-content tab-layout" wx:elif="{{currentTab === 2}}">
+    <view class="tab-content tab-layout" style="{{layoutReady ? '' : 'visibility: hidden;'}}" wx:elif="{{currentTab === 2}}">
       <!-- 筛选栏（固定在顶部） -->
-      <view class="filter-wrapper">
+      <view class="filter-wrapper report-filter-wrap">
         <scroll-view class="filter-bar" scroll-x enable-flex>
           <view
             class="filter-chip {{reportFilter === item.id ? 'active' : ''}}"
@@ -192,7 +199,14 @@
       </view>
 
       <!-- 列表区（独立滚动） -->
-      <scroll-view class="list-scroll" scroll-y enable-flex>
+      <scroll-view
+        class="list-scroll"
+        scroll-y
+        enable-flex
+        enhanced
+        show-scrollbar="{{false}}"
+        style="height: {{reportListHeight}}px;"
+      >
         <!-- 空状态 -->
         <view class="empty-panel" wx:if="{{reports.length === 0}}">
           <text class="empty-emoji">👏</text>

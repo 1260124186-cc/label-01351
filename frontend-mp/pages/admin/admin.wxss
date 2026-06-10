@@ -244,11 +244,10 @@
   padding: 0;
 }
 
-/* 审核/举报 Tab：筛选栏固定 + 列表独立滚动 */
+/* 审核/举报 Tab：筛选栏固定 + 列表独立滚动（高度全由 JS 动态计算） */
 .tab-layout {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 280rpx);
   overflow: hidden;
   background: #f5f2ee;
 }
@@ -262,12 +261,12 @@
   z-index: 3;
 }
 
-/* 列表独立滚动区 */
+/* 列表独立滚动区（高度由 data.reviewListHeight / reportListHeight 内联传入精确 px） */
 .list-scroll {
-  flex: 1;
+  flex: 0 0 auto;
   padding: 10rpx 24rpx 32rpx;
   box-sizing: border-box;
-  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .scroll-area {
