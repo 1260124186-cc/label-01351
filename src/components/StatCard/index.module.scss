@@ -1,0 +1,56 @@
+@use '@/styles/variables.scss' as *;
+
+.card {
+  display: flex;
+  align-items: center;
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  box-shadow: $shadow-card;
+  position: relative;
+  overflow: hidden;
+
+  &:active {
+    opacity: 0.95;
+  }
+}
+
+.iconWrap {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $radius-md;
+  background: $color-bg-tag-pending;
+  @include flex-center;
+  margin-right: $spacing-md;
+  flex-shrink: 0;
+}
+
+.icon {
+  font-size: 40rpx;
+}
+
+.info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.value {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  line-height: 1.2;
+}
+
+.label {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xs;
+}
+
+.trend {
+  font-size: $font-size-xs;
+  color: $color-approved;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+}

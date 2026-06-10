@@ -1,0 +1,96 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+}
+
+.header {
+  background: linear-gradient(135deg, #165dff 0%, #4080ff 100%);
+  padding: $spacing-xl $spacing-lg;
+  padding-top: $spacing-md;
+}
+
+.headerTitle {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-white;
+  display: block;
+}
+
+.headerSub {
+  font-size: $font-size-sm;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: $spacing-xs;
+  display: block;
+}
+
+.content {
+  padding: 0 $spacing-lg;
+  margin-top: -$spacing-md;
+}
+
+.statGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.statItem {
+  width: calc(50% - #{$spacing-md} / 2);
+}
+
+.section {
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-lg;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg $spacing-lg $spacing-sm;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.sectionMore {
+  font-size: $font-size-sm;
+  color: $color-primary;
+}
+
+.pendingRow {
+  display: flex;
+  gap: $spacing-md;
+  padding: $spacing-sm $spacing-lg $spacing-lg;
+}
+
+.pendingItem {
+  flex: 1;
+  background: $color-bg-page;
+  border-radius: $radius-sm;
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pendingValue {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-pending;
+}
+
+.pendingLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xs;
+}

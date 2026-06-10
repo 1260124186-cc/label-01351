@@ -1,0 +1,141 @@
+@use '@/styles/variables.scss' as *;
+
+.card {
+  display: flex;
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  overflow: hidden;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+
+  &:active {
+    opacity: 0.95;
+  }
+}
+
+.cover {
+  width: 180rpx;
+  height: 220rpx;
+  flex-shrink: 0;
+}
+
+.body {
+  flex: 1;
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: $spacing-xs;
+}
+
+.statusTag {
+  font-size: $font-size-xs;
+  padding: 2rpx 12rpx;
+  border-radius: $radius-xs;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+}
+
+.statusPending {
+  color: $color-pending;
+  background: $color-bg-tag-pending;
+}
+
+.statusTakedown {
+  color: $color-rejected;
+  background: $color-bg-tag-rejected;
+}
+
+.statusIgnored {
+  color: $color-ignored;
+  background: $color-bg-tag-ignored;
+}
+
+.title {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  @include text-ellipsis-multi(1);
+  margin-bottom: $spacing-xs;
+}
+
+.reason {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  @include text-ellipsis-multi(2);
+  line-height: $line-height-normal;
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: $spacing-sm;
+}
+
+.reporter {
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: $radius-round;
+  margin-right: $spacing-xs;
+}
+
+.reporterName {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.btn {
+  @include button-reset;
+  height: $button-height-sm;
+  min-width: 96rpx;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  padding: 0 24rpx;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+.btnIgnore {
+  background: $color-bg-hover;
+  border: 2rpx solid transparent;
+
+  .btnText {
+    color: $color-text-secondary;
+  }
+}
+
+.btnTakedown {
+  background: $color-rejected;
+  border: 2rpx solid transparent;
+
+  .btnText {
+    color: $color-text-white;
+  }
+}
+
+.btnText {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+}

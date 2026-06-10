@@ -28,3 +28,23 @@ $color-text-white: #ffffff;
 // 边框色
 $color-border: #e5e6eb;
 $color-divider: #f2f3f5;
+
+$color-pending: #ff7d00;
+$color-approved: #00b42a;
+$color-rejected: #f53f3f;
+$color-ignored: #86909c;
+$color-takedown: #f53f3f;
+
+$color-bg-tag-pending: rgba(255, 125, 0, 0.1);
+$color-bg-tag-approved: rgba(0, 180, 42, 0.1);
+$color-bg-tag-rejected: rgba(245, 63, 63, 0.1);
+$color-bg-tag-ignored: rgba(134, 144, 156, 0.1);
+
+$color-chart-1: #165dff;
+$color-chart-2: #00b42a;
+$color-chart-3: #ff7d00;
+$color-chart-4: #f53f3f;
+$color-chart-5: #722ed1;
+$color-chart-6: #0fc6c2;
+
+$color-bg-header: linear-gradient(135deg, #165dff 0%, #4080ff 100%);

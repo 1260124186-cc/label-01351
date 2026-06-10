@@ -1,0 +1,57 @@
+@use '@/styles/variables.scss' as *;
+
+.section {
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg $spacing-lg $spacing-md;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+}
+
+.title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.count {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  margin-left: $spacing-xs;
+}
+
+.actionBtn {
+  @include button-reset;
+  height: 56rpx;
+  padding: 0 $spacing-md;
+  background: rgba(22, 93, 255, 0.08);
+  border-radius: $radius-button;
+  border: 2rpx solid transparent;
+
+  &:active {
+    opacity: 0.9;
+  }
+}
+
+.actionText {
+  font-size: $font-size-sm;
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+}
+
+.sectionBody {
+  padding: 0 $spacing-lg $spacing-lg;
+}

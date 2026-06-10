@@ -1,0 +1,147 @@
+@use '@/styles/variables.scss' as *;
+
+.card {
+  display: flex;
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  overflow: hidden;
+  box-shadow: $shadow-card;
+  margin-bottom: $spacing-md;
+
+  &:active {
+    opacity: 0.95;
+  }
+}
+
+.cover {
+  width: 200rpx;
+  height: 240rpx;
+  flex-shrink: 0;
+}
+
+.body {
+  flex: 1;
+  padding: $spacing-md;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.typeTag {
+  font-size: $font-size-xs;
+  padding: 2rpx 12rpx;
+  border-radius: $radius-xs;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+}
+
+.tagArticle {
+  color: $color-primary;
+  background: rgba(22, 93, 255, 0.1);
+}
+
+.tagLandmark {
+  color: $color-chart-5;
+  background: rgba(114, 46, 209, 0.1);
+}
+
+.tagActivity {
+  color: $color-pending;
+  background: $color-bg-tag-pending;
+}
+
+.time {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  white-space: nowrap;
+}
+
+.title {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  @include text-ellipsis-multi(1);
+  margin-bottom: $spacing-xs;
+}
+
+.desc {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  @include text-ellipsis-multi(2);
+  line-height: $line-height-normal;
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: $spacing-sm;
+}
+
+.author {
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: $radius-round;
+  margin-right: $spacing-xs;
+}
+
+.authorName {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.actions {
+  display: flex;
+  gap: $spacing-sm;
+}
+
+.btn {
+  @include button-reset;
+  height: $button-height-sm;
+  min-width: 96rpx;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  padding: 0 24rpx;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+.btnReject {
+  background: $color-bg-tag-rejected;
+  border: 2rpx solid transparent;
+
+  .btnText {
+    color: $color-rejected;
+  }
+}
+
+.btnApprove {
+  background: $color-primary;
+  border: 2rpx solid transparent;
+
+  .btnText {
+    color: $color-text-white;
+  }
+}
+
+.btnText {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  white-space: nowrap;
+}

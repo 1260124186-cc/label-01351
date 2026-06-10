@@ -1,0 +1,55 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  padding: $spacing-md 0;
+}
+
+.chartArea {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 280rpx;
+  padding: 0 $spacing-sm;
+}
+
+.barGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+}
+
+.barValue {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  font-weight: $font-weight-medium;
+  margin-bottom: $spacing-xs;
+  white-space: nowrap;
+}
+
+.barBg {
+  flex: 1;
+  width: 32rpx;
+  background: $color-bg-hover;
+  border-radius: $radius-xs;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.barFill {
+  width: 100%;
+  background: linear-gradient(180deg, $color-primary 0%, $color-primary-light 100%);
+  border-radius: $radius-xs;
+  min-height: 4rpx;
+  transition: height $transition-base;
+}
+
+.barLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xs;
+  white-space: nowrap;
+}

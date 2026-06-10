@@ -1,16 +1,23 @@
 import React, { useEffect } from 'react';
 import { useDidShow, useDidHide } from '@tarojs/taro';
-// 全局样式
+import { useAdminStore } from '@/store/admin';
 import './app.scss';
 
 function App(props) {
-  // 可以使用所有的 React Hooks
-  useEffect(() => {});
+  const setUserInfo = useAdminStore((state) => state.setUserInfo);
 
-  // 对应 onShow
+  useEffect(() => {
+    const defaultUser = {
+      id: 'admin001',
+      nickname: '管理员',
+      avatar: 'https://picsum.photos/id/64/200/200',
+      role: 'admin' as const
+    };
+    setUserInfo(defaultUser);
+  }, []);
+
   useDidShow(() => {});
 
-  // 对应 onHide
   useDidHide(() => {});
 
   return props.children;
