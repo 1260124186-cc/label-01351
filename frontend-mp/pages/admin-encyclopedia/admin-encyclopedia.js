@@ -11,6 +11,8 @@ Page({
     submitting: false,
 
     categories: [],
+    allArticles: [],
+    allTopics: [],
 
     formData: {
       title: '',
@@ -28,6 +30,10 @@ Page({
       level: '1',
       title: ''
     },
+    showArticlePicker: false,
+    showTopicPicker: false,
+    selectedArticleTitles: [],
+    selectedTopicTitles: [],
     canSubmit: false
   },
 
@@ -79,6 +85,28 @@ Page({
     }
   },
 
+  async loadAllArticles() {
+    try {
+      const res = await api.getArticleList({ page: 1, pageSize: 200 });
+      if (res.code === 200) {
+        this.setData({ allArticles: res.data.list });
+      }
+    } catch (error) {
+      console.error('[AdminEncyclopedia] 加载文章列表失败:', error);
+    }
+  },
+
+  async loadAllTopics() {
+    try {
+      const res = await api.getTopicList({ page: 1, pageSize: 200 });
+      if (res.code === 200) {
+        this.setData({ allTopics: res.data.list });
+      }
+    } catch (error) {
+      console.error('[AdminEncyclopedia] 加载专题列表失败:', error);
+    }
+  },
+
   async loadEntryList() {
     this.setData({ loading: true });
 
@@ -97,7 +125,7 @@ Page({
     }
   },
 
-  openCreateForm() {
+  async openCreateForm() {
     this.setData({
       showForm: true,
       editMode: false,
@@ -114,11 +142,17 @@ Page({
       },
       tagInput: '',
       newCatalogItem: { level: '1', title: '' },
+      showArticlePicker: false,
+      showTopicPicker: false,
+      selectedArticleTitles: [],
+      selectedTopicTitles: [],
       canSubmit: false
     });
+    await this.loadAllArticles();
+    await this.loadAllTopics();
   },
 
-  openEditForm(e) {
+  async openEditForm(e) {
     const id = e.currentTarget.dataset.id;
     const entry = this.data.entryList.find(item => item.id === id);
     if (!entry) return;
@@ -139,7 +173,15 @@ Page({
       },
       tagInput: '',
       newCatalogItem: { level: '1', title: '' },
+      showArticlePicker: false,
+      showTopicPicker: false,
       canSubmit: true
+    });
+    await this.loadAllArticles();
+    await this.loadAllTopics();
+    this.setData({
+      selectedArticleTitles: this.data.formData.relatedArticleIds.map(aid => this.getArticleTitle(aid)),
+      selectedTopicTitles: this.data.formData.relatedTopicIds.map(tid => this.getTopicTitle(tid))
     });
   },
 
@@ -231,6 +273,80 @@ Page({
     const catalog = [...this.data.formData.catalog];
     catalog.splice(index, 1);
     this.setData({ 'formData.catalog': catalog });
+  },
+
+  toggleArticlePicker() {
+    this.setData({ showArticlePicker: !this.data.showArticlePicker });
+  },
+
+  toggleArticleSelect(e) {
+    const id = e.currentTarget.dataset.id;
+    const relatedArticleIds = [...this.data.formData.relatedArticleIds];
+    const index = relatedArticleIds.indexOf(id);
+    if (index > -1) {
+      relatedArticleIds.splice(index, 1);
+    } else {
+      relatedArticleIds.push(id);
+    }
+    this.setData({
+      'formData.relatedArticleIds': relatedArticleIds,
+      selectedArticleTitles: relatedArticleIds.map(aid => this.getArticleTitle(aid))
+    });
+  },
+
+  removeRelatedArticle(e) {
+    const id = e.currentTarget.dataset.id;
+    const relatedArticleIds = [...this.data.formData.relatedArticleIds];
+    const index = relatedArticleIds.indexOf(id);
+    if (index > -1) {
+      relatedArticleIds.splice(index, 1);
+      this.setData({
+        'formData.relatedArticleIds': relatedArticleIds,
+        selectedArticleTitles: relatedArticleIds.map(aid => this.getArticleTitle(aid))
+      });
+    }
+  },
+
+  toggleTopicPicker() {
+    this.setData({ showTopicPicker: !this.data.showTopicPicker });
+  },
+
+  toggleTopicSelect(e) {
+    const id = e.currentTarget.dataset.id;
+    const relatedTopicIds = [...this.data.formData.relatedTopicIds];
+    const index = relatedTopicIds.indexOf(id);
+    if (index > -1) {
+      relatedTopicIds.splice(index, 1);
+    } else {
+      relatedTopicIds.push(id);
+    }
+    this.setData({
+      'formData.relatedTopicIds': relatedTopicIds,
+      selectedTopicTitles: relatedTopicIds.map(tid => this.getTopicTitle(tid))
+    });
+  },
+
+  removeRelatedTopic(e) {
+    const id = e.currentTarget.dataset.id;
+    const relatedTopicIds = [...this.data.formData.relatedTopicIds];
+    const index = relatedTopicIds.indexOf(id);
+    if (index > -1) {
+      relatedTopicIds.splice(index, 1);
+      this.setData({
+        'formData.relatedTopicIds': relatedTopicIds,
+        selectedTopicTitles: relatedTopicIds.map(tid => this.getTopicTitle(tid))
+      });
+    }
+  },
+
+  getArticleTitle(id) {
+    const article = this.data.allArticles.find(a => a.id === id);
+    return article ? article.title : id;
+  },
+
+  getTopicTitle(id) {
+    const topic = this.data.allTopics.find(t => t.id === id);
+    return topic ? topic.title : id;
   },
 
   checkCanSubmit() {

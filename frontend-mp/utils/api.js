@@ -700,15 +700,24 @@ const storageApi = {
       summary: util.truncateText(item.content, 100)
     }));
 
-    const relatedTopics = topics
-      .filter(item => item.id !== id && item.status === 1 && item.category === topic.category)
-      .slice(0, 4)
-      .map(item => ({
-        id: item.id,
-        title: item.title,
-        cover: item.cover,
-        articleCount: (item.articleIds || []).length
-      }));
+    const relatedTopics = (topic.relatedTopicIds && topic.relatedTopicIds.length > 0)
+      ? topics
+          .filter(item => topic.relatedTopicIds.includes(item.id) && item.status === 1)
+          .map(item => ({
+            id: item.id,
+            title: item.title,
+            cover: item.cover,
+            articleCount: (item.articleIds || []).length
+          }))
+      : topics
+          .filter(item => item.id !== id && item.status === 1 && item.category === topic.category)
+          .slice(0, 4)
+          .map(item => ({
+            id: item.id,
+            title: item.title,
+            cover: item.cover,
+            articleCount: (item.articleIds || []).length
+          }));
 
     return {
       code: 200,
@@ -738,11 +747,12 @@ const storageApi = {
     const newTopic = {
       id: util.generateId('topic'),
       title: data.title.trim(),
-      cover: data.cover || '',
+      cover: data.coverImage || data.cover || '',
       introduction: data.introduction.trim(),
       category: data.category || 'culture',
       articleIds: data.articleIds || [],
       extendedReading: data.extendedReading || [],
+      relatedTopicIds: data.relatedTopicIds || [],
       tags: data.tags || [],
       authorId: userInfo.id,
       authorName: userInfo.nickname,
@@ -768,7 +778,12 @@ const storageApi = {
     if (index === -1) {
       return { code: 404, data: null, message: '专题不存在' };
     }
-    topics[index] = { ...topics[index], ...data };
+    const updateData = { ...data };
+    if (updateData.coverImage !== undefined) {
+      updateData.cover = updateData.coverImage;
+      delete updateData.coverImage;
+    }
+    topics[index] = { ...topics[index], ...updateData };
     wx.setStorageSync('topics', topics);
     return { code: 200, data: topics[index], message: '更新成功' };
   },

@@ -147,6 +147,110 @@
             </view>
           </view>
         </view>
+
+        <!-- 关联文章 -->
+        <view class="form-item">
+          <text class="form-label">关联文章</text>
+          <view class="selected-items" wx:if="{{formData.articleIds.length > 0}}">
+            <view class="selected-item" wx:for="{{formData.articleIds}}" wx:key="*this">
+              <text class="selected-item-text">{{selectedArticleTitles[index] || item}}</text>
+              <text class="selected-item-remove" data-id="{{item}}" bindtap="removeArticle">✕</text>
+            </view>
+          </view>
+          <view class="picker-toggle" bindtap="toggleArticlePicker">
+            <text class="picker-toggle-text">{{showArticlePicker ? '收起文章列表 ▲' : '选择文章 ▼'}}</text>
+          </view>
+          <view class="picker-list" wx:if="{{showArticlePicker}}">
+            <view 
+              class="picker-option {{formData.articleIds.indexOf(item.id) > -1 ? 'selected' : ''}}"
+              wx:for="{{allArticles}}"
+              wx:key="id"
+              data-id="{{item.id}}"
+              bindtap="toggleArticleSelect"
+            >
+              <view class="picker-checkbox">{{formData.articleIds.indexOf(item.id) > -1 ? '☑' : '☐'}}</view>
+              <view class="picker-option-info">
+                <text class="picker-option-title">{{item.title}}</text>
+                <text class="picker-option-meta">{{item.authorName}} · {{item.createTime}}</text>
+              </view>
+            </view>
+            <view class="picker-empty" wx:if="{{allArticles.length === 0}}">
+              <text>暂无可选文章</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 延伸阅读 -->
+        <view class="form-item">
+          <text class="form-label">延伸阅读</text>
+          <view class="extended-input-wrap">
+            <input 
+              class="form-input" 
+              placeholder="标题（必填）"
+              value="{{newExtendedReading.title}}"
+              bindinput="onExtendedReadingTitleInput"
+              maxlength="50"
+            />
+            <view class="extended-input-row">
+              <input 
+                class="form-input extended-source-input" 
+                placeholder="来源（选填）"
+                value="{{newExtendedReading.source}}"
+                bindinput="onExtendedReadingSourceInput"
+                maxlength="30"
+              />
+              <input 
+                class="form-input extended-url-input" 
+                placeholder="链接（选填）"
+                value="{{newExtendedReading.url}}"
+                bindinput="onExtendedReadingUrlInput"
+                maxlength="200"
+              />
+            </view>
+            <view class="tag-add-btn" bindtap="addExtendedReading">添加</view>
+          </view>
+          <view class="extended-list" wx:if="{{formData.extendedReading.length > 0}}">
+            <view class="extended-item" wx:for="{{formData.extendedReading}}" wx:key="index">
+              <view class="extended-info">
+                <text class="extended-text">{{item.title}}</text>
+                <text class="extended-source-label" wx:if="{{item.source}}">来源：{{item.source}}</text>
+              </view>
+              <text class="extended-remove" data-index="{{index}}" bindtap="removeExtendedReading">✕</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 相关专题 -->
+        <view class="form-item">
+          <text class="form-label">相关专题</text>
+          <view class="selected-items" wx:if="{{formData.relatedTopicIds.length > 0}}">
+            <view class="selected-item" wx:for="{{formData.relatedTopicIds}}" wx:key="*this">
+              <text class="selected-item-text">{{selectedTopicTitles[index] || item}}</text>
+              <text class="selected-item-remove" data-id="{{item}}" bindtap="removeRelatedTopic">✕</text>
+            </view>
+          </view>
+          <view class="picker-toggle" bindtap="toggleTopicPicker">
+            <text class="picker-toggle-text">{{showTopicPicker ? '收起专题列表 ▲' : '选择专题 ▼'}}</text>
+          </view>
+          <view class="picker-list" wx:if="{{showTopicPicker}}">
+            <view 
+              class="picker-option {{formData.relatedTopicIds.indexOf(item.id) > -1 ? 'selected' : ''}}"
+              wx:for="{{allTopics}}"
+              wx:key="id"
+              data-id="{{item.id}}"
+              bindtap="toggleTopicSelect"
+            >
+              <view class="picker-checkbox">{{formData.relatedTopicIds.indexOf(item.id) > -1 ? '☑' : '☐'}}</view>
+              <view class="picker-option-info">
+                <text class="picker-option-title">{{item.title}}</text>
+                <text class="picker-option-meta">{{item.categoryName}}</text>
+              </view>
+            </view>
+            <view class="picker-empty" wx:if="{{allTopics.length === 0}}">
+              <text>暂无可选专题</text>
+            </view>
+          </view>
+        </view>
       </scroll-view>
 
       <!-- 底部按钮 -->

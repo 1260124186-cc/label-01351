@@ -11,6 +11,8 @@ Page({
     submitting: false,
 
     categories: [],
+    allArticles: [],
+    allTopics: [],
 
     formData: {
       title: '',
@@ -19,10 +21,20 @@ Page({
       introduction: '',
       tags: [],
       articleIds: [],
+      extendedReading: [],
       relatedTopicIds: []
     },
 
     tagInput: '',
+    newExtendedReading: {
+      title: '',
+      source: '',
+      url: ''
+    },
+    showArticlePicker: false,
+    showTopicPicker: false,
+    selectedArticleTitles: [],
+    selectedTopicTitles: [],
     canSubmit: false
   },
 
@@ -74,6 +86,28 @@ Page({
     }
   },
 
+  async loadAllArticles() {
+    try {
+      const res = await api.getArticleList({ page: 1, pageSize: 200 });
+      if (res.code === 200) {
+        this.setData({ allArticles: res.data.list });
+      }
+    } catch (error) {
+      console.error('[AdminTopic] 加载文章列表失败:', error);
+    }
+  },
+
+  async loadAllTopics() {
+    try {
+      const res = await api.getTopicList({ page: 1, pageSize: 200 });
+      if (res.code === 200) {
+        this.setData({ allTopics: res.data.list });
+      }
+    } catch (error) {
+      console.error('[AdminTopic] 加载专题列表失败:', error);
+    }
+  },
+
   async loadTopicList() {
     this.setData({ loading: true });
 
@@ -92,7 +126,7 @@ Page({
     }
   },
 
-  openCreateForm() {
+  async openCreateForm() {
     this.setData({
       showForm: true,
       editMode: false,
@@ -104,14 +138,22 @@ Page({
         introduction: '',
         tags: [],
         articleIds: [],
+        extendedReading: [],
         relatedTopicIds: []
       },
       tagInput: '',
+      newExtendedReading: { title: '', source: '', url: '' },
+      showArticlePicker: false,
+      showTopicPicker: false,
+      selectedArticleTitles: [],
+      selectedTopicTitles: [],
       canSubmit: false
     });
+    await this.loadAllArticles();
+    await this.loadAllTopics();
   },
 
-  openEditForm(e) {
+  async openEditForm(e) {
     const id = e.currentTarget.dataset.id;
     const topic = this.data.topicList.find(item => item.id === id);
     if (!topic) return;
@@ -122,15 +164,25 @@ Page({
       editId: id,
       formData: {
         title: topic.title || '',
-        coverImage: topic.coverImage || '',
+        coverImage: topic.cover || topic.coverImage || '',
         category: topic.category || '',
         introduction: topic.introduction || '',
         tags: topic.tags || [],
         articleIds: topic.articleIds || [],
+        extendedReading: topic.extendedReading || [],
         relatedTopicIds: topic.relatedTopicIds || []
       },
       tagInput: '',
+      newExtendedReading: { title: '', source: '', url: '' },
+      showArticlePicker: false,
+      showTopicPicker: false,
       canSubmit: true
+    });
+    await this.loadAllArticles();
+    await this.loadAllTopics();
+    this.setData({
+      selectedArticleTitles: this.data.formData.articleIds.map(aid => this.getArticleTitle(aid)),
+      selectedTopicTitles: this.data.formData.relatedTopicIds.map(tid => this.getTopicTitle(tid))
     });
   },
 
@@ -187,6 +239,120 @@ Page({
     this.setData({ 'formData.tags': tags });
   },
 
+  toggleArticlePicker() {
+    this.setData({ showArticlePicker: !this.data.showArticlePicker });
+  },
+
+  toggleArticleSelect(e) {
+    const id = e.currentTarget.dataset.id;
+    const articleIds = [...this.data.formData.articleIds];
+    const index = articleIds.indexOf(id);
+    if (index > -1) {
+      articleIds.splice(index, 1);
+    } else {
+      articleIds.push(id);
+    }
+    this.setData({
+      'formData.articleIds': articleIds,
+      selectedArticleTitles: articleIds.map(aid => this.getArticleTitle(aid))
+    });
+  },
+
+  removeArticle(e) {
+    const id = e.currentTarget.dataset.id;
+    const articleIds = [...this.data.formData.articleIds];
+    const index = articleIds.indexOf(id);
+    if (index > -1) {
+      articleIds.splice(index, 1);
+      this.setData({
+        'formData.articleIds': articleIds,
+        selectedArticleTitles: articleIds.map(aid => this.getArticleTitle(aid))
+      });
+    }
+  },
+
+  onExtendedReadingTitleInput(e) {
+    this.setData({ 'newExtendedReading.title': e.detail.value });
+  },
+
+  onExtendedReadingSourceInput(e) {
+    this.setData({ 'newExtendedReading.source': e.detail.value });
+  },
+
+  onExtendedReadingUrlInput(e) {
+    this.setData({ 'newExtendedReading.url': e.detail.value });
+  },
+
+  addExtendedReading() {
+    const { title, source, url } = this.data.newExtendedReading;
+    if (!title.trim()) {
+      wx.showToast({ title: '请输入延伸阅读标题', icon: 'none' });
+      return;
+    }
+    const extendedReading = [...this.data.formData.extendedReading, {
+      title: title.trim(),
+      source: source.trim(),
+      url: url.trim()
+    }];
+    this.setData({
+      'formData.extendedReading': extendedReading,
+      newExtendedReading: { title: '', source: '', url: '' }
+    });
+  },
+
+  removeExtendedReading(e) {
+    const index = e.currentTarget.dataset.index;
+    const extendedReading = [...this.data.formData.extendedReading];
+    extendedReading.splice(index, 1);
+    this.setData({ 'formData.extendedReading': extendedReading });
+  },
+
+  toggleTopicPicker() {
+    this.setData({ showTopicPicker: !this.data.showTopicPicker });
+  },
+
+  toggleTopicSelect(e) {
+    const id = e.currentTarget.dataset.id;
+    if (this.data.editMode && id === this.data.editId) {
+      wx.showToast({ title: '不能关联自身', icon: 'none' });
+      return;
+    }
+    const relatedTopicIds = [...this.data.formData.relatedTopicIds];
+    const index = relatedTopicIds.indexOf(id);
+    if (index > -1) {
+      relatedTopicIds.splice(index, 1);
+    } else {
+      relatedTopicIds.push(id);
+    }
+    this.setData({
+      'formData.relatedTopicIds': relatedTopicIds,
+      selectedTopicTitles: relatedTopicIds.map(tid => this.getTopicTitle(tid))
+    });
+  },
+
+  removeRelatedTopic(e) {
+    const id = e.currentTarget.dataset.id;
+    const relatedTopicIds = [...this.data.formData.relatedTopicIds];
+    const index = relatedTopicIds.indexOf(id);
+    if (index > -1) {
+      relatedTopicIds.splice(index, 1);
+      this.setData({
+        'formData.relatedTopicIds': relatedTopicIds,
+        selectedTopicTitles: relatedTopicIds.map(tid => this.getTopicTitle(tid))
+      });
+    }
+  },
+
+  getArticleTitle(id) {
+    const article = this.data.allArticles.find(a => a.id === id);
+    return article ? article.title : id;
+  },
+
+  getTopicTitle(id) {
+    const topic = this.data.allTopics.find(t => t.id === id);
+    return topic ? topic.title : id;
+  },
+
   checkCanSubmit() {
     const { title, category, introduction } = this.data.formData;
     const canSubmit = title.trim().length >= 2 &&
@@ -200,7 +366,7 @@ Page({
     if (!app.checkLogin()) return;
     if (this.data.submitting) return;
 
-    const { title, coverImage, category, introduction, tags, articleIds, relatedTopicIds } = this.data.formData;
+    const { title, coverImage, category, introduction, tags, articleIds, extendedReading, relatedTopicIds } = this.data.formData;
 
     if (!title || title.trim().length < 2) {
       wx.showToast({ title: '请输入专题标题（至少2字）', icon: 'none' });
@@ -222,6 +388,7 @@ Page({
       introduction: introduction.trim(),
       tags: tags || [],
       articleIds: articleIds || [],
+      extendedReading: extendedReading || [],
       relatedTopicIds: relatedTopicIds || []
     };
 

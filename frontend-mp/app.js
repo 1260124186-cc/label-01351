@@ -209,6 +209,7 @@ App({
             { title: '屈原与端午节的传说', source: '人民日报', url: '' },
             { title: '全国各地端午习俗一览', source: '中国文化报', url: '' }
           ],
+          relatedTopicIds: ['topic_003'],
           tags: ['端午节', '民俗', '传统文化'],
           authorId: 'user_admin',
           authorName: '管理员',
@@ -228,6 +229,7 @@ App({
             { title: '中国四大名锦', source: '中国非物质文化遗产网', url: '' },
             { title: '黄道婆与纺织技术革新', source: '历史春秋', url: '' }
           ],
+          relatedTopicIds: ['topic_005'],
           tags: ['织布', '传统技艺', '非物质文化遗产'],
           authorId: 'user_admin',
           authorName: '管理员',
@@ -247,6 +249,7 @@ App({
             { title: '二十四节气的科学依据', source: '中国气象局', url: '' },
             { title: '节气与养生', source: '健康时报', url: '' }
           ],
+          relatedTopicIds: ['topic_001'],
           tags: ['二十四节气', '农耕', '传统文化'],
           authorId: 'user_admin',
           authorName: '管理员',
@@ -266,6 +269,7 @@ App({
             { title: '正在消失的老物件', source: '中国文化报', url: '' },
             { title: '老物件里的时光故事', source: '读者', url: '' }
           ],
+          relatedTopicIds: ['topic_005'],
           tags: ['老物件', '乡村记忆', '怀旧'],
           authorId: 'user_admin',
           authorName: '管理员',
@@ -284,6 +288,7 @@ App({
           extendedReading: [
             { title: '非遗传承人的坚守与创新', source: '光明日报', url: '' }
           ],
+          relatedTopicIds: ['topic_002', 'topic_004'],
           tags: ['手工艺人', '非遗', '传承'],
           authorId: 'user_admin',
           authorName: '管理员',
