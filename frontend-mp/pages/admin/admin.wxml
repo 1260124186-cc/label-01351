@@ -40,8 +40,10 @@
           bindtap="onTabChange"
           data-id="{{item.id}}"
         >
-          <text class="tab-icon">{{item.icon}}</text>
-          <text class="tab-name">{{item.name}}</text>
+          <view class="tab-text-wrap">
+            <text class="tab-icon">{{item.icon}}</text>
+            <text class="tab-name">{{item.name}}</text>
+          </view>
           <view class="tab-badge" wx:if="{{item.badge && item.badge > 0}}">
             {{item.badge > 99 ? '99+' : item.badge}}
           </view>
@@ -126,9 +128,9 @@
     </view>
 
     <!-- ========== Tab 1: 内容审核 ========== -->
-    <view class="tab-content" wx:elif="{{currentTab === 1}}">
-      <view class="scroll-area">
-        <!-- 筛选 -->
+    <view class="tab-content tab-layout" wx:elif="{{currentTab === 1}}">
+      <!-- 筛选栏（固定在顶部） -->
+      <view class="filter-wrapper">
         <scroll-view class="filter-bar" scroll-x enable-flex>
           <view
             class="filter-chip {{reviewFilter === item.id ? 'active' : ''}}"
@@ -138,7 +140,10 @@
             data-id="{{item.id}}"
           >{{item.name}}</view>
         </scroll-view>
+      </view>
 
+      <!-- 列表区（独立滚动） -->
+      <scroll-view class="list-scroll" scroll-y enable-flex>
         <!-- 空状态 -->
         <view class="empty-panel" wx:if="{{pendingReview.length === 0}}">
           <text class="empty-emoji">🎉</text>
@@ -168,13 +173,13 @@
             </view>
           </block>
         </view>
-      </view>
+      </scroll-view>
     </view>
 
     <!-- ========== Tab 2: 举报处理 ========== -->
-    <view class="tab-content" wx:elif="{{currentTab === 2}}">
-      <view class="scroll-area">
-        <!-- 筛选 -->
+    <view class="tab-content tab-layout" wx:elif="{{currentTab === 2}}">
+      <!-- 筛选栏（固定在顶部） -->
+      <view class="filter-wrapper">
         <scroll-view class="filter-bar" scroll-x enable-flex>
           <view
             class="filter-chip {{reportFilter === item.id ? 'active' : ''}}"
@@ -184,7 +189,10 @@
             data-id="{{item.id}}"
           >{{item.name}}</view>
         </scroll-view>
+      </view>
 
+      <!-- 列表区（独立滚动） -->
+      <scroll-view class="list-scroll" scroll-y enable-flex>
         <!-- 空状态 -->
         <view class="empty-panel" wx:if="{{reports.length === 0}}">
           <text class="empty-emoji">👏</text>
@@ -228,7 +236,7 @@
             </view>
           </block>
         </view>
-      </view>
+      </scroll-view>
     </view>
 
     <!-- ========== Tab 3: 运营配置 ========== -->

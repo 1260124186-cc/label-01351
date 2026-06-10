@@ -174,11 +174,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8rpx;
-  padding: 20rpx 0;
+  padding: 16rpx 0 20rpx;
   position: relative;
   transition: all 0.25s ease;
   border-radius: 20rpx;
+  overflow: visible;
 }
 
 .tab-item.active {
@@ -186,15 +186,28 @@
   box-shadow: 0 -4rpx 14rpx rgba(0, 0, 0, 0.08);
 }
 
+/* 文字容器：图标在上、文字在下，居中对齐，让右上角 badge 不遮住文字 */
+.tab-text-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  padding: 0 16rpx;
+  max-width: 100%;
+}
+
 .tab-icon {
-  font-size: 30rpx;
+  font-size: 28rpx;
+  line-height: 1;
 }
 
 .tab-name {
-  font-size: 26rpx;
+  font-size: 24rpx;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.88);
   transition: color 0.2s;
+  white-space: nowrap;
 }
 
 .tab-item.active .tab-name {
@@ -203,22 +216,23 @@
 
 .tab-badge {
   position: absolute;
-  top: 8rpx;
-  right: 8rpx;
-  min-width: 36rpx;
-  height: 32rpx;
+  top: 6rpx;
+  right: 10rpx;
+  min-width: 34rpx;
+  height: 30rpx;
   padding: 0 10rpx;
   background: #FF4D4F;
   color: #fff;
-  font-size: 20rpx;
+  font-size: 18rpx;
   font-weight: 700;
-  border-radius: 16rpx;
+  border-radius: 15rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
   border: 2rpx solid #fff;
   box-shadow: 0 2rpx 6rpx rgba(255, 77, 79, 0.4);
+  z-index: 2;
 }
 
 .tab-item.active .tab-badge {
@@ -228,6 +242,32 @@
 /* ============ Tab 内容滚动区 ============ */
 .tab-content {
   padding: 0;
+}
+
+/* 审核/举报 Tab：筛选栏固定 + 列表独立滚动 */
+.tab-layout {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 280rpx);
+  overflow: hidden;
+  background: #f5f2ee;
+}
+
+/* 筛选栏容器：固定在顶部 */
+.filter-wrapper {
+  flex-shrink: 0;
+  padding: 20rpx 24rpx 14rpx;
+  background: #f5f2ee;
+  border-bottom: 1rpx solid rgba(139, 69, 19, 0.08);
+  z-index: 3;
+}
+
+/* 列表独立滚动区 */
+.list-scroll {
+  flex: 1;
+  padding: 10rpx 24rpx 32rpx;
+  box-sizing: border-box;
+  min-height: 0;
 }
 
 .scroll-area {
@@ -420,8 +460,9 @@
 .filter-bar {
   display: flex;
   gap: 14rpx;
-  margin-bottom: 20rpx;
   white-space: nowrap;
+  width: 100%;
+  min-height: 80rpx;
 }
 
 .filter-chip {
