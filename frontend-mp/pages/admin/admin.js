@@ -96,11 +96,13 @@ Page({
     statusBarHeight: 0,
     navBarHeight: 44,        // 小程序默认导航栏 44px
     headerHeight: 0,         // 顶部管理员头 + 四主 Tab 总高
-    reviewFilterHeight: 0,   // 审核 Tab 的筛选栏高度
-    reportFilterHeight: 0,   // 举报 Tab 的筛选栏高度
-    reviewListHeight: 0,     // 审核 Tab 列表可滚动高度
-    reportListHeight: 0,     // 举报 Tab 列表可滚动高度
-    layoutReady: false
+    reviewFilterHeight: 68,  // 审核 Tab 的筛选栏高度（默认 fallback）
+    reportFilterHeight: 68,  // 举报 Tab 的筛选栏高度（默认 fallback）
+    tabContentHeight: 400,   // Tab 内容区总高度（windowHeight - headerHeight）
+    reviewListHeight: 300,   // 审核 Tab 列表可滚动高度
+    reportListHeight: 300,   // 举报 Tab 列表可滚动高度
+    layoutReady: false,
+    measureAttempts: 0       // 测量尝试次数，最多 5 次
   },
 
   // =============== 生命周期 ===============
@@ -115,10 +117,10 @@ Page({
     // 渲染后测量各区域真实高度
     const app = getApp();
     if (app.isAdmin()) {
-      // 稍微延迟等 DOM 树渲染
+      // 延迟 200ms，等 DOM 渲染完整（含筛选栏 offscreen 元素）
       setTimeout(() => {
         this.measureAllRegions();
-      }, 120);
+      }, 200);
     }
   },
 
@@ -128,9 +130,9 @@ Page({
     }
     if (this.data.hasPermission) {
       this.refreshAllData();
-      // 回到页面再补一次测量，防止 tab 切换后高度变
-      if (!this.data.layoutReady) {
-        setTimeout(() => this.measureAllRegions(), 100);
+      // 如果还没准备好，补一次测量（最多 5 次）
+      if (!this.data.layoutReady && this.data.measureAttempts < 5) {
+        setTimeout(() => this.measureAllRegions(), 150);
       }
     }
   },
@@ -184,10 +186,8 @@ Page({
       hasPermission: true,
       userInfo: userInfo || null
     });
-    // 权限通过后：首次已 onReady 测量；若还没准备好，这里补触发一次
-    if (!this.data.layoutReady) {
-      setTimeout(() => this.measureAllRegions(), 80);
-    }
+    // 权限通过后：立即触发测量（不依赖 onReady 时序）
+    setTimeout(() => this.measureAllRegions(), 100);
     this.refreshAllData();
   },
 
@@ -195,11 +195,10 @@ Page({
     wx.switchTab({ url: '/pages/mine/mine' });
   },
 
-  // =============== 动态高度计算 ===============
+  // =============== 动态高度计算（核心修复） ===============
   initWindowMetrics() {
     let winInfo = null;
     try {
-      // 优先使用 wx.getWindowInfo（基础库 2.21.3+）
       if (typeof wx.getWindowInfo === 'function') {
         winInfo = wx.getWindowInfo();
       } else {
@@ -208,27 +207,41 @@ Page({
     } catch (e) {
       winInfo = wx.getSystemInfoSync();
     }
-    // 小程序可渲染区域高度：不包含胶囊导航栏，但 windowHeight 在微信里通常=屏幕-系统状态栏-导航栏，这里直接取 windowHeight
+    // 微信小程序 windowHeight = 屏幕高度 - 状态栏高度 - 胶囊导航栏高度
+    // 这是可用于渲染的真实高度，不需要再额外减 navBarHeight
     const windowHeight = winInfo.windowHeight || 667;
     const statusBarHeight = winInfo.statusBarHeight || 20;
 
-    // 自定义导航栏标题栏高度（ios 44 / Android 48 / 鸿蒙 44，统一 44 安全）
     let navBarHeight = 44;
     if (winInfo.system && /android/i.test(winInfo.system)) {
       navBarHeight = 48;
     }
 
+    // 用窗口信息先粗略算一下，防止首帧空白
+    const approxHeader = 170; // 预估 header 约 170px
+    const tabContentHeight = Math.max(windowHeight - approxHeader, 300);
+    const approxFilter = 68;
+
     this.setData({
       windowHeight,
       statusBarHeight,
-      navBarHeight
+      navBarHeight,
+      tabContentHeight,
+      reviewFilterHeight: approxFilter,
+      reportFilterHeight: approxFilter,
+      reviewListHeight: Math.max(tabContentHeight - approxFilter, 240),
+      reportListHeight: Math.max(tabContentHeight - approxFilter, 240)
     });
-    console.log('[Admin] 窗口信息:', { windowHeight, statusBarHeight, navBarHeight });
+    console.log('[Admin] 窗口信息 (粗略值):', { windowHeight, statusBarHeight, navBarHeight, tabContentHeight });
   },
 
-  // 通过 selectorQuery 测量 Header + 筛选栏 真实高度
+  // 通过 selectorQuery 测量 Header + 两个筛选栏的真实高度（含 fallback）
   measureAllRegions() {
-    const query = wx.createSelectorQuery();
+    const attempts = this.data.measureAttempts + 1;
+    this.setData({ measureAttempts: attempts });
+    console.log(`[Admin] 测量尝试 ${attempts}/5`);
+
+    const query = wx.createSelectorQuery().in(this);
     query.select('.admin-header').boundingClientRect();
     query.select('.review-filter-wrap').boundingClientRect();
     query.select('.report-filter-wrap').boundingClientRect();
@@ -237,9 +250,30 @@ Page({
       const reviewFilterRect = (res && res[1]) || null;
       const reportFilterRect = (res && res[2]) || null;
 
-      const headerHeight = headerRect ? headerRect.height : 0;
-      const reviewFilterHeight = reviewFilterRect ? reviewFilterRect.height : 0;
-      const reportFilterHeight = reportFilterRect ? reportFilterRect.height : 0;
+      // fallback 默认值（经验值，单位 px）
+      const headerHeight = headerRect && headerRect.height > 0 ? headerRect.height : 170;
+      let reviewFilterHeight = reviewFilterRect && reviewFilterRect.height > 0 ? reviewFilterRect.height : 0;
+      let reportFilterHeight = reportFilterRect && reportFilterRect.height > 0 ? reportFilterRect.height : 0;
+
+      // 如果某个筛选栏还是测不到（可能 DOM 还没渲染好），尝试重试最多 5 次
+      const needRetry = (!reviewFilterHeight || !reportFilterHeight) && attempts < 5;
+
+      if (needRetry) {
+        console.log('[Admin] 测量未完成，150ms 后重试:', { reviewFilterHeight, reportFilterHeight });
+        setTimeout(() => this.measureAllRegions(), 150);
+        return;
+      }
+
+      // 最终兜底：如果重试完还没到，用经验值 68px
+      if (!reviewFilterHeight) reviewFilterHeight = 68;
+      if (!reportFilterHeight) reportFilterHeight = 68;
+
+      console.log('[Admin] 各区域测量完成:', {
+        headerHeight,
+        reviewFilterHeight,
+        reportFilterHeight,
+        attempts
+      });
 
       this.setData({
         headerHeight,
@@ -251,22 +285,31 @@ Page({
     });
   },
 
+  // 根据测量结果精确计算列表高度
   recalcListHeights() {
-    const { windowHeight, navBarHeight, headerHeight, reviewFilterHeight, reportFilterHeight } = this.data;
-    // 公式：列表可用高 = 窗口高 - 导航栏 - 顶部 Header + 4Tab总高 - 筛选栏 - 20px安全边距
-    const baseRemain = windowHeight - headerHeight - 20; // 扣除header + 安全边距
+    const { windowHeight, headerHeight, reviewFilterHeight, reportFilterHeight } = this.data;
 
-    const reviewListHeight = Math.max(baseRemain - reviewFilterHeight, 240);
-    const reportListHeight = Math.max(baseRemain - reportFilterHeight, 240);
+    // 关键公式：
+    // tabContentHeight = windowHeight - headerHeight - 20 (安全边距)
+    //   这个是整个 Tab 内容区的高度（筛选栏 + 列表），写在 tab-layout 的 style.height 上
+    //
+    // reviewListHeight = tabContentHeight - reviewFilterHeight
+    //   这个是列表区的精确高度，写在 scroll-view 的 style.height 上
+
+    const tabContentHeight = Math.max(windowHeight - headerHeight - 20, 240);
+    const reviewListHeight = Math.max(tabContentHeight - reviewFilterHeight, 200);
+    const reportListHeight = Math.max(tabContentHeight - reportFilterHeight, 200);
 
     this.setData({
+      tabContentHeight,
       reviewListHeight,
       reportListHeight,
       layoutReady: true
     });
-    console.log('[Admin] 动态高度计算:', {
+    console.log('[Admin] 最终高度计算:', {
       windowHeight,
       headerHeight,
+      tabContentHeight,
       reviewFilterHeight,
       reportFilterHeight,
       reviewListHeight,
@@ -466,7 +509,17 @@ Page({
   // =============== Tab 切换 ===============
   onTabChange(e) {
     const id = e.currentTarget.dataset.id;
+    const prevTab = this.data.currentTab;
     this.setData({ currentTab: id });
+
+    // 切到审核或举报 Tab 时，确保高度已计算；如果还没 ready，补一次测量
+    if ((id === 1 || id === 2) && !this.data.layoutReady) {
+      setTimeout(() => this.measureAllRegions(), 60);
+    }
+    // 如果从非审核/举报 Tab 切过来，也补一次重算（确保当前激活的筛选栏高度正确）
+    if ((id === 1 || id === 2) && (prevTab !== 1 && prevTab !== 2)) {
+      setTimeout(() => this.recalcListHeights(), 50);
+    }
   },
 
   onReviewFilterChange(e) {

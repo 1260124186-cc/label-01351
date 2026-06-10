@@ -127,22 +127,45 @@
       </view>
     </view>
 
-    <!-- ========== Tab 1: 内容审核 ========== -->
-    <view class="tab-content tab-layout" style="{{layoutReady ? '' : 'visibility: hidden;'}}" wx:elif="{{currentTab === 1}}">
-      <!-- 筛选栏（固定在顶部） -->
-      <view class="filter-wrapper review-filter-wrap">
-        <scroll-view class="filter-bar" scroll-x enable-flex>
-          <view
-            class="filter-chip {{reviewFilter === item.id ? 'active' : ''}}"
-            wx:for="{{reviewFilters}}"
-            wx:key="id"
-            bindtap="onReviewFilterChange"
-            data-id="{{item.id}}"
-          >{{item.name}}</view>
-        </scroll-view>
-      </view>
+    <!-- ========== 筛选栏（常驻 DOM，供 selectorQuery 测量真实高度，未激活时移出视口） ========== -->
+    <view
+      class="filter-wrapper review-filter-wrap {{currentTab !== 1 ? 'filter-offscreen' : ''}}"
+    >
+      <scroll-view class="filter-bar" scroll-x enable-flex>
+        <view
+          class="filter-chip {{reviewFilter === item.id ? 'active' : ''}}"
+          wx:for="{{reviewFilters}}"
+          wx:key="id"
+          bindtap="onReviewFilterChange"
+          data-id="{{item.id}}"
+        >{{item.name}}</view>
+      </scroll-view>
+    </view>
 
-      <!-- 列表区（独立滚动） -->
+    <view
+      class="filter-wrapper report-filter-wrap {{currentTab !== 2 ? 'filter-offscreen' : ''}}"
+    >
+      <scroll-view class="filter-bar" scroll-x enable-flex>
+        <view
+          class="filter-chip {{reportFilter === item.id ? 'active' : ''}}"
+          wx:for="{{reportFilters}}"
+          wx:key="id"
+          bindtap="onReportFilterChange"
+          data-id="{{item.id}}"
+        >{{item.name}}</view>
+      </scroll-view>
+    </view>
+
+    <!-- ========== Tab 1: 内容审核 ========== -->
+    <view
+      class="tab-content tab-layout"
+      style="height: {{tabContentHeight}}px;"
+      wx:elif="{{currentTab === 1}}"
+    >
+      <!-- 筛选栏占位（真实高度由外层常驻 DOM 测量得到） -->
+      <view class="filter-placeholder" style="height: {{reviewFilterHeight}}px;"></view>
+
+      <!-- 列表区（独立滚动，精确高度） -->
       <scroll-view
         class="list-scroll"
         scroll-y
@@ -184,21 +207,15 @@
     </view>
 
     <!-- ========== Tab 2: 举报处理 ========== -->
-    <view class="tab-content tab-layout" style="{{layoutReady ? '' : 'visibility: hidden;'}}" wx:elif="{{currentTab === 2}}">
-      <!-- 筛选栏（固定在顶部） -->
-      <view class="filter-wrapper report-filter-wrap">
-        <scroll-view class="filter-bar" scroll-x enable-flex>
-          <view
-            class="filter-chip {{reportFilter === item.id ? 'active' : ''}}"
-            wx:for="{{reportFilters}}"
-            wx:key="id"
-            bindtap="onReportFilterChange"
-            data-id="{{item.id}}"
-          >{{item.name}}</view>
-        </scroll-view>
-      </view>
+    <view
+      class="tab-content tab-layout"
+      style="height: {{tabContentHeight}}px;"
+      wx:elif="{{currentTab === 2}}"
+    >
+      <!-- 筛选栏占位（真实高度由外层常驻 DOM 测量得到） -->
+      <view class="filter-placeholder" style="height: {{reportFilterHeight}}px;"></view>
 
-      <!-- 列表区（独立滚动） -->
+      <!-- 列表区（独立滚动，精确高度） -->
       <scroll-view
         class="list-scroll"
         scroll-y

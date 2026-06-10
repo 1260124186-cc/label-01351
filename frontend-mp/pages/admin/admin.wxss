@@ -244,21 +244,44 @@
   padding: 0;
 }
 
-/* 审核/举报 Tab：筛选栏固定 + 列表独立滚动（高度全由 JS 动态计算） */
+/* 审核/举报 Tab：筛选栏固定 + 列表独立滚动（高度全由 JS 动态计算，内联 style 传入精确 px） */
 .tab-layout {
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: #f5f2ee;
+  box-sizing: border-box;
 }
 
-/* 筛选栏容器：固定在顶部 */
+/* 筛选栏容器（外层常驻 DOM）：正常显示时顶部排列，非当前 Tab 时绝对定位移出视口但保留渲染 */
 .filter-wrapper {
   flex-shrink: 0;
   padding: 20rpx 24rpx 14rpx;
   background: #f5f2ee;
   border-bottom: 1rpx solid rgba(139, 69, 19, 0.08);
   z-index: 3;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 未激活的筛选栏：移出视口但保留 DOM 树，方便 selectorQuery 测量真实高度 */
+.filter-offscreen {
+  position: absolute !important;
+  left: -9999px !important;
+  top: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* 筛选栏占位（真实高度由 JS 动态测量后内联传入） */
+.filter-placeholder {
+  flex-shrink: 0;
+  width: 100%;
+  padding: 0 24rpx;
+  box-sizing: border-box;
+  background: #f5f2ee;
+  border-bottom: 1rpx solid rgba(139, 69, 19, 0.08);
 }
 
 /* 列表独立滚动区（高度由 data.reviewListHeight / reportListHeight 内联传入精确 px） */
@@ -267,6 +290,7 @@
   padding: 10rpx 24rpx 32rpx;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 .scroll-area {
