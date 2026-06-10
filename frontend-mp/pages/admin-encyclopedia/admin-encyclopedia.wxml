@@ -70,6 +70,7 @@
       </view>
 
       <scroll-view class="form-scroll" scroll-y>
+        <view class="form-inner">
         <!-- 标题 -->
         <view class="form-item">
           <text class="form-label">词条标题 <text class="required">*</text></text>
@@ -211,6 +212,7 @@
           <view class="select-btn" bindtap="openTopicPicker">
             <text class="select-btn-text">+ 选择专题</text>
           </view>
+        </view>
         </view>
       </scroll-view>
 

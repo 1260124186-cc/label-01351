@@ -70,11 +70,12 @@
       </view>
 
       <scroll-view class="form-scroll" scroll-y>
+        <view class="form-inner">
         <!-- 标题 -->
         <view class="form-item">
           <text class="form-label">专题标题 <text class="required">*</text></text>
-          <input 
-            class="form-input" 
+          <input
+            class="form-input"
             placeholder="请输入专题标题"
             value="{{formData.title}}"
             bindinput="onTitleInput"
@@ -85,8 +86,8 @@
         <!-- 封面图 -->
         <view class="form-item">
           <text class="form-label">封面图片URL</text>
-          <input 
-            class="form-input" 
+          <input
+            class="form-input"
             placeholder="请输入封面图片链接（选填）"
             value="{{formData.coverImage}}"
             bindinput="onCoverImageInput"
@@ -97,7 +98,7 @@
         <view class="form-item">
           <text class="form-label">专题分类 <text class="required">*</text></text>
           <view class="tag-group">
-            <view 
+            <view
               class="tag-item {{formData.category === item.id ? 'active' : ''}}"
               wx:for="{{categories}}"
               wx:key="id"
@@ -112,8 +113,8 @@
         <!-- 导语 -->
         <view class="form-item">
           <text class="form-label">专题导语 <text class="required">*</text></text>
-          <textarea 
-            class="form-textarea" 
+          <textarea
+            class="form-textarea"
             placeholder="请输入专题导语，介绍专题内容（至少10字）"
             value="{{formData.introduction}}"
             bindinput="onIntroductionInput"
@@ -126,8 +127,8 @@
         <view class="form-item">
           <text class="form-label">专题标签</text>
           <view class="tag-input-wrap">
-            <input 
-              class="tag-input" 
+            <input
+              class="tag-input"
               placeholder="输入标签后点击添加"
               value="{{tagInput}}"
               bindinput="onTagInput"
@@ -160,22 +161,22 @@
         <view class="form-item">
           <text class="form-label">延伸阅读</text>
           <view class="extended-field-group">
-            <input 
-              class="form-input" 
+            <input
+              class="form-input"
               placeholder="标题（必填）"
               value="{{newExtendedReading.title}}"
               bindinput="onExtendedReadingTitleInput"
               maxlength="50"
             />
-            <input 
-              class="form-input" 
+            <input
+              class="form-input"
               placeholder="来源（选填）"
               value="{{newExtendedReading.source}}"
               bindinput="onExtendedReadingSourceInput"
               maxlength="30"
             />
-            <input 
-              class="form-input" 
+            <input
+              class="form-input"
               placeholder="链接（选填）"
               value="{{newExtendedReading.url}}"
               bindinput="onExtendedReadingUrlInput"
@@ -207,6 +208,7 @@
             <text class="select-btn-text">+ 选择专题</text>
           </view>
         </view>
+        </view>
       </scroll-view>
 
       <view class="form-footer">
@@ -228,7 +230,7 @@
         <text class="picker-confirm" bindtap="confirmArticlePicker">确定</text>
       </view>
       <scroll-view class="picker-scroll" scroll-y>
-        <view 
+        <view
           class="picker-option {{tempArticleIds.indexOf(item.id) > -1 ? 'selected' : ''}}"
           wx:for="{{allArticles}}"
           wx:key="id"
@@ -258,7 +260,7 @@
         <text class="picker-confirm" bindtap="confirmTopicPicker">确定</text>
       </view>
       <scroll-view class="picker-scroll" scroll-y>
-        <view 
+        <view
           class="picker-option {{tempTopicIds.indexOf(item.id) > -1 ? 'selected' : ''}}"
           wx:for="{{allTopics}}"
           wx:key="id"

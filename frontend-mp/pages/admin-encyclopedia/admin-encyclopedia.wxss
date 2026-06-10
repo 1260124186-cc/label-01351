@@ -280,9 +280,11 @@
 
 .form-scroll {
   flex: 1;
-  padding: 0 32rpx;
   max-height: 60vh;
-  overflow-x: hidden;
+}
+
+.form-inner {
+  padding: 0 32rpx;
 }
 
 .form-item {
@@ -304,6 +306,7 @@
 }
 
 .form-input {
+  display: block;
   width: 100%;
   padding: 20rpx;
   background-color: var(--color-bg);
@@ -311,11 +314,10 @@
   font-size: 28rpx;
   color: var(--color-text);
   box-sizing: border-box;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .form-textarea {
+  display: block;
   width: 100%;
   padding: 20rpx;
   background-color: var(--color-bg);
@@ -359,6 +361,7 @@
 }
 
 .tag-input {
+  display: block;
   flex: 1;
   min-width: 0;
   padding: 16rpx 20rpx;
@@ -366,7 +369,6 @@
   border-radius: 12rpx;
   font-size: 26rpx;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 .tag-add-btn {
@@ -408,6 +410,7 @@
 }
 
 .catalog-input {
+  display: block;
   flex: 1;
   min-width: 0;
   padding: 16rpx 20rpx;
@@ -415,7 +418,6 @@
   border-radius: 12rpx;
   font-size: 26rpx;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 .catalog-add-btn {
