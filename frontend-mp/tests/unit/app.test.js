@@ -69,6 +69,25 @@ function createApp() {
       return { ...user, token };
     },
 
+    ensureFallbackLogin() {
+      if (this.globalData.isLoggedIn) {
+        return;
+      }
+      const guestUser = {
+        id: 'guest_' + Date.now(),
+        openid: '',
+        nickname: '游客用户',
+        avatar: '',
+        phone: '',
+        loginType: 'guest',
+        createTime: new Date().toISOString().split('T')[0],
+        role: 'user',
+        isGuest: true
+      };
+      const result = this.login(guestUser);
+      return result;
+    },
+
     logout() {
       wx.removeStorageSync('isLoggedIn');
       wx.removeStorageSync('userInfo');
@@ -76,6 +95,7 @@ function createApp() {
       this.globalData.isLoggedIn = false;
       this.globalData.userInfo = null;
       this.globalData.token = null;
+      this.ensureFallbackLogin();
     },
 
     checkLogin() {
@@ -112,6 +132,16 @@ function createApp() {
       const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
       if (!userInfo) return 'guest';
       return userInfo.role === 'admin' ? 'admin' : 'user';
+    },
+
+    isGuest() {
+      const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+      return !!(userInfo && userInfo.isGuest);
+    },
+
+    getLoginType() {
+      const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+      return userInfo ? userInfo.loginType || 'none' : 'none';
     },
 
     initMockData() {
@@ -179,20 +209,99 @@ describe('App - 全局状态管理', () => {
   });
 
   describe('logout', () => {
-    test('退出登录后清除 globalData', () => {
+    test('退出登录后清除原用户信息并兜底为游客', () => {
       app.login(defaultUser);
+      const originalId = app.globalData.userInfo.id;
       app.logout();
-      expect(app.globalData.isLoggedIn).toBe(false);
-      expect(app.globalData.userInfo).toBeNull();
-      expect(app.globalData.token).toBeNull();
+      expect(app.globalData.isLoggedIn).toBe(true);
+      expect(app.globalData.userInfo).not.toBeNull();
+      expect(app.globalData.userInfo.id).not.toBe(originalId);
+      expect(app.isGuest()).toBe(true);
+      expect(app.globalData.token).toBeTruthy();
     });
 
-    test('退出登录后清除 Storage 中的登录状态和用户信息', () => {
+    test('退出登录后原 Storage 被清除，并替换为游客信息', () => {
+      app.login(defaultUser);
+      const originalToken = wx.getStorageSync('token');
+      app.logout();
+      expect(wx.getStorageSync('isLoggedIn')).toBe(true);
+      expect(wx.getStorageSync('userInfo')).not.toEqual(expect.objectContaining(defaultUser));
+      expect(wx.getStorageSync('token')).not.toBe(originalToken);
+      expect(wx.getStorageSync('token')).toBeTruthy();
+    });
+  });
+
+  describe('ensureFallbackLogin', () => {
+    test('未登录时创建游客用户', () => {
+      app.checkLoginStatus();
+      const result = app.ensureFallbackLogin();
+      expect(app.globalData.isLoggedIn).toBe(true);
+      expect(app.globalData.userInfo).not.toBeNull();
+      expect(app.globalData.userInfo.nickname).toBe('游客用户');
+      expect(app.globalData.userInfo.loginType).toBe('guest');
+      expect(app.globalData.userInfo.isGuest).toBe(true);
+      expect(app.globalData.token).toBeTruthy();
+      expect(result.token).toBeTruthy();
+    });
+
+    test('已登录时不创建新用户', () => {
+      app.login(defaultUser);
+      const originalId = app.globalData.userInfo.id;
+      const result = app.ensureFallbackLogin();
+      expect(result).toBeUndefined();
+      expect(app.globalData.userInfo.id).toBe(originalId);
+      expect(app.isGuest()).toBe(false);
+    });
+
+    test('退出登录后自动兜底为游客', () => {
       app.login(defaultUser);
       app.logout();
-      expect(wx.getStorageSync('isLoggedIn')).toBe('');
-      expect(wx.getStorageSync('userInfo')).toBe('');
-      expect(wx.getStorageSync('token')).toBe('');
+      expect(app.getLoginStatus()).toBe(true);
+      expect(app.isGuest()).toBe(true);
+      expect(app.getLoginType()).toBe('guest');
+    });
+
+    test('游客用户ID以guest_开头', () => {
+      app.checkLoginStatus();
+      app.ensureFallbackLogin();
+      expect(app.globalData.userInfo.id).toMatch(/^guest_\d+$/);
+    });
+
+    test('游客用户role为user', () => {
+      app.checkLoginStatus();
+      app.ensureFallbackLogin();
+      expect(app.getUserRole()).toBe('user');
+      expect(app.isAdmin()).toBe(false);
+    });
+  });
+
+  describe('isGuest / getLoginType', () => {
+    test('未兜底时 isGuest 返回 false', () => {
+      expect(app.isGuest()).toBe(false);
+    });
+
+    test('游客登录后 isGuest 返回 true', () => {
+      app.ensureFallbackLogin();
+      expect(app.isGuest()).toBe(true);
+    });
+
+    test('普通用户登录后 isGuest 返回 false', () => {
+      app.login(defaultUser);
+      expect(app.isGuest()).toBe(false);
+    });
+
+    test('未登录时 getLoginType 返回 none', () => {
+      expect(app.getLoginType()).toBe('none');
+    });
+
+    test('游客登录后 getLoginType 返回 guest', () => {
+      app.ensureFallbackLogin();
+      expect(app.getLoginType()).toBe('guest');
+    });
+
+    test('昵称登录后 getLoginType 返回 nickname', () => {
+      app.login({ ...defaultUser, loginType: 'nickname' });
+      expect(app.getLoginType()).toBe('nickname');
     });
   });
 

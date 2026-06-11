@@ -16,6 +16,7 @@ App({
   onLaunch() {
     this.initApiConfig();
     this.checkLoginStatus();
+    this.ensureFallbackLogin();
     this.initMockData();
   },
 
@@ -76,6 +77,27 @@ App({
     });
   },
 
+  ensureFallbackLogin() {
+    if (this.globalData.isLoggedIn) {
+      console.log('[App] 已有登录状态，无需兜底');
+      return;
+    }
+    const guestUser = {
+      id: 'guest_' + Date.now(),
+      openid: '',
+      nickname: '游客用户',
+      avatar: '',
+      phone: '',
+      loginType: 'guest',
+      createTime: new Date().toISOString().split('T')[0],
+      role: 'user',
+      isGuest: true
+    };
+    const result = this.login(guestUser);
+    console.log('[App] 登录兜底：已创建游客身份');
+    return result;
+  },
+
   login(userInfo) {
     const user = userInfo || {
       id: 'user_' + Date.now(),
@@ -113,6 +135,7 @@ App({
     this.globalData.userInfo = null;
     this.globalData.token = null;
     console.log('[App] 已退出登录，token 与用户信息已清除');
+    this.ensureFallbackLogin();
   },
 
   checkLogin() {
@@ -151,6 +174,16 @@ App({
     const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
     if (!userInfo) return 'guest';
     return userInfo.role === 'admin' ? 'admin' : 'user';
+  },
+
+  isGuest() {
+    const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+    return !!(userInfo && userInfo.isGuest);
+  },
+
+  getLoginType() {
+    const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+    return userInfo ? userInfo.loginType || 'none' : 'none';
   },
 
   updateUserRole(role) {
