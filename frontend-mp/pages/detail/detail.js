@@ -82,6 +82,7 @@ Page({
         if (app.getLoginStatus()) {
           await this.checkFavoriteStatus(id);
           await this.checkLikeStatus(id);
+          await api.addHistory(id);
         }
         this.loadComments(true);
       } else {

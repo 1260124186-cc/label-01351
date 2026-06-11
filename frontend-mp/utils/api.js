@@ -3502,6 +3502,128 @@ const storageApi = {
     wx.setStorageSync('feedbacks', feedbacks);
 
     return { code: 200, data: newFeedback, message: '感谢您的反馈，我们会认真处理' };
+  },
+
+  addHistory: async (articleId) => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const history = wx.getStorageSync('history') || {};
+    const userHistory = history[userId] || [];
+
+    const existingIndex = userHistory.findIndex(item => item.articleId === articleId);
+    if (existingIndex > -1) {
+      userHistory.splice(existingIndex, 1);
+    }
+
+    userHistory.unshift({
+      articleId,
+      readTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
+    });
+
+    if (userHistory.length > 50) {
+      userHistory.splice(50);
+    }
+
+    history[userId] = userHistory;
+    wx.setStorageSync('history', history);
+
+    return { code: 200, data: { success: true }, message: '已记录阅读历史' };
+  },
+
+  getHistoryList: async (params = {}) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    const userId = getCurrentUserId();
+    const history = wx.getStorageSync('history') || {};
+    const userHistory = history[userId] || [];
+
+    if (userHistory.length === 0) {
+      return {
+        code: 200,
+        data: { list: [], total: 0, page, pageSize, hasMore: false },
+        message: 'success'
+      };
+    }
+
+    const articleIdMap = {};
+    userHistory.forEach((item, index) => {
+      articleIdMap[item.articleId] = item.readTime;
+    });
+
+    let articles = wx.getStorageSync('articles') || [];
+    articles = articles.filter(item => articleIdMap[item.id]);
+
+    if (category && category !== 'all') {
+      articles = articles.filter(item => item.category === category);
+    }
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      articles = articles.filter(item =>
+        item.title.toLowerCase().includes(kw) ||
+        item.content.toLowerCase().includes(kw)
+      );
+    }
+
+    articles.sort((a, b) => {
+      const timeA = new Date(articleIdMap[a.id]).getTime();
+      const timeB = new Date(articleIdMap[b.id]).getTime();
+      return timeB - timeA;
+    });
+
+    articles = articles.map(item => ({
+      ...item,
+      readTime: articleIdMap[item.id]
+    }));
+
+    const total = articles.length;
+    const start = (page - 1) * pageSize;
+    const list = articles.slice(start, start + pageSize);
+
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  deleteHistory: async (articleId) => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const history = wx.getStorageSync('history') || {};
+    const userHistory = history[userId] || [];
+
+    const index = userHistory.findIndex(item => item.articleId === articleId);
+    if (index > -1) {
+      userHistory.splice(index, 1);
+      history[userId] = userHistory;
+      wx.setStorageSync('history', history);
+    }
+
+    return { code: 200, data: { success: true }, message: '删除成功' };
+  },
+
+  clearHistory: async () => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const history = wx.getStorageSync('history') || {};
+    history[userId] = [];
+    wx.setStorageSync('history', history);
+
+    return { code: 200, data: { success: true }, message: '已清空阅读历史' };
   }
 };
 
@@ -3703,6 +3825,57 @@ const remoteApi = {
       url: '/api/article/favorites',
       method: 'GET',
       data: { userId, category, page, pageSize, keyword }
+    });
+  },
+
+  addHistory: async (articleId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/article/history/add',
+      method: 'POST',
+      data: { userId, articleId }
+    });
+  },
+
+  getHistoryList: async (params = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/article/history',
+      method: 'GET',
+      data: { userId, category, page, pageSize, keyword }
+    });
+  },
+
+  deleteHistory: async (articleId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/article/history/${articleId}`,
+      method: 'DELETE',
+      data: { userId }
+    });
+  },
+
+  clearHistory: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/article/history/clear',
+      method: 'POST',
+      data: { userId }
     });
   },
 

@@ -37,7 +37,8 @@
     "pages/interview-collections/interview-collections",
     "pages/interview-collection-detail/interview-collection-detail",
     "pages/calendar/calendar",
-    "pages/settings/settings"
+    "pages/settings/settings",
+    "pages/history/history"
   ],
   "window": {
     "backgroundTextStyle": "dark",

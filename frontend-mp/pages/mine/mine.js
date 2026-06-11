@@ -300,5 +300,11 @@ Page({
     wx.navigateTo({
       url: '/pages/settings/settings'
     });
+  },
+
+  goToHistory() {
+    wx.navigateTo({
+      url: '/pages/history/history'
+    });
   }
 });

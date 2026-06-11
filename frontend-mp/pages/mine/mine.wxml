@@ -75,6 +75,12 @@
         </view>
         <text class="action-text">我的活动</text>
       </view>
+      <view class="action-item" bindtap="goToHistory">
+        <view class="action-icon-wrap">
+          <text class="action-icon">📖</text>
+        </view>
+        <text class="action-text">阅读历史</text>
+      </view>
     </view>
 
     <!-- 管理后台入口（仅管理员可见） -->
