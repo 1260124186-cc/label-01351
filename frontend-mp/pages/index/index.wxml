@@ -90,6 +90,21 @@
     </view>
   </scroll-view>
 
+  <!-- 标签筛选器 -->
+  <view class="tag-filter-bar" wx:if="{{tag}}">
+    <view class="tag-filter-wrap">
+      <text class="tag-filter-label">标签筛选：</text>
+      <view class="tag-filter-active">
+        <text class="filter-tag-prefix">#</text>
+        <text class="filter-tag-text">{{tag}}</text>
+      </view>
+      <view class="tag-filter-clear" bindtap="clearTagFilter">
+        <text class="clear-icon">✕</text>
+        <text class="clear-text">清除</text>
+      </view>
+    </view>
+  </view>
+
   <!-- 文章列表 -->
   <view class="article-list">
     <!-- 加载中 -->
@@ -123,6 +138,22 @@
       <view class="article-title">{{item.title}}</view>
 
       <view class="article-content">{{item.summary}}</view>
+
+      <!-- 文章标签 -->
+      <view class="article-card-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+        <view
+          class="card-tag-item"
+          wx:for="{{item.tags}}"
+          wx:for-item="tag"
+          wx:for-index="tagIndex"
+          wx:key="*this"
+          catchtap="onCardTagClick"
+          data-tag="{{tag}}"
+          data-id="{{item.id}}"
+        >
+          <text>#{{tag}}</text>
+        </view>
+      </view>
 
       <view class="article-footer">
         <view class="article-author">

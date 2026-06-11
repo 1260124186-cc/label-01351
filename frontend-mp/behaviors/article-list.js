@@ -9,6 +9,7 @@ module.exports = Behavior({
     pageSize: 10,
     hasMore: true,
     keyword: '',
+    tag: '',
     loading: false,
     loadingMore: false
   },
@@ -78,7 +79,8 @@ module.exports = Behavior({
           category: this.data.currentCategory,
           page: this.data.page,
           pageSize: this.data.pageSize,
-          keyword: this.data.keyword
+          keyword: this.data.keyword,
+          tag: this.data.tag
         });
 
         if (requestId !== this._loadRequestId) {
@@ -182,6 +184,21 @@ module.exports = Behavior({
       wx.navigateTo({
         url: `/pages/detail/detail?id=${id}`
       });
+    },
+
+    async filterByTag(tag) {
+      const listKey = this.getListKey();
+      this.setData({
+        tag: tag || '',
+        page: 1,
+        [listKey]: [],
+        hasMore: true
+      });
+      return this.loadList();
+    },
+
+    async clearTagFilter() {
+      return this.filterByTag('');
     }
   }
 });

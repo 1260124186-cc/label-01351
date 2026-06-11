@@ -6,7 +6,10 @@ const {
   throttle,
   truncateText,
   validateForm,
-  getCategoryName
+  getCategoryName,
+  checkSensitiveWords,
+  SENSITIVE_WORDS,
+  SUGGESTED_TAGS
 } = require('../../utils/util');
 
 describe('util.formatDate', () => {
@@ -248,5 +251,78 @@ describe('util.throttle', () => {
     jest.advanceTimersByTime(300);
     throttled('second');
     expect(fn).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('util.SENSITIVE_WORDS 敏感词列表', () => {
+  test('敏感词列表不为空', () => {
+    expect(SENSITIVE_WORDS).toBeDefined();
+    expect(Array.isArray(SENSITIVE_WORDS)).toBe(true);
+    expect(SENSITIVE_WORDS.length).toBeGreaterThan(0);
+  });
+
+  test('敏感词列表包含常见违禁词', () => {
+    expect(SENSITIVE_WORDS).toContain('虚假宣传');
+    expect(SENSITIVE_WORDS).toContain('毒品');
+    expect(SENSITIVE_WORDS).toContain('诈骗');
+    expect(SENSITIVE_WORDS).toContain('传销');
+  });
+});
+
+describe('util.checkSensitiveWords 敏感词检测', () => {
+  test('空文本不包含敏感词', () => {
+    expect(checkSensitiveWords('')).toEqual({ hasSensitive: false, matchedWords: [] });
+    expect(checkSensitiveWords(null)).toEqual({ hasSensitive: false, matchedWords: [] });
+    expect(checkSensitiveWords(undefined)).toEqual({ hasSensitive: false, matchedWords: [] });
+  });
+
+  test('正常文本不包含敏感词', () => {
+    const result = checkSensitiveWords('这是一篇关于乡村文化的文章，讲述了农耕的故事');
+    expect(result.hasSensitive).toBe(false);
+    expect(result.matchedWords).toEqual([]);
+  });
+
+  test('包含单个敏感词时正确检测', () => {
+    const result = checkSensitiveWords('这篇文章有虚假宣传的内容');
+    expect(result.hasSensitive).toBe(true);
+    expect(result.matchedWords).toContain('虚假宣传');
+  });
+
+  test('包含多个敏感词时全部返回', () => {
+    const result = checkSensitiveWords('此内容涉及诈骗和传销活动');
+    expect(result.hasSensitive).toBe(true);
+    expect(result.matchedWords).toContain('诈骗');
+    expect(result.matchedWords).toContain('传销');
+  });
+
+  test('大小写不敏感检测', () => {
+    const result = checkSensitiveWords('涉及DRUG毒品交易');
+    expect(result.hasSensitive).toBe(true);
+    expect(result.matchedWords).toContain('毒品');
+  });
+
+  test('非字符串输入安全处理', () => {
+    expect(checkSensitiveWords(123)).toEqual({ hasSensitive: false, matchedWords: [] });
+    expect(checkSensitiveWords({})).toEqual({ hasSensitive: false, matchedWords: [] });
+  });
+});
+
+describe('util.SUGGESTED_TAGS 推荐标签', () => {
+  test('推荐标签列表不为空', () => {
+    expect(SUGGESTED_TAGS).toBeDefined();
+    expect(Array.isArray(SUGGESTED_TAGS)).toBe(true);
+    expect(SUGGESTED_TAGS.length).toBeGreaterThan(10);
+  });
+
+  test('包含需求中指定的标签', () => {
+    expect(SUGGESTED_TAGS).toContain('端午节');
+    expect(SUGGESTED_TAGS).toContain('织布');
+  });
+
+  test('标签为非空字符串', () => {
+    SUGGESTED_TAGS.forEach(tag => {
+      expect(typeof tag).toBe('string');
+      expect(tag.length).toBeGreaterThan(0);
+    });
   });
 });

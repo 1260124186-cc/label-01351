@@ -1,5 +1,5 @@
 // pages/publish/publish.js
-// 投稿页面 - 发布文章表单，支持标题、分类、内容输入
+// 投稿页面 - 发布文章表单，支持标题、分类、摘要、标签、内容输入
 
 const api = require('../../utils/api');
 const util = require('../../utils/util');
@@ -22,22 +22,33 @@ Page({
     formData: {
       title: '',
       category: '',
+      summary: '',
       content: '',
-      figureId: ''
+      figureId: '',
+      tags: []
     },
 
+    // 标签相关
+    suggestedTags: [],
+    tagInput: '',
+    showTagInput: false,
+
     // 关联人物数据
-    selectedFigure: null,      // 已选择的人物
-    showFigureSelector: false, // 是否显示人物选择器
-    figureSearchKeyword: '',   // 人物搜索关键词
-    allFigures: [],            // 所有人物列表
-    filteredFigures: [],       // 筛选后的人物列表
+    selectedFigure: null,
+    showFigureSelector: false,
+    figureSearchKeyword: '',
+    allFigures: [],
+    filteredFigures: [],
+
+    // 预览弹窗
+    showPreview: false,
+    previewData: null,
 
     // 表单状态
-    canSubmit: false,    // 是否可以提交
-    submitting: false,   // 提交中状态
-    showSuccess: false,  // 显示成功弹窗
-    newArticleId: ''     // 新发布的文章ID
+    canSubmit: false,
+    submitting: false,
+    showSuccess: false,
+    newArticleId: ''
   },
 
   _categoriesLoaded: false,
@@ -46,6 +57,7 @@ Page({
   onLoad() {
     this.loadCategories();
     this._categoriesLoaded = true;
+    this.setData({ suggestedTags: util.SUGGESTED_TAGS });
   },
 
   onShow() {
@@ -72,9 +84,6 @@ Page({
     });
   },
 
-  /**
-   * 加载人物列表
-   */
   async loadFigures() {
     try {
       const res = await api.getFigureList({ page: 1, pageSize: 100 });
@@ -90,27 +99,18 @@ Page({
     }
   },
 
-  /**
-   * 切换人物选择器显示
-   */
   toggleFigureSelector() {
     this.setData({
       showFigureSelector: !this.data.showFigureSelector
     });
   },
 
-  /**
-   * 人物搜索输入
-   */
   onFigureSearchInput(e) {
     const keyword = e.detail.value;
     this.setData({ figureSearchKeyword: keyword });
     this.filterFigures(keyword);
   },
 
-  /**
-   * 清空人物搜索
-   */
   clearFigureSearch() {
     this.setData({
       figureSearchKeyword: '',
@@ -118,9 +118,6 @@ Page({
     });
   },
 
-  /**
-   * 筛选人物
-   */
   filterFigures(keyword) {
     if (!keyword) {
       this.setData({ filteredFigures: this.data.allFigures });
@@ -134,9 +131,6 @@ Page({
     this.setData({ filteredFigures: filtered });
   },
 
-  /**
-   * 选择人物
-   */
   onFigureSelect(e) {
     const figure = e.currentTarget.dataset.figure;
     this.setData({
@@ -148,9 +142,6 @@ Page({
     this.checkCanSubmit();
   },
 
-  /**
-   * 清除已选人物
-   */
   clearSelectedFigure() {
     this.setData({
       selectedFigure: null,
@@ -159,27 +150,19 @@ Page({
     this.checkCanSubmit();
   },
 
-  /**
-   * 跳转到新建人物页面
-   */
   goToCreateFigure() {
     wx.navigateTo({
       url: '/pages/figure-create/figure-create'
     });
   },
 
-  /**
-   * 加载分类列表
-   */
   async loadCategories() {
     try {
       const res = await api.getCategoryList();
       if (res.code === 200 && res.data && res.data.length > 0) {
-        // 过滤掉 'all' 分类
         const categories = res.data.filter(item => item.id !== 'all');
         this.setData({ categories });
       } else {
-        // 如果没有数据，使用默认分类
         const defaultCategories = [
           { id: 'folklore', name: '民俗故事' },
           { id: 'farming', name: '农耕智慧' },
@@ -191,7 +174,6 @@ Page({
       }
     } catch (error) {
       console.error('[Publish] 加载分类异常:', error);
-      // 出错时也使用默认分类
       const defaultCategories = [
         { id: 'folklore', name: '民俗故事' },
         { id: 'farming', name: '农耕智慧' },
@@ -202,38 +184,87 @@ Page({
     }
   },
 
-  /**
-   * 标题输入处理
-   * @param {Object} e - 事件对象
-   */
   onTitleInput(e) {
     this.setData({ 'formData.title': e.detail.value });
     this.checkCanSubmit();
   },
 
-  /**
-   * 分类选择处理
-   * @param {Object} e - 事件对象
-   */
+  onSummaryInput(e) {
+    this.setData({ 'formData.summary': e.detail.value });
+  },
+
   onCategorySelect(e) {
     const id = e.currentTarget.dataset.id;
     this.setData({ 'formData.category': id });
     this.checkCanSubmit();
   },
 
-  /**
-   * 内容输入处理
-   * @param {Object} e - 事件对象
-   */
   onContentInput(e) {
     this.setData({ 'formData.content': e.detail.value });
     this.checkCanSubmit();
   },
 
-  /**
-   * 检查表单是否可以提交
-   * 标题至少2字，内容至少10字，分类必选
-   */
+  toggleSuggestedTag(e) {
+    const tag = e.currentTarget.dataset.tag;
+    const currentTags = [...this.data.formData.tags];
+    const index = currentTags.indexOf(tag);
+    if (index > -1) {
+      currentTags.splice(index, 1);
+    } else {
+      if (currentTags.length >= 3) {
+        wx.showToast({ title: '最多选择3个标签', icon: 'none' });
+        return;
+      }
+      currentTags.push(tag);
+    }
+    this.setData({ 'formData.tags': currentTags });
+  },
+
+  onTagInputChange(e) {
+    this.setData({ tagInput: e.detail.value });
+  },
+
+  showAddTagInput() {
+    this.setData({ showTagInput: true });
+  },
+
+  hideAddTagInput() {
+    this.setData({ showTagInput: false, tagInput: '' });
+  },
+
+  addCustomTag() {
+    const tag = this.data.tagInput.trim();
+    if (!tag) {
+      this.setData({ showTagInput: false });
+      return;
+    }
+    if (tag.length > 10) {
+      wx.showToast({ title: '标签长度不超过10字', icon: 'none' });
+      return;
+    }
+    const currentTags = [...this.data.formData.tags];
+    if (currentTags.includes(tag)) {
+      wx.showToast({ title: '标签已存在', icon: 'none' });
+      return;
+    }
+    if (currentTags.length >= 3) {
+      wx.showToast({ title: '最多选择3个标签', icon: 'none' });
+      return;
+    }
+    currentTags.push(tag);
+    this.setData({
+      'formData.tags': currentTags,
+      tagInput: '',
+      showTagInput: false
+    });
+  },
+
+  removeTag(e) {
+    const tag = e.currentTarget.dataset.tag;
+    const currentTags = this.data.formData.tags.filter(t => t !== tag);
+    this.setData({ 'formData.tags': currentTags });
+  },
+
   checkCanSubmit() {
     const { title, category, content } = this.data.formData;
     const titleLen = title.trim().length;
@@ -246,16 +277,40 @@ Page({
     this.setData({ canSubmit });
   },
 
-  /**
-   * 提交表单
-   */
+  onPreview() {
+    if (!this.data.canSubmit) {
+      wx.showToast({ title: '请先完善必填信息', icon: 'none' });
+      return;
+    }
+    const { title, category, summary, content, tags } = this.data.formData;
+    const contentTrimmed = content.trim();
+    const autoSummary = (summary || '').trim() || util.truncateText(contentTrimmed, 100);
+    const categoryName = util.getCategoryName(category);
+    const userInfo = wx.getStorageSync('userInfo') || {};
+    this.setData({
+      showPreview: true,
+      previewData: {
+        title: title.trim(),
+        category,
+        categoryName,
+        summary: autoSummary,
+        content: contentTrimmed,
+        tags: tags || [],
+        authorName: userInfo.nickname || '我',
+        createTime: util.formatDate(new Date(), 'YYYY-MM-DD')
+      }
+    });
+  },
+
+  closePreview() {
+    this.setData({ showPreview: false, previewData: null });
+  },
+
   async onSubmit() {
-    // 防止重复提交
     if (this.data.submitting) return;
 
-    const { title, category, content, figureId } = this.data.formData;
+    const { title, category, summary, content, figureId, tags } = this.data.formData;
 
-    // 表单验证并提示
     if (!title || title.trim().length < 2) {
       wx.showToast({ title: '请输入文章标题（至少2字）', icon: 'none' });
       return;
@@ -271,14 +326,44 @@ Page({
       return;
     }
 
+    if (summary && summary.trim().length > 50) {
+      wx.showToast({ title: '摘要不超过50字', icon: 'none' });
+      return;
+    }
+
+    if (tags && tags.length > 3) {
+      wx.showToast({ title: '标签最多3个', icon: 'none' });
+      return;
+    }
+
+    const titleTrimmed = title.trim();
+    const contentTrimmed = content.trim();
+    const summaryTrimmed = (summary || '').trim();
+    const autoSummary = summaryTrimmed || util.truncateText(contentTrimmed, 100);
+
+    const sensitiveCheck = util.checkSensitiveWords(
+      titleTrimmed + ' ' + autoSummary + ' ' + contentTrimmed + ' ' + (tags || []).join(' ')
+    );
+    if (sensitiveCheck.hasSensitive) {
+      wx.showModal({
+        title: '内容包含敏感词',
+        content: '检测到敏感词：' + sensitiveCheck.matchedWords.join('、') + '\n请修改后重新发布',
+        showCancel: false,
+        confirmText: '我知道了'
+      });
+      return;
+    }
+
     this.setData({ submitting: true });
     wx.showLoading({ title: '发布中...' });
 
     try {
       const articleData = {
-        title: title.trim(),
+        title: titleTrimmed,
         category,
-        content: content.trim()
+        summary: autoSummary,
+        content: contentTrimmed,
+        tags: tags && tags.length > 0 ? tags : []
       };
       if (figureId) {
         articleData.figureId = figureId;
@@ -288,14 +373,18 @@ Page({
       wx.hideLoading();
 
       if (res.code === 200) {
-        // 发布成功，保存文章ID，清空表单
         this.setData({
+          showPreview: false,
+          previewData: null,
           showSuccess: true,
           newArticleId: res.data.id,
           formData: {
             title: '',
             category: '',
-            content: ''
+            summary: '',
+            content: '',
+            figureId: '',
+            tags: []
           },
           canSubmit: false
         });
@@ -311,17 +400,16 @@ Page({
     }
   },
 
-  /**
-   * 继续投稿 - 重置表单
-   */
   continuePublish() {
     this.setData({
       showSuccess: false,
       formData: {
         title: '',
         category: '',
+        summary: '',
         content: '',
-        figureId: ''
+        figureId: '',
+        tags: []
       },
       selectedFigure: null,
       showFigureSelector: false,
@@ -330,9 +418,6 @@ Page({
     });
   },
 
-  /**
-   * 查看文章 - 跳转到文章详情
-   */
   goToHome() {
     const { newArticleId } = this.data;
     this.setData({ showSuccess: false });

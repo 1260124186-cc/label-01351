@@ -209,6 +209,35 @@ const formatActivityTime = (startTime, endTime) => {
   return `${startStr} 至 ${formatDate(end, 'YYYY-MM-DD HH:mm')}`;
 };
 
+const SENSITIVE_WORDS = [
+  '虚假宣传', '包治百病', '代购走私', '刷单返利', '赌博下注',
+  '低俗擦边', '投资理财稳赚', '枪支交易', '虚假中奖', '封建迷信',
+  '毒品', '色情', '暴力', '诈骗', '传销'
+];
+
+const checkSensitiveWords = (text) => {
+  if (!text || typeof text !== 'string') {
+    return { hasSensitive: false, matchedWords: [] };
+  }
+  const matched = [];
+  const lowerText = text.toLowerCase();
+  SENSITIVE_WORDS.forEach(word => {
+    if (lowerText.includes(word.toLowerCase())) {
+      matched.push(word);
+    }
+  });
+  return {
+    hasSensitive: matched.length > 0,
+    matchedWords: matched
+  };
+};
+
+const SUGGESTED_TAGS = [
+  '端午节', '织布', '刺绣', '剪纸', '年画', '皮影', '陶艺',
+  '竹编', '木雕', '制茶', '酿酒', '养蚕', '农耕', '节日',
+  '婚俗', '丧礼', '庙会', '戏曲', '山歌', '民谣'
+];
+
 module.exports = {
   formatDate,
   formatRelativeTime,
@@ -224,5 +253,8 @@ module.exports = {
   getActivityTypeIcon,
   getActivityStatus,
   canCancelRegistration,
-  formatActivityTime
+  formatActivityTime,
+  SENSITIVE_WORDS,
+  checkSensitiveWords,
+  SUGGESTED_TAGS
 };

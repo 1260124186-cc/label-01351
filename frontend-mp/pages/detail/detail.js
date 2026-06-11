@@ -62,7 +62,9 @@ Page({
         const article = {
           ...res.data,
           categoryName: util.getCategoryName(res.data.category),
-          commentCount: res.data.commentCount || 0
+          commentCount: res.data.commentCount || 0,
+          summary: res.data.summary || util.truncateText(res.data.content, 100),
+          tags: res.data.tags || []
         };
 
         this.setData({
@@ -501,5 +503,22 @@ Page({
       title: article.title,
       path: `/pages/detail/detail?id=${article.id}`
     };
+  },
+
+  onTagClick(e) {
+    const tag = e.currentTarget.dataset.tag;
+    if (!tag) return;
+    wx.switchTab({
+      url: '/pages/index/index',
+      success: () => {
+        setTimeout(() => {
+          const pages = getCurrentPages();
+          const currentPage = pages[pages.length - 1];
+          if (currentPage && currentPage.filterByTag) {
+            currentPage.filterByTag(tag);
+          }
+        }, 100);
+      }
+    });
   }
 });

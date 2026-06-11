@@ -74,6 +74,52 @@ describe('api.getArticleList', () => {
     }
   });
 
+  test('按标签精准筛选文章', async () => {
+    const articles = wx.getStorageSync('articles');
+    if (articles[0]) articles[0].tags = ['端午节', '传统'];
+    if (articles[1]) articles[1].tags = ['织布', '技艺'];
+    if (articles[2]) articles[2].tags = ['端午节'];
+    wx.setStorageSync('articles', articles);
+
+    const res = await api.getArticleList({ tag: '端午节' });
+    expect(res.code).toBe(200);
+    res.data.list.forEach(item => {
+      expect(item.tags).toContain('端午节');
+    });
+  });
+
+  test('关键词搜索同时匹配标签', async () => {
+    const articles = wx.getStorageSync('articles');
+    if (articles[3]) articles[3].tags = ['乡村美食节', '美食'];
+    wx.setStorageSync('articles', articles);
+
+    const res = await api.getArticleList({ keyword: '美食节' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+  });
+
+  test('标签+分类组合筛选', async () => {
+    const articles = wx.getStorageSync('articles');
+    if (articles[4]) {
+      articles[4].category = 'craft';
+      articles[4].tags = ['刺绣', '技艺'];
+    }
+    wx.setStorageSync('articles', articles);
+
+    const res = await api.getArticleList({ category: 'craft', tag: '刺绣' });
+    expect(res.code).toBe(200);
+    res.data.list.forEach(item => {
+      expect(item.category).toBe('craft');
+      expect(item.tags).toContain('刺绣');
+    });
+  });
+
+  test('空标签参数忽略标签筛选', async () => {
+    const res1 = await api.getArticleList({ tag: '' });
+    const res2 = await api.getArticleList();
+    expect(res1.data.total).toBe(res2.data.total);
+  });
+
   test('不显示未发布文章（status !== 1）', async () => {
     const articles = wx.getStorageSync('articles');
     articles.push({ id: 'article_draft', title: '草稿', content: '草稿内容', category: 'farming', authorId: 'user_001', authorName: '张三', viewCount: 0, likeCount: 0, createTime: '2024-12-20', status: 0 });
@@ -224,6 +270,97 @@ describe('api.publishArticle', () => {
     expect(res.code).toBe(200);
     expect(res.data.title).toBe('带空格标题');
     expect(res.data.content).toBe('带空格内容，长度超过十个字符');
+  });
+
+  test('使用自定义摘要', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const customSummary = '这是我自定义的文章摘要内容';
+    const res = await api.publishArticle({
+      title: '带摘要的文章',
+      content: '这是正文内容，长度超过十个字符没问题',
+      category: 'folklore',
+      summary: customSummary
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.summary).toBe(customSummary);
+  });
+
+  test('摘要为空时自动截取正文前100字', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const longContent = 'a'.repeat(200);
+    const res = await api.publishArticle({
+      title: '自动摘要文章',
+      content: longContent,
+      category: 'folklore'
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.summary).toBeTruthy();
+    expect(res.data.summary.length).toBeLessThanOrEqual(103);
+  });
+
+  test('使用自定义标签（正常范围 1-3 个）', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.publishArticle({
+      title: '带标签的文章',
+      content: '这是正文内容，长度超过十个字符没问题',
+      category: 'craft',
+      tags: ['织布', '刺绣', '传统技艺']
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.tags).toEqual(['织布', '刺绣', '传统技艺']);
+  });
+
+  test('无标签时保存空数组', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.publishArticle({
+      title: '无标签文章',
+      content: '这是正文内容，长度超过十个字符没问题',
+      category: 'folklore'
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.tags).toEqual([]);
+  });
+
+  test('标签超过3个返回400', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.publishArticle({
+      title: '标签过多的文章',
+      content: '内容内容内容',
+      category: 'folklore',
+      tags: ['标签1', '标签2', '标签3', '标签4']
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('命中敏感词返回400并提示', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.publishArticle({
+      title: '正常标题',
+      content: '这篇文章包含虚假宣传的内容',
+      category: 'folklore'
+    });
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('敏感');
+    expect(res.message).toContain('虚假宣传');
+  });
+
+  test('摘要中命中敏感词也被拦截', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.publishArticle({
+      title: '正常标题',
+      content: '正常内容，长度超过十个字符',
+      category: 'folklore',
+      summary: '摘要中提到诈骗相关内容'
+    });
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('诈骗');
   });
 });
 

@@ -34,7 +34,12 @@ describe('Publish 投稿页', () => {
   test('初始 data 状态正确', () => {
     expect(page.data.isLoggedIn).toBe(false);
     expect(page.data.categories).toEqual([]);
-    expect(page.data.formData).toEqual({ title: '', category: '', content: '', figureId: '' });
+    expect(page.data.formData).toEqual({ title: '', category: '', summary: '', content: '', figureId: '', tags: [] });
+    expect(page.data.suggestedTags).toBeDefined();
+    expect(page.data.tagInput).toBe('');
+    expect(page.data.showTagInput).toBe(false);
+    expect(page.data.showPreview).toBe(false);
+    expect(page.data.previewData).toBeNull();
     expect(page.data.canSubmit).toBe(false);
     expect(page.data.submitting).toBe(false);
     expect(page.data.showSuccess).toBe(false);
@@ -156,11 +161,153 @@ describe('Publish 投稿页', () => {
   describe('continuePublish', () => {
     test('重置表单和成功状态', () => {
       page.data.showSuccess = true;
-      page.data.formData = { title: '旧标题', category: 'folklore', content: '旧内容', figureId: 'figure_001' };
+      page.data.formData = { title: '旧标题', category: 'folklore', summary: '旧摘要', content: '旧内容', figureId: 'figure_001', tags: ['端午节'] };
       page.continuePublish();
       expect(page.data.showSuccess).toBe(false);
-      expect(page.data.formData).toEqual({ title: '', category: '', content: '', figureId: '' });
+      expect(page.data.formData).toEqual({ title: '', category: '', summary: '', content: '', figureId: '', tags: [] });
       expect(page.data.canSubmit).toBe(false);
+    });
+  });
+
+  describe('onSummaryInput', () => {
+    test('更新摘要内容', () => {
+      page.onSummaryInput({ detail: { value: '测试摘要内容' } });
+      expect(page.data.formData.summary).toBe('测试摘要内容');
+    });
+  });
+
+  describe('标签系统', () => {
+    test('toggleSuggestedTag 添加推荐标签', () => {
+      page.data.formData.tags = [];
+      page.toggleSuggestedTag({ currentTarget: { dataset: { tag: '端午节' } } });
+      expect(page.data.formData.tags).toContain('端午节');
+    });
+
+    test('toggleSuggestedTag 超过3个时不添加', () => {
+      page.data.formData.tags = ['标签1', '标签2', '标签3'];
+      page.toggleSuggestedTag({ currentTarget: { dataset: { tag: '端午节' } } });
+      expect(page.data.formData.tags.length).toBe(3);
+      expect(page.data.formData.tags).not.toContain('端午节');
+    });
+
+    test('toggleSuggestedTag 移除已选标签', () => {
+      page.data.formData.tags = ['端午节', '织布'];
+      page.toggleSuggestedTag({ currentTarget: { dataset: { tag: '端午节' } } });
+      expect(page.data.formData.tags).not.toContain('端午节');
+      expect(page.data.formData.tags).toContain('织布');
+    });
+
+    test('addCustomTag 添加自定义标签', () => {
+      page.data.formData.tags = [];
+      page.data.tagInput = '我的标签';
+      page.addCustomTag();
+      expect(page.data.formData.tags).toContain('我的标签');
+      expect(page.data.tagInput).toBe('');
+      expect(page.data.showTagInput).toBe(false);
+    });
+
+    test('addCustomTag 空标签不添加', () => {
+      page.data.formData.tags = [];
+      page.data.tagInput = '';
+      page.addCustomTag();
+      expect(page.data.formData.tags.length).toBe(0);
+    });
+
+    test('removeTag 删除指定标签', () => {
+      page.data.formData.tags = ['端午节', '织布', '刺绣'];
+      page.removeTag({ currentTarget: { dataset: { tag: '织布' } } });
+      expect(page.data.formData.tags).toEqual(['端午节', '刺绣']);
+    });
+  });
+
+  describe('onSubmit 扩展验证', () => {
+    test('摘要超过50字时提示', async () => {
+      page.data.formData = {
+        title: '标题文字',
+        category: 'folklore',
+        summary: 'a'.repeat(51),
+        content: '内容超过十个字符的内容',
+        tags: []
+      };
+      await page.onSubmit();
+      expect(wx.showToast).toHaveBeenCalledWith(expect.objectContaining({
+        title: expect.stringContaining('50')
+      }));
+    });
+
+    test('标签超过3个时提示', async () => {
+      page.data.formData = {
+        title: '标题文字',
+        category: 'folklore',
+        summary: '',
+        content: '内容超过十个字符的内容',
+        tags: ['标签1', '标签2', '标签3', '标签4']
+      };
+      await page.onSubmit();
+      expect(wx.showToast).toHaveBeenCalledWith(expect.objectContaining({
+        title: expect.stringContaining('3个')
+      }));
+    });
+
+    test('命中敏感词时弹窗提示', async () => {
+      page.data.formData = {
+        title: '测试标题',
+        category: 'folklore',
+        summary: '',
+        content: '这是包含虚假宣传的内容',
+        tags: []
+      };
+      await page.onSubmit();
+      expect(wx.showModal).toHaveBeenCalledWith(expect.objectContaining({
+        title: expect.stringContaining('敏感')
+      }));
+    });
+  });
+
+  describe('投稿预览', () => {
+    test('onPreview 生成预览数据并打开弹窗', () => {
+      page.data.formData = {
+        title: '测试预览标题',
+        category: 'folklore',
+        summary: '自定义摘要内容',
+        content: '这是正文内容，长度超过十个字符',
+        tags: ['端午节', '织布']
+      };
+      page.checkCanSubmit();
+      page.onPreview();
+      expect(page.data.showPreview).toBe(true);
+      expect(page.data.previewData).not.toBeNull();
+      expect(page.data.previewData.title).toBe('测试预览标题');
+      expect(page.data.previewData.tags).toEqual(['端午节', '织布']);
+    });
+
+    test('未填写摘要时自动生成', () => {
+      page.data.formData = {
+        title: '测试预览标题',
+        category: 'folklore',
+        summary: '',
+        content: 'a'.repeat(150),
+        tags: []
+      };
+      page.checkCanSubmit();
+      page.onPreview();
+      expect(page.data.previewData).not.toBeNull();
+      expect(page.data.previewData.summary).toBeTruthy();
+      expect(page.data.previewData.summary.length).toBeLessThanOrEqual(103);
+    });
+
+    test('closePreview 关闭预览弹窗', () => {
+      page.data.showPreview = true;
+      page.data.previewData = { title: 'test' };
+      page.closePreview();
+      expect(page.data.showPreview).toBe(false);
+    });
+  });
+
+  describe('onShow 初始化标签', () => {
+    test('onLoad 初始化 suggestedTags', () => {
+      expect(page.data.suggestedTags).toBeDefined();
+      expect(Array.isArray(page.data.suggestedTags)).toBe(true);
     });
   });
 

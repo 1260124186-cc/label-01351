@@ -59,5 +59,11 @@ Page({
     wx.navigateTo({
       url: '/pages/calendar/calendar'
     });
+  },
+
+  onCardTagClick(e) {
+    const tag = e.currentTarget.dataset.tag;
+    if (!tag) return;
+    this.filterByTag(tag);
   }
 });

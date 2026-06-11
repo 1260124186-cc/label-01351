@@ -27,6 +27,26 @@
       <!-- 标题 -->
       <view class="article-title">{{article.title}}</view>
 
+      <!-- 标签列表 -->
+      <view class="article-tags" wx:if="{{article.tags && article.tags.length > 0}}">
+        <view
+          class="article-tag-item"
+          wx:for="{{article.tags}}"
+          wx:key="*this"
+          wx:for-item="tag"
+          bindtap="onTagClick"
+          data-tag="{{tag}}"
+        >
+          <text>#{{tag}}</text>
+        </view>
+      </view>
+
+      <!-- 摘要 -->
+      <view class="article-summary" wx:if="{{article.summary}}">
+        <text class="summary-label">摘要：</text>
+        <text class="summary-text">{{article.summary}}</text>
+      </view>
+
       <!-- 作者信息 -->
       <view class="article-meta">
         <view class="meta-author">

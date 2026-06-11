@@ -185,19 +185,38 @@ const storageApi = {
     return { code: 200, data: null, message: '退出成功' };
   },
 
+  checkSensitiveWords: async (data = {}) => {
+    await delay(100);
+    const { title = '', summary = '', content = '', tags = [] } = data;
+    const text = [title, summary, content, ...tags].join(' ');
+    const result = util.checkSensitiveWords(text);
+    return {
+      code: 200,
+      data: result,
+      message: 'success'
+    };
+  },
+
   getArticleList: async (params = {}) => {
     await delay(500);
-    const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    const { category = 'all', page = 1, pageSize = 10, keyword = '', tag = '' } = params;
     let articles = wx.getStorageSync('articles') || [];
     articles = articles.filter(item => item.status === 1);
     if (category && category !== 'all') {
       articles = articles.filter(item => item.category === category);
     }
+    if (tag && tag.trim()) {
+      const tagKw = tag.trim();
+      articles = articles.filter(item =>
+        Array.isArray(item.tags) && item.tags.some(t => t === tagKw)
+      );
+    }
     if (keyword && keyword.trim()) {
       const kw = keyword.toLowerCase().trim();
       articles = articles.filter(item =>
         item.title.toLowerCase().includes(kw) ||
-        item.content.toLowerCase().includes(kw)
+        item.content.toLowerCase().includes(kw) ||
+        (Array.isArray(item.tags) && item.tags.some(t => t.toLowerCase().includes(kw)))
       );
     }
     articles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
@@ -239,13 +258,35 @@ const storageApi = {
     if (!data.category) {
       return { code: 400, data: null, message: '请选择分类' };
     }
+    const title = data.title.trim();
+    const content = data.content.trim();
+    const summaryInput = data.summary ? data.summary.trim() : '';
+    const summary = summaryInput || util.truncateText(content, 100);
+    const sensitiveCheck = util.checkSensitiveWords(title + ' ' + summary + ' ' + content);
+    if (sensitiveCheck.hasSensitive) {
+      return {
+        code: 400,
+        data: { matchedWords: sensitiveCheck.matchedWords },
+        message: '内容包含敏感词：' + sensitiveCheck.matchedWords.join('、') + '，请修改后重试'
+      };
+    }
+    if (data.tags !== undefined && data.tags !== null) {
+      if (!Array.isArray(data.tags)) {
+        return { code: 400, data: null, message: '标签格式错误' };
+      }
+      if (data.tags.length > 3) {
+        return { code: 400, data: null, message: '标签数量最多3个' };
+      }
+    }
     const userInfo = wx.getStorageSync('userInfo');
     const articles = wx.getStorageSync('articles') || [];
     const newArticle = {
       id: util.generateId('article'),
-      title: data.title.trim(),
-      content: data.content.trim(),
+      title,
+      summary,
+      content,
       category: data.category,
+      tags: data.tags || [],
       authorId: userInfo.id,
       authorName: userInfo.nickname,
       viewCount: 0,

@@ -171,6 +171,68 @@
   color: var(--color-text-secondary);
 }
 
+/* 标签筛选栏 */
+.tag-filter-bar {
+  padding: 0 24rpx 20rpx;
+}
+
+.tag-filter-wrap {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  background-color: rgba(34, 139, 34, 0.06);
+  border: 2rpx solid rgba(34, 139, 34, 0.2);
+  border-radius: 40rpx;
+}
+
+.tag-filter-label {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  margin-right: 12rpx;
+}
+
+.tag-filter-active {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 16rpx;
+  background-color: rgba(34, 139, 34, 0.15);
+  border-radius: 24rpx;
+}
+
+.filter-tag-prefix {
+  font-size: 26rpx;
+  color: var(--color-secondary);
+  margin-right: 4rpx;
+}
+
+.filter-tag-text {
+  font-size: 26rpx;
+  color: var(--color-secondary);
+  font-weight: 500;
+}
+
+.tag-filter-clear {
+  display: flex;
+  align-items: center;
+  padding: 8rpx 16rpx;
+  margin-left: 12rpx;
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  border: 2rpx solid var(--color-border);
+}
+
+.clear-icon {
+  font-size: 22rpx;
+  color: var(--color-text-light);
+  margin-right: 6rpx;
+}
+
+.clear-text {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
 /* 文章列表 */
 .article-list {
   padding: 0 24rpx;
@@ -292,7 +354,32 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
+  margin-bottom: 16rpx;
+}
+
+/* 卡片标签 */
+.article-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
   margin-bottom: 20rpx;
+}
+
+.card-tag-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 16rpx;
+  background-color: rgba(34, 139, 34, 0.06);
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  color: var(--color-secondary);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.card-tag-item:active {
+  background-color: rgba(34, 139, 34, 0.15);
+  transform: scale(0.96);
 }
 
 .article-footer {
