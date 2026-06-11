@@ -1,0 +1,68 @@
+<view class="detail-page" v-if="!loading && landmark">
+  <scroll-view scroll-y class="scroll-content">
+    <view class="cover-section">
+      <image class="cover-image" :src="landmark.cover || 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=chinese%20rural%20cultural%20landmark%20scenic%20view&image_size=landscape_16_9'" mode="aspectFill" />
+      <view class="cover-overlay">
+        <view class="landmark-name">{{ landmark.name }}</view>
+        <view class="landmark-category">{{ landmark.categoryName }}</view>
+      </view>
+    </view>
+
+    <view class="basic-info">
+      <view class="info-item" @tap="navigateToAddress">
+        <text class="info-icon">📍</text>
+        <text class="info-text">{{ landmark.address }}</text>
+        <text class="info-arrow">›</text>
+      </view>
+      <view class="info-item">
+        <text class="info-icon">📅</text>
+        <text class="info-text">{{ landmark.history || '暂无历史信息' }}</text>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">简介</view>
+      <view class="section-content">{{ landmark.description }}</view>
+    </view>
+
+    <view class="section" v-if="landmark.historyDetail">
+      <view class="section-title">历史沿革</view>
+      <view class="section-content">{{ landmark.historyDetail }}</view>
+    </view>
+
+    <view class="section" v-if="relatedArticles.length > 0">
+      <view class="section-title">关联文章</view>
+      <view class="article-list">
+        <view
+          v-for="article in relatedArticles"
+          :key="article.id"
+          class="article-item"
+          :data-id="article.id"
+          @tap="goToArticleDetail"
+        >
+          <view class="article-title">{{ article.title }}</view>
+          <view class="article-meta">
+            <text class="article-author">{{ article.authorName }}</text>
+            <text class="article-time">{{ article.createTime }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="bottom-bar">
+    <view class="nav-btn" @tap="navigateToAddress">
+      <text class="nav-icon">🧭</text>
+      <text class="nav-text">导航</text>
+    </view>
+  </view>
+</view>
+
+<view class="loading-state" v-if="loading">
+  <text class="loading-text">加载中...</text>
+</view>
+
+<view class="empty-state" v-if="!loading && !landmark">
+  <text class="empty-icon">❌</text>
+  <text class="empty-text">地标不存在</text>
+</view>

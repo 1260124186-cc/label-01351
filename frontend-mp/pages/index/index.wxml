@@ -26,6 +26,13 @@
 
   <!-- 金刚区入口 -->
   <view class="quick-entry">
+    <view class="entry-item" bindtap="goToMap">
+      <view class="entry-icon-wrap icon-map">
+        <text class="entry-icon">🗺️</text>
+      </view>
+      <text class="entry-name">文化地图</text>
+      <text class="entry-desc">乡土地标</text>
+    </view>
     <view class="entry-item" bindtap="goToTopics">
       <view class="entry-icon-wrap icon-topic">
         <text class="entry-icon">📖</text>
@@ -53,6 +60,13 @@
       </view>
       <text class="entry-name">文化活动</text>
       <text class="entry-desc">志愿招募</text>
+    </view>
+    <view class="entry-item" bindtap="goToPublish">
+      <view class="entry-icon-wrap icon-publish">
+        <text class="entry-icon">✏️</text>
+      </view>
+      <text class="entry-name">我要投稿</text>
+      <text class="entry-desc">分享故事</text>
     </view>
   </view>
 

@@ -1,0 +1,75 @@
+<view class="publish-page" v-if="!showSuccess">
+  <view class="form-section">
+    <view class="form-item">
+      <text class="form-label">地标名称 *</text>
+      <input class="form-input" placeholder="请输入地标名称" :value="formData.name" @input="onNameInput" />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">分类 *</text>
+      <view class="category-list">
+        <view
+          v-for="cat in categories"
+          :key="cat.id"
+          class="category-item"
+          :class="{ active: formData.category === cat.id }"
+          :data-id="cat.id"
+          @tap="onCategorySelect"
+        >
+          <text class="cat-icon">{{ cat.icon }}</text>
+          <text class="cat-name">{{ cat.name }}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">简介 *</text>
+      <textarea class="form-textarea" placeholder="请输入地标简介（至少10字）" :value="formData.description" @input="onDescriptionInput" />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">详细地址 *</text>
+      <input class="form-input" placeholder="请输入详细地址" :value="formData.address" @input="onAddressInput" />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">坐标 *</text>
+      <view class="coord-input">
+        <view class="coord-item">
+          <text class="coord-label">纬度</text>
+          <input class="coord-input-field" type="digit" placeholder="30.2672" :value="formData.latitude" @input="onLatitudeInput" />
+        </view>
+        <view class="coord-item">
+          <text class="coord-label">经度</text>
+          <input class="coord-input-field" type="digit" placeholder="120.1552" :value="formData.longitude" @input="onLongitudeInput" />
+        </view>
+      </view>
+      <view class="location-btn" @tap="getLocation">
+        <text class="location-icon">📍</text>
+        <text class="location-text">获取当前位置</text>
+      </view>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">历史背景</text>
+      <textarea class="form-textarea" placeholder="请输入地标历史背景（可选）" :value="formData.history" @input="onHistoryInput" />
+    </view>
+  </view>
+
+  <view class="submit-section">
+    <button class="submit-btn" @tap="onSubmit" :disabled="submitting">
+      {{ submitting ? '提交中...' : '提交地标' }}
+    </button>
+    <text class="submit-hint">提交后需等待审核通过</text>
+  </view>
+</view>
+
+<view class="success-page" v-if="showSuccess">
+  <view class="success-icon">✅</view>
+  <view class="success-title">提交成功</view>
+  <view class="success-desc">您的地标信息已提交，等待审核</view>
+  <view class="success-btn-group">
+    <button class="success-btn secondary" @tap="continuePublish">继续投稿</button>
+    <button class="success-btn primary" @tap="goToMap">返回地图</button>
+  </view>
+</view>

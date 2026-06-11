@@ -1529,6 +1529,194 @@ const storageApi = {
       data: { list, total: list.length },
       message: 'success'
     };
+  },
+
+  getLandmarkCategories: async () => {
+    await delay(200);
+    const categories = [
+      { id: 'all', name: '全部', icon: '🗺️' },
+      { id: 'folklore', name: '民俗遗址', icon: '🏛️' },
+      { id: 'nature', name: '自然景观', icon: '🏞️' },
+      { id: 'craft', name: '传统技艺传习地', icon: '🧶' },
+      { id: 'history', name: '历史古迹', icon: '🏰' }
+    ];
+    return { code: 200, data: categories, message: 'success' };
+  },
+
+  getLandmarkList: async (params = {}) => {
+    await delay(500);
+    const { category = 'all', page = 1, pageSize = 20, keyword = '' } = params;
+    let landmarks = wx.getStorageSync('landmarks') || [];
+    landmarks = landmarks.filter(item => item.status === 'approved');
+
+    if (category && category !== 'all') {
+      landmarks = landmarks.filter(item => item.category === category);
+    }
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      landmarks = landmarks.filter(item =>
+        item.name.toLowerCase().includes(kw) ||
+        item.description.toLowerCase().includes(kw)
+      );
+    }
+
+    const total = landmarks.length;
+    const start = (page - 1) * pageSize;
+    const list = landmarks.slice(start, start + pageSize);
+
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getLandmarkDetail: async (id) => {
+    await delay(300);
+    if (!id) {
+      return { code: 400, data: null, message: '地标ID不能为空' };
+    }
+    const landmarks = wx.getStorageSync('landmarks') || [];
+    const landmark = landmarks.find(item => item.id === id);
+    if (!landmark) {
+      return { code: 404, data: null, message: '地标不存在' };
+    }
+    return { code: 200, data: landmark, message: 'success' };
+  },
+
+  createLandmark: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!data.name || !data.name.trim()) {
+      return { code: 400, data: null, message: '地标名称不能为空' };
+    }
+    if (!data.category) {
+      return { code: 400, data: null, message: '请选择地标分类' };
+    }
+    if (!data.description || !data.description.trim()) {
+      return { code: 400, data: null, message: '地标简介不能为空' };
+    }
+    if (!data.address || !data.address.trim()) {
+      return { code: 400, data: null, message: '详细地址不能为空' };
+    }
+    if (!data.latitude || !data.longitude) {
+      return { code: 400, data: null, message: '坐标不能为空' };
+    }
+
+    const userInfo = wx.getStorageSync('userInfo');
+    const landmarks = wx.getStorageSync('landmarks') || [];
+
+    const newLandmark = {
+      id: util.generateId('landmark'),
+      name: data.name.trim(),
+      category: data.category,
+      description: data.description.trim(),
+      address: data.address.trim(),
+      latitude: data.latitude,
+      longitude: data.longitude,
+      history: data.history || '',
+      cover: data.cover || '',
+      submitterId: userInfo.id,
+      submitterName: userInfo.nickname,
+      status: 'pending',
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      viewCount: 0
+    };
+
+    landmarks.unshift(newLandmark);
+    wx.setStorageSync('landmarks', landmarks);
+
+    return { code: 200, data: newLandmark, message: '提交成功，等待审核' };
+  },
+
+  getRelatedArticles: async (landmarkId) => {
+    await delay(300);
+    const articles = wx.getStorageSync('articles') || [];
+    const relatedArticles = articles.filter(item =>
+      item.status === 1 && item.landmarkId === landmarkId
+    ).map(item => ({
+      id: item.id,
+      title: item.title,
+      authorName: item.authorName,
+      createTime: item.createTime,
+      viewCount: item.viewCount
+    }));
+    return { code: 200, data: relatedArticles, message: 'success' };
+  },
+
+  getPendingLandmarks: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo.role !== 'admin') {
+      return { code: 403, data: null, message: '仅管理员可查看待审核地标' };
+    }
+
+    let landmarks = wx.getStorageSync('landmarks') || [];
+    landmarks = landmarks.filter(item => item.status === 'pending');
+    landmarks.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+    return {
+      code: 200,
+      data: { list: landmarks, total: landmarks.length },
+      message: 'success'
+    };
+  },
+
+  approveLandmark: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo.role !== 'admin') {
+      return { code: 403, data: null, message: '仅管理员可审核地标' };
+    }
+
+    if (!id) {
+      return { code: 400, data: null, message: '地标ID不能为空' };
+    }
+
+    const landmarks = wx.getStorageSync('landmarks') || [];
+    const index = landmarks.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '地标不存在' };
+    }
+
+    landmarks[index].status = 'approved';
+    wx.setStorageSync('landmarks', landmarks);
+
+    return { code: 200, data: landmarks[index], message: '审核通过' };
+  },
+
+  rejectLandmark: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo.role !== 'admin') {
+      return { code: 403, data: null, message: '仅管理员可审核地标' };
+    }
+
+    if (!id) {
+      return { code: 400, data: null, message: '地标ID不能为空' };
+    }
+
+    const landmarks = wx.getStorageSync('landmarks') || [];
+    const index = landmarks.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '地标不存在' };
+    }
+
+    landmarks[index].status = 'rejected';
+    wx.setStorageSync('landmarks', landmarks);
+
+    return { code: 200, data: landmarks[index], message: '已拒绝' };
   }
 };
 

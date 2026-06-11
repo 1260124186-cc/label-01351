@@ -1,0 +1,73 @@
+<view class="map-page">
+  <view class="map-container">
+    <map
+      id="map"
+      class="map"
+      :latitude="latitude"
+      :longitude="longitude"
+      :markers="markers"
+      :scale="14"
+      :show-location="true"
+      @markertap="onMarkerTap"
+      @regionchange="onRegionChange"
+    ></map>
+    
+    <view class="filter-btn" @tap="toggleFilter">
+      <text class="filter-icon">🔍</text>
+      <text class="filter-text">筛选</text>
+    </view>
+
+    <view class="publish-btn" @tap="goToPublish">
+      <text class="publish-icon">+</text>
+    </view>
+  </view>
+
+  <view class="filter-panel" v-if="showFilter">
+    <view class="filter-header">
+      <text class="filter-title">选择分类</text>
+      <text class="close-btn" @tap="toggleFilter">✕</text>
+    </view>
+    <scroll-view scroll-y class="filter-list">
+      <view
+        v-for="cat in categories"
+        :key="cat.id"
+        class="filter-item"
+        :class="{ active: selectedCategory === cat.id }"
+        :data-id="cat.id"
+        @tap="onCategorySelect"
+      >
+        <text class="cat-icon">{{ cat.icon }}</text>
+        <text class="cat-name">{{ cat.name }}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="landmark-list" v-if="!showFilter">
+    <view class="list-header">
+      <text class="list-title">文化地标</text>
+      <text class="list-count">{{ landmarkList.length }}个</text>
+    </view>
+    <scroll-view scroll-y class="list-content">
+      <view
+        v-for="landmark in landmarkList"
+        :key="landmark.id"
+        class="landmark-card"
+        @tap="goToDetail(landmark.id)"
+      >
+        <image class="landmark-cover" :src="landmark.cover || '/assets/icons/home.png'" mode="aspectFill" />
+        <view class="landmark-info">
+          <view class="landmark-name">{{ landmark.name }}</view>
+          <view class="landmark-category">{{ getCategoryName(landmark.category) }}</view>
+          <view class="landmark-desc">{{ landmark.description }}</view>
+          <view class="landmark-meta">
+            <text class="meta-item">📍 {{ landmark.address }}</text>
+          </view>
+        </view>
+      </view>
+      <view v-if="landmarkList.length === 0" class="empty-state">
+        <text class="empty-icon">🗺️</text>
+        <text class="empty-text">暂无地标数据</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

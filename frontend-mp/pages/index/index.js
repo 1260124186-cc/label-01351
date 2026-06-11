@@ -19,6 +19,12 @@ Page({
     return this.loadList();
   },
 
+  goToMap() {
+    wx.navigateTo({
+      url: '/pages/map/map'
+    });
+  },
+
   goToTopics() {
     wx.navigateTo({
       url: '/pages/topics/topics'

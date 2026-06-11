@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/map/map",
     "pages/figures/figures",
     "pages/activities/activities",
     "pages/publish/publish",
@@ -20,7 +21,9 @@
     "pages/notifications/notifications",
     "pages/activity-detail/activity-detail",
     "pages/activity-publish/activity-publish",
-    "pages/my-activities/my-activities"
+    "pages/my-activities/my-activities",
+    "pages/landmark-detail/landmark-detail",
+    "pages/landmark-publish/landmark-publish"
   ],
   "window": {
     "backgroundTextStyle": "dark",
