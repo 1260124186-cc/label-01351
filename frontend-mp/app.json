@@ -41,7 +41,8 @@
     "pages/settings/settings",
     "pages/profile-edit/profile-edit",
     "pages/history/history",
-    "pages/author-home/author-home"
+    "pages/author-home/author-home",
+    "pages/drafts/drafts"
   ],
   "window": {
     "backgroundTextStyle": "dark",

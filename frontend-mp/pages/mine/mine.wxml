@@ -69,6 +69,15 @@
         </view>
         <text class="action-text">消息通知</text>
       </view>
+      <view class="action-item" bindtap="goToDrafts">
+        <view class="action-icon-wrap">
+          <text class="action-icon">📝</text>
+          <view class="unread-badge" wx:if="{{draftCount > 0}}">
+            <text class="badge-text">{{draftCount > 99 ? '99+' : draftCount}}</text>
+          </view>
+        </view>
+        <text class="action-text">草稿箱</text>
+      </view>
       <view class="action-item" bindtap="goToFavorites">
         <view class="action-icon-wrap">
           <text class="action-icon">⭐</text>

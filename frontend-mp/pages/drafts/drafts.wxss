@@ -1,0 +1,301 @@
+/* 页面容器 */
+.page-container {
+  min-height: 100vh;
+  padding: 24rpx;
+  padding-bottom: 60rpx;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #FFF8F0 0%, #F5F5DC 50%, #FFF8F0 100%);
+}
+
+/* 登录卡片 */
+.login-wrap {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  width: 560rpx;
+  padding: 80rpx 40rpx;
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  box-shadow: 0 10rpx 40rpx rgba(139, 69, 19, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-icon {
+  font-size: 100rpx;
+  margin-bottom: 32rpx;
+}
+
+.login-text {
+  font-size: 28rpx;
+  color: #666666;
+  margin-bottom: 48rpx;
+}
+
+.btn-login {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: linear-gradient(135deg, #DAA520 0%, #B8860B 100%);
+  border-radius: 44rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #FFFFFF;
+  border: none;
+}
+
+/* 列表头部 */
+.section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+  padding: 0 8rpx;
+}
+
+.section-title {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.section-count {
+  font-size: 26rpx;
+  color: #999999;
+}
+
+/* 加载中 */
+.loading-wrap {
+  padding: 120rpx 0;
+  display: flex;
+  justify-content: center;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #999999;
+}
+
+/* 空状态 */
+.empty-wrap {
+  padding: 140rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  box-shadow: 0 6rpx 24rpx rgba(139, 69, 19, 0.06);
+}
+
+.empty-icon-wrap {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 70rpx;
+  background: #FFF8E7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32rpx;
+}
+
+.empty-icon {
+  font-size: 64rpx;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 12rpx;
+}
+
+.empty-text {
+  font-size: 26rpx;
+  color: #999999;
+  margin-bottom: 48rpx;
+}
+
+.btn-empty {
+  width: 320rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: linear-gradient(135deg, #DAA520 0%, #B8860B 100%);
+  border-radius: 44rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #FFFFFF;
+  border: none;
+}
+
+/* 草稿列表 */
+.draft-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.draft-card {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  box-shadow: 0 6rpx 24rpx rgba(139, 69, 19, 0.06);
+  overflow: hidden;
+}
+
+.draft-card-header {
+  display: flex;
+  align-items: flex-start;
+  padding: 28rpx 28rpx 20rpx;
+  gap: 16rpx;
+}
+
+.draft-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.draft-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+  line-height: 1.4;
+  margin-bottom: 12rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.draft-meta-row {
+  margin-bottom: 14rpx;
+}
+
+.meta-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.meta-category {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  background: #F5F5DC;
+  color: #8B4513;
+}
+
+.tag-folklore {
+  background: #FFF0E6;
+  color: #D2691E;
+}
+
+.tag-farming {
+  background: #F0F9E8;
+  color: #2E8B57;
+}
+
+.tag-craft {
+  background: #FFF8E7;
+  color: #B8860B;
+}
+
+.tag-memory {
+  background: #F0F4FF;
+  color: #4682B4;
+}
+
+.tag-placeholder {
+  background: #F5F5F5;
+  color: #999999;
+}
+
+.meta-time {
+  font-size: 22rpx;
+  color: #AAAAAA;
+}
+
+.draft-summary,
+.draft-content-preview {
+  font-size: 26rpx;
+  color: #666666;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.draft-empty-hint {
+  font-size: 26rpx;
+  color: #CCCCCC;
+  font-style: italic;
+}
+
+.draft-arrow {
+  font-size: 40rpx;
+  color: #CCCCCC;
+  line-height: 1;
+  padding-top: 20rpx;
+  flex-shrink: 0;
+}
+
+/* 操作按钮栏 */
+.draft-card-actions {
+  display: flex;
+  border-top: 1rpx solid #F0E6D2;
+  padding: 0;
+}
+
+.action-btn {
+  flex: 1;
+  height: 84rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  font-size: 26rpx;
+  padding: 0;
+  line-height: 1;
+}
+
+.action-btn[disabled] {
+  opacity: 0.5;
+}
+
+.action-btn::after {
+  border: none;
+}
+
+.btn-edit {
+  color: #8B4513;
+  border-right: 1rpx solid #F0E6D2;
+}
+
+.btn-publish {
+  color: #228B22;
+  border-right: 1rpx solid #F0E6D2;
+}
+
+.btn-delete {
+  color: #E74C3C;
+}
+
+.btn-icon {
+  font-size: 28rpx;
+}
+
+.btn-text {
+  font-size: 26rpx;
+}

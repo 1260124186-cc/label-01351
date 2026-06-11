@@ -1,0 +1,84 @@
+<view class="page-container">
+  <!-- 未登录状态 -->
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">📝</text>
+      <text class="login-text">登录后查看草稿箱</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <block wx:else>
+    <!-- 草稿列表头部 -->
+    <view class="section-header" wx:if="{{!loading || draftList.length > 0}}">
+      <text class="section-title">草稿箱</text>
+      <text class="section-count">共 {{draftList.length}} 篇</text>
+    </view>
+
+    <!-- 加载中 -->
+    <view class="loading-wrap" wx:if="{{loading && draftList.length === 0}}">
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-wrap" wx:if="{{!loading && draftList.length === 0}}">
+      <view class="empty-icon-wrap">
+        <text class="empty-icon">📝</text>
+      </view>
+      <text class="empty-title">暂无草稿</text>
+      <text class="empty-text">投稿时可保存草稿，随时继续编辑</text>
+      <button class="btn-empty" bindtap="goToPublish">去投稿</button>
+    </view>
+
+    <!-- 草稿列表 -->
+    <view class="draft-list" wx:if="{{draftList.length > 0}}">
+      <view
+        class="draft-card"
+        wx:for="{{draftList}}"
+        wx:key="id"
+      >
+        <view class="draft-card-header" bindtap="onEditDraft" data-id="{{item.id}}">
+          <view class="draft-main">
+            <view class="draft-title">
+              {{item.title || '（无标题）'}}
+            </view>
+            <view class="draft-meta-row">
+              <view class="meta-left">
+                <text class="meta-category tag-{{item.category}}" wx:if="{{item.category}}">
+                  {{item.categoryName}}
+                </text>
+                <text class="meta-category tag-placeholder" wx:else>未选分类</text>
+                <text class="meta-time">{{item.displayTime}}</text>
+              </view>
+            </view>
+            <view class="draft-summary" wx:if="{{item.summary}}">
+              {{item.summary}}
+            </view>
+            <view class="draft-content-preview" wx:elif="{{item.content}}">
+              {{item.content}}
+            </view>
+            <view class="draft-empty-hint" wx:else>
+              点击编辑，补充内容
+            </view>
+          </view>
+          <text class="draft-arrow">›</text>
+        </view>
+
+        <view class="draft-card-actions">
+          <button class="action-btn btn-edit" bindtap="onEditDraft" data-id="{{item.id}}">
+            <text class="btn-icon">✏️</text>
+            <text class="btn-text">继续编辑</text>
+          </button>
+          <button class="action-btn btn-publish" bindtap="onPublishDraft" data-id="{{item.id}}">
+            <text class="btn-icon">🚀</text>
+            <text class="btn-text">发布</text>
+          </button>
+          <button class="action-btn btn-delete" bindtap="onDeleteDraft" data-id="{{item.id}}">
+            <text class="btn-icon">🗑️</text>
+            <text class="btn-text">删除</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

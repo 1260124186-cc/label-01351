@@ -28,6 +28,12 @@ Page({
       tags: []
     },
 
+    // 草稿相关
+    draftId: '',
+    isEditingDraft: false,
+    savingDraft: false,
+    draftSaved: false,
+
     // 标签相关
     suggestedTags: [],
     tagInput: '',
@@ -54,10 +60,15 @@ Page({
   _categoriesLoaded: false,
   _figuresLoaded: false,
 
-  onLoad() {
+  onLoad(options) {
     this.loadCategories();
     this._categoriesLoaded = true;
     this.setData({ suggestedTags: util.SUGGESTED_TAGS });
+
+    if (options && options.draftId) {
+      this.setData({ draftId: options.draftId, isEditingDraft: true });
+      this.loadDraftDetail(options.draftId);
+    }
   },
 
   onShow() {
@@ -74,7 +85,46 @@ Page({
         this.loadFigures();
         this._figuresLoaded = true;
       }
-      this.checkCanSubmit();
+      if (!this.data.isEditingDraft) {
+        this.checkCanSubmit();
+      }
+    }
+  },
+
+  async loadDraftDetail(draftId) {
+    try {
+      wx.showLoading({ title: '加载中...' });
+      const res = await api.getArticleDraftDetail(draftId);
+      wx.hideLoading();
+      if (res.code === 200 && res.data) {
+        const draft = res.data;
+        const formData = {
+          title: draft.title || '',
+          category: draft.category || '',
+          summary: draft.summary || '',
+          content: draft.content || '',
+          figureId: draft.figureId || '',
+          tags: draft.tags || []
+        };
+
+        let selectedFigure = null;
+        if (draft.figureId && this.data.allFigures.length > 0) {
+          selectedFigure = this.data.allFigures.find(f => f.id === draft.figureId) || null;
+        }
+
+        this.setData({
+          formData,
+          selectedFigure
+        }, () => {
+          this.checkCanSubmit();
+        });
+      } else {
+        wx.showToast({ title: res.message || '加载草稿失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('[Publish] 加载草稿异常:', error);
+      wx.showToast({ title: '网络错误，请重试', icon: 'none' });
     }
   },
 
@@ -89,9 +139,14 @@ Page({
       const res = await api.getFigureList({ page: 1, pageSize: 100 });
       if (res.code === 200 && res.data && res.data.list) {
         const figures = res.data.list.filter(item => item.status === 1);
+        let selectedFigure = null;
+        if (this.data.isEditingDraft && this.data.formData.figureId) {
+          selectedFigure = figures.find(f => f.id === this.data.formData.figureId) || null;
+        }
         this.setData({
           allFigures: figures,
-          filteredFigures: figures
+          filteredFigures: figures,
+          selectedFigure: selectedFigure || this.data.selectedFigure
         });
       }
     } catch (error) {
@@ -306,6 +361,61 @@ Page({
     this.setData({ showPreview: false, previewData: null });
   },
 
+  async onSaveDraft() {
+    if (this.data.savingDraft) return;
+
+    const { title, category, summary, content, figureId, tags } = this.data.formData;
+
+    if (!title && !content) {
+      wx.showToast({ title: '请至少输入标题或内容', icon: 'none' });
+      return;
+    }
+
+    if (tags && tags.length > 3) {
+      wx.showToast({ title: '标签最多3个', icon: 'none' });
+      return;
+    }
+
+    this.setData({ savingDraft: true });
+    wx.showLoading({ title: '保存中...' });
+
+    try {
+      const draftData = {
+        title: title,
+        category: category,
+        summary: summary,
+        content: content,
+        tags: tags && tags.length > 0 ? tags : []
+      };
+      if (figureId) {
+        draftData.figureId = figureId;
+      }
+      if (this.data.draftId) {
+        draftData.id = this.data.draftId;
+      }
+
+      const res = await api.saveArticleDraft(draftData);
+      wx.hideLoading();
+
+      if (res.code === 200) {
+        this.setData({
+          draftId: res.data.id,
+          isEditingDraft: true,
+          draftSaved: true
+        });
+        wx.showToast({ title: '草稿已保存', icon: 'success' });
+      } else {
+        wx.showToast({ title: res.message || '保存失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('[Publish] 保存草稿异常:', error);
+      wx.showToast({ title: '网络错误，请重试', icon: 'none' });
+    } finally {
+      this.setData({ savingDraft: false });
+    }
+  },
+
   async onSubmit() {
     if (this.data.submitting) return;
 
@@ -358,17 +468,36 @@ Page({
     wx.showLoading({ title: '发布中...' });
 
     try {
-      const articleData = {
-        title: titleTrimmed,
-        category,
-        summary: autoSummary,
-        content: contentTrimmed,
-        tags: tags && tags.length > 0 ? tags : []
-      };
-      if (figureId) {
-        articleData.figureId = figureId;
+      let res;
+      if (this.data.draftId) {
+        const updateRes = await api.updateArticleDraft(this.data.draftId, {
+          title: titleTrimmed,
+          category,
+          summary: autoSummary,
+          content: contentTrimmed,
+          tags: tags && tags.length > 0 ? tags : [],
+          figureId: figureId || ''
+        });
+        if (updateRes.code !== 200) {
+          wx.hideLoading();
+          wx.showToast({ title: updateRes.message || '更新失败', icon: 'none' });
+          this.setData({ submitting: false });
+          return;
+        }
+        res = await api.publishArticleDraft(this.data.draftId);
+      } else {
+        const articleData = {
+          title: titleTrimmed,
+          category,
+          summary: autoSummary,
+          content: contentTrimmed,
+          tags: tags && tags.length > 0 ? tags : []
+        };
+        if (figureId) {
+          articleData.figureId = figureId;
+        }
+        res = await api.publishArticle(articleData);
       }
-      const res = await api.publishArticle(articleData);
 
       wx.hideLoading();
 
@@ -378,6 +507,8 @@ Page({
           previewData: null,
           showSuccess: true,
           newArticleId: res.data.id,
+          draftId: '',
+          isEditingDraft: false,
           formData: {
             title: '',
             category: '',
@@ -386,6 +517,7 @@ Page({
             figureId: '',
             tags: []
           },
+          selectedFigure: null,
           canSubmit: false
         });
       } else {

@@ -309,12 +309,32 @@
 /* 发布按钮 */
 .form-actions {
   display: flex;
-  gap: 20rpx;
+  gap: 16rpx;
   padding: 0 16rpx;
 }
 
+.btn-draft {
+  width: 200rpx;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border: 2rpx solid #8B4513;
+  border-radius: 48rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #8B4513;
+  box-sizing: border-box;
+}
+
+.btn-draft[disabled] {
+  border-color: #cccccc;
+  color: #cccccc;
+}
+
 .btn-preview {
-  width: 240rpx;
+  width: 200rpx;
   height: 96rpx;
   display: flex;
   align-items: center;
@@ -322,7 +342,7 @@
   background: #FFFFFF;
   border: 2rpx solid var(--color-secondary);
   border-radius: 48rpx;
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: 500;
   color: var(--color-secondary);
   box-sizing: border-box;
@@ -341,7 +361,7 @@
   justify-content: center;
   background: linear-gradient(135deg, #228B22 0%, #2E8B57 100%);
   border-radius: 48rpx;
-  font-size: 32rpx;
+  font-size: 30rpx;
   font-weight: bold;
   color: #FFFFFF;
   border: none;

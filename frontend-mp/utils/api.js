@@ -321,13 +321,237 @@ const storageApi = {
     if (authError) return authError;
     const userId = getCurrentUserId();
     let articles = wx.getStorageSync('articles') || [];
-    articles = articles.filter(item => item.authorId === userId);
+    articles = articles.filter(item => item.authorId === userId && item.status === 1);
     articles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
     return {
       code: 200,
       data: { list: articles, total: articles.length },
       message: 'success'
     };
+  },
+
+  saveArticleDraft: async (data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userInfo = wx.getStorageSync('userInfo');
+    const articles = wx.getStorageSync('articles') || [];
+
+    const title = data.title ? data.title.trim() : '';
+    const content = data.content ? data.content.trim() : '';
+    const category = data.category || '';
+    const summaryInput = data.summary ? data.summary.trim() : '';
+    const summary = summaryInput || (content ? util.truncateText(content, 100) : '');
+    const id = data.id;
+
+    if (id) {
+      const index = articles.findIndex(item => item.id === id && item.authorId === userInfo.id);
+      if (index === -1) {
+        return { code: 404, data: null, message: '草稿不存在' };
+      }
+      articles[index] = {
+        ...articles[index],
+        title: title || articles[index].title || '无标题',
+        category: category || articles[index].category || '',
+        summary: summary || articles[index].summary || '',
+        content: content || articles[index].content || '',
+        tags: data.tags || articles[index].tags || [],
+        figureId: data.figureId || articles[index].figureId || '',
+        updateTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+        status: 0
+      };
+      wx.setStorageSync('articles', articles);
+      return { code: 200, data: articles[index], message: '保存成功' };
+    }
+
+    const newDraft = {
+      id: util.generateId('draft'),
+      title: title || '无标题',
+      category: category || '',
+      summary: summary || '',
+      content: content || '',
+      tags: data.tags || [],
+      figureId: data.figureId || '',
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      viewCount: 0,
+      likeCount: 0,
+      commentCount: 0,
+      createTime: '',
+      updateTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 0
+    };
+    articles.unshift(newDraft);
+    wx.setStorageSync('articles', articles);
+    return { code: 200, data: newDraft, message: '保存成功' };
+  },
+
+  getArticleDraftList: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    let articles = wx.getStorageSync('articles') || [];
+    const drafts = articles.filter(item => item.authorId === userId && item.status === 0);
+    drafts.sort((a, b) => new Date(b.updateTime) - new Date(a.updateTime));
+
+    const list = drafts.map(item => ({
+      ...item,
+      categoryName: util.getCategoryName(item.category)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total: list.length },
+      message: 'success'
+    };
+  },
+
+  getArticleDraftDetail: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '草稿ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const draft = articles.find(item => item.id === id && item.authorId === userId && item.status === 0);
+
+    if (!draft) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+
+    return { code: 200, data: draft, message: 'success' };
+  },
+
+  updateArticleDraft: async (id, data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '草稿ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const index = articles.findIndex(item => item.id === id && item.authorId === userId && item.status === 0);
+
+    if (index === -1) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+
+    const updateData = {};
+    if (data.title !== undefined) updateData.title = data.title.trim();
+    if (data.category !== undefined) updateData.category = data.category;
+    if (data.summary !== undefined) updateData.summary = data.summary.trim();
+    if (data.content !== undefined) updateData.content = data.content.trim();
+    if (data.tags !== undefined) updateData.tags = data.tags;
+    if (data.figureId !== undefined) updateData.figureId = data.figureId;
+    updateData.updateTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+
+    articles[index] = { ...articles[index], ...updateData };
+    wx.setStorageSync('articles', articles);
+
+    return { code: 200, data: articles[index], message: '更新成功' };
+  },
+
+  publishArticleDraft: async (id) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '草稿ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const index = articles.findIndex(item => item.id === id && item.authorId === userId && item.status === 0);
+
+    if (index === -1) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+
+    const draft = articles[index];
+    if (!draft.title || draft.title.trim().length < 2) {
+      return { code: 400, data: null, message: '请输入文章标题（至少2字）' };
+    }
+    if (!draft.category) {
+      return { code: 400, data: null, message: '请选择文章分类' };
+    }
+    if (!draft.content || draft.content.trim().length < 10) {
+      return { code: 400, data: null, message: '请输入文章内容（至少10字）' };
+    }
+
+    const contentTrimmed = draft.content.trim();
+    const autoSummary = (draft.summary || '').trim() || util.truncateText(contentTrimmed, 100);
+    const sensitiveCheck = util.checkSensitiveWords(
+      draft.title + ' ' + autoSummary + ' ' + contentTrimmed + ' ' + (draft.tags || []).join(' ')
+    );
+    if (sensitiveCheck.hasSensitive) {
+      return {
+        code: 400,
+        data: { matchedWords: sensitiveCheck.matchedWords },
+        message: '内容包含敏感词：' + sensitiveCheck.matchedWords.join('、') + '，请修改后重试'
+      };
+    }
+
+    articles[index] = {
+      ...draft,
+      title: draft.title.trim(),
+      summary: autoSummary,
+      content: contentTrimmed,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      updateTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 1
+    };
+    wx.setStorageSync('articles', articles);
+
+    const figureId = articles[index].figureId;
+    if (figureId) {
+      const figures = wx.getStorageSync('figures') || [];
+      const figureIndex = figures.findIndex(item => item.id === figureId);
+      if (figureIndex > -1) {
+        if (!figures[figureIndex].relatedArticles) {
+          figures[figureIndex].relatedArticles = [];
+        }
+        if (!figures[figureIndex].relatedArticles.includes(id)) {
+          figures[figureIndex].relatedArticles.push(id);
+        }
+        wx.setStorageSync('figures', figures);
+      }
+    }
+
+    return { code: 200, data: articles[index], message: '发布成功' };
+  },
+
+  deleteArticleDraft: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '草稿ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const index = articles.findIndex(item => item.id === id && item.authorId === userId && item.status === 0);
+
+    if (index === -1) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+
+    articles.splice(index, 1);
+    wx.setStorageSync('articles', articles);
+
+    return { code: 200, data: null, message: '删除成功' };
   },
 
   getCategoryList: async () => {
@@ -3799,6 +4023,69 @@ const remoteApi = {
       url: '/api/article/my',
       method: 'GET',
       data: { authorId: userId }
+    });
+  },
+
+  saveArticleDraft: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/article/draft/save',
+      method: 'POST',
+      data: { ...data, authorId: userId }
+    });
+  },
+
+  getArticleDraftList: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/article/drafts',
+      method: 'GET',
+      data: { authorId: userId }
+    });
+  },
+
+  getArticleDraftDetail: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '草稿ID不能为空' };
+    return request({
+      url: `/api/article/draft/${id}`,
+      method: 'GET'
+    });
+  },
+
+  updateArticleDraft: async (id, data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '草稿ID不能为空' };
+    return request({
+      url: `/api/article/draft/update/${id}`,
+      method: 'POST',
+      data
+    });
+  },
+
+  publishArticleDraft: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '草稿ID不能为空' };
+    return request({
+      url: `/api/article/draft/publish/${id}`,
+      method: 'POST'
+    });
+  },
+
+  deleteArticleDraft: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '草稿ID不能为空' };
+    return request({
+      url: `/api/article/draft/delete/${id}`,
+      method: 'POST'
     });
   },
 

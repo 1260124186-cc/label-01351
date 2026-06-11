@@ -26,7 +26,7 @@
           <text class="label-required">*</text>
         </view>
         <view class="form-input-wrap">
-          <input 
+          <input
             class="form-input"
             placeholder="请输入文章标题（至少2字）"
             placeholder-class="input-placeholder"
@@ -45,7 +45,7 @@
           <text class="label-required">*</text>
         </view>
         <view class="category-list">
-          <view 
+          <view
             class="category-option {{formData.category === item.id ? 'active' : ''}}"
             wx:for="{{categories}}"
             wx:key="id"
@@ -66,7 +66,7 @@
           <text class="label-hint">（选填，不填将自动截取正文前100字）</text>
         </view>
         <view class="form-input-wrap">
-          <input 
+          <input
             class="form-input"
             placeholder="一句话概括文章内容（50字内）"
             placeholder-class="input-placeholder"
@@ -87,7 +87,7 @@
 
         <!-- 已选标签 -->
         <view class="selected-tags" wx:if="{{formData.tags.length > 0}}">
-          <view 
+          <view
             class="tag-item selected"
             wx:for="{{formData.tags}}"
             wx:key="*this"
@@ -105,7 +105,7 @@
         <view class="tag-suggest">
           <view class="suggest-label">推荐标签：</view>
           <view class="suggest-list">
-            <view 
+            <view
               class="tag-item {{formData.tags.indexOf(item) > -1 ? 'selected' : ''}}"
               wx:for="{{suggestedTags}}"
               wx:key="*this"
@@ -124,7 +124,7 @@
 
         <!-- 自定义标签输入 -->
         <view class="custom-tag-wrap" wx:if="{{showTagInput}}">
-          <input 
+          <input
             class="custom-tag-input"
             placeholder="输入自定义标签（10字内）"
             placeholder-class="input-placeholder"
@@ -172,7 +172,7 @@
           <view class="figure-search-wrap" wx:if="{{showFigureSelector}}">
             <view class="search-input-wrap">
               <text class="search-icon">🔍</text>
-              <input 
+              <input
                 class="search-input"
                 placeholder="搜索人物姓名"
                 placeholder-class="input-placeholder"
@@ -186,7 +186,7 @@
           <!-- 人物列表 -->
           <view class="figure-list" wx:if="{{showFigureSelector}}">
             <scroll-view scroll-y style="max-height: 400rpx;">
-              <view 
+              <view
                 class="figure-option"
                 wx:for="{{filteredFigures}}"
                 wx:key="id"
@@ -229,7 +229,7 @@
           <text class="label-required">*</text>
         </view>
         <view class="form-textarea-wrap">
-          <textarea 
+          <textarea
             class="form-textarea"
             placeholder="请输入文章内容（至少10字）"
             placeholder-class="input-placeholder"
@@ -260,10 +260,15 @@
 
       <!-- 发布按钮 -->
       <view class="form-actions">
+        <button class="btn-draft" bindtap="onSaveDraft" disabled="{{savingDraft}}">
+          <text wx:if="{{savingDraft}}">保存中...</text>
+          <text wx:elif="{{isEditingDraft}}">更新草稿</text>
+          <text wx:else>保存草稿</text>
+        </button>
         <button class="btn-preview" bindtap="onPreview" disabled="{{!canSubmit}}">
           <text>预览排版</text>
         </button>
-        <button 
+        <button
           class="btn-publish"
           bindtap="onSubmit"
           disabled="{{!canSubmit || submitting}}"
@@ -301,7 +306,7 @@
           <text class="summary-text">{{previewData.summary}}</text>
         </view>
         <view class="preview-tags" wx:if="{{previewData.tags && previewData.tags.length > 0}}">
-          <view 
+          <view
             class="preview-tag-item"
             wx:for="{{previewData.tags}}"
             wx:key="*this"

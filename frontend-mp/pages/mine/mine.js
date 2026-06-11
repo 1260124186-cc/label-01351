@@ -42,6 +42,8 @@ Page({
 
     unreadNotificationCount: 0,
 
+    draftCount: 0,
+
     showFeedbackModal: false,
     feedbackContent: '',
     feedbackContact: ''
@@ -58,6 +60,7 @@ Page({
       this.loadStats();
       this.loadMyArticles();
       this.loadUnreadCount();
+      this.loadDraftCount();
     }
   },
 
@@ -319,6 +322,24 @@ Page({
   goToHistory() {
     wx.navigateTo({
       url: '/pages/history/history'
+    });
+  },
+
+  async loadDraftCount() {
+    try {
+      const res = await api.getArticleDraftList();
+      if (res.code === 200) {
+        const list = res.data && res.data.list ? res.data.list : (res.data || []);
+        this.setData({ draftCount: Array.isArray(list) ? list.length : 0 });
+      }
+    } catch (error) {
+      console.error('[Mine] 加载草稿数量异常:', error);
+    }
+  },
+
+  goToDrafts() {
+    wx.navigateTo({
+      url: '/pages/drafts/drafts'
     });
   }
 });
