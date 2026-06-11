@@ -81,7 +81,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 30%;
+  width: 25%;
   margin-bottom: 16rpx;
 }
 
@@ -114,6 +114,10 @@
 
 .icon-activity {
   background: linear-gradient(135deg, #FF6B9D 0%, #C44569 100%);
+}
+
+.icon-calendar {
+  background: linear-gradient(135deg, #E67E22 0%, #F39C12 100%);
 }
 
 .icon-publish {

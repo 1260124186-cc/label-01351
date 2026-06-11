@@ -53,5 +53,11 @@ Page({
     wx.navigateTo({
       url: '/pages/publish/publish'
     });
+  },
+
+  goToCalendar() {
+    wx.navigateTo({
+      url: '/pages/calendar/calendar'
+    });
   }
 });

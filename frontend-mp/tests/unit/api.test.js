@@ -2937,3 +2937,107 @@ describe('api错题本功能', () => {
     expect(res.data.quizzes.length).toBeLessThanOrEqual(10);
   });
 });
+
+describe('api 日历功能', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  describe('getCalendarEvents', () => {
+    test('获取当月节气节日事件', async () => {
+      const res = await api.getCalendarEvents({ year: 2025, month: 1 });
+      expect(res.code).toBe(200);
+      expect(res.data).toBeTruthy();
+    });
+
+    test('缺少参数返回400', async () => {
+      const res = await api.getCalendarEvents({});
+      expect(res.code).toBe(400);
+    });
+  });
+
+  describe('getCalendarDateDetail', () => {
+    test('获取节气日期详情', async () => {
+      const res = await api.getCalendarDateDetail({ year: 2025, month: 1, day: 5 });
+      expect(res.code).toBe(200);
+      expect(res.data.events.length).toBeGreaterThan(0);
+      expect(res.data.events[0].name).toBe('小寒');
+    });
+
+    test('无事件日期返回空数组', async () => {
+      const res = await api.getCalendarDateDetail({ year: 2025, month: 3, day: 15 });
+      expect(res.code).toBe(200);
+      expect(res.data.events).toEqual([]);
+    });
+
+    test('缺少参数返回400', async () => {
+      const res = await api.getCalendarDateDetail({});
+      expect(res.code).toBe(400);
+    });
+  });
+
+  describe('subscribeCalendarEvent / unsubscribeCalendarEvent', () => {
+    test('订阅节气节日', async () => {
+      wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('isLoggedIn', true);
+      const res = await api.subscribeCalendarEvent('lichun');
+      expect(res.code).toBe(200);
+      expect(res.data.isSubscribed).toBe(true);
+    });
+
+    test('未登录时订阅返回401', async () => {
+      const res = await api.subscribeCalendarEvent('lichun');
+      expect(res.code).toBe(401);
+    });
+
+    test('取消订阅', async () => {
+      wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('isLoggedIn', true);
+      await api.subscribeCalendarEvent('lichun');
+      const res = await api.unsubscribeCalendarEvent('lichun');
+      expect(res.code).toBe(200);
+      expect(res.data.isSubscribed).toBe(false);
+    });
+
+    test('缺少事件ID返回400', async () => {
+      wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('isLoggedIn', true);
+      const res = await api.subscribeCalendarEvent('');
+      expect(res.code).toBe(400);
+    });
+  });
+
+  describe('checkCalendarSubscription', () => {
+    test('检查订阅状态', async () => {
+      const res = await api.checkCalendarSubscription('lichun');
+      expect(res.code).toBe(200);
+      expect(res.data.isSubscribed).toBe(false);
+    });
+
+    test('订阅后检查返回true', async () => {
+      wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('isLoggedIn', true);
+      await api.subscribeCalendarEvent('lichun');
+      const res = await api.checkCalendarSubscription('lichun');
+      expect(res.code).toBe(200);
+      expect(res.data.isSubscribed).toBe(true);
+    });
+  });
+
+  describe('getMyCalendarSubscriptions', () => {
+    test('获取我的订阅列表', async () => {
+      wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('isLoggedIn', true);
+      await api.subscribeCalendarEvent('lichun');
+      await api.subscribeCalendarEvent('chunjie');
+      const res = await api.getMyCalendarSubscriptions();
+      expect(res.code).toBe(200);
+      expect(res.data.total).toBe(2);
+    });
+
+    test('未登录时返回401', async () => {
+      const res = await api.getMyCalendarSubscriptions();
+      expect(res.code).toBe(401);
+    });
+  });
+});

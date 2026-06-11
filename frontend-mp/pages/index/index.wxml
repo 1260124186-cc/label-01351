@@ -61,6 +61,13 @@
       <text class="entry-name">文化活动</text>
       <text class="entry-desc">志愿招募</text>
     </view>
+    <view class="entry-item" bindtap="goToCalendar">
+      <view class="entry-icon-wrap icon-calendar">
+        <text class="entry-icon">📅</text>
+      </view>
+      <text class="entry-name">文化日历</text>
+      <text class="entry-desc">节气节日</text>
+    </view>
     <view class="entry-item" bindtap="goToPublish">
       <view class="entry-icon-wrap icon-publish">
         <text class="entry-icon">✏️</text>

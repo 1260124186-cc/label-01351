@@ -35,7 +35,8 @@
     "pages/interview-detail/interview-detail",
     "pages/interview-create/interview-create",
     "pages/interview-collections/interview-collections",
-    "pages/interview-collection-detail/interview-collection-detail"
+    "pages/interview-collection-detail/interview-collection-detail",
+    "pages/calendar/calendar"
   ],
   "window": {
     "backgroundTextStyle": "dark",

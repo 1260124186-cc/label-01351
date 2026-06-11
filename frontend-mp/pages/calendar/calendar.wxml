@@ -1,0 +1,169 @@
+<!--pages/calendar/calendar.wxml-->
+<view class="page-container">
+  <view class="header">
+    <view class="month-nav">
+      <view class="nav-btn" bindtap="prevMonth">
+        <text class="nav-arrow">‹</text>
+      </view>
+      <view class="month-info">
+        <text class="month-text">{{currentYear}}年{{currentMonth}}月</text>
+        <view class="today-btn" bindtap="goToday">
+          <text class="today-text">今天</text>
+        </view>
+      </view>
+      <view class="nav-btn" bindtap="nextMonth">
+        <text class="nav-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="week-header">
+      <view class="week-day" wx:for="{{weekDays}}" wx:key="*this">
+        <text class="week-day-text">{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="calendar-grid">
+    <view
+      class="day-cell {{item.isCurrentMonth ? '' : 'day-other'}} {{item.isToday ? 'day-today' : ''}} {{item.dateStr === selectedDate ? 'day-selected' : ''}} {{item.hasEvent ? 'day-event' : ''}}"
+      wx:for="{{calendarDays}}"
+      wx:key="index"
+      bindtap="onDateTap"
+      data-index="{{index}}"
+    >
+      <text class="day-num">{{item.day}}</text>
+      <view class="event-dots" wx:if="{{item.hasEvent}}">
+        <view
+          class="dot {{evt.type === 'solar_term' ? 'dot-term' : 'dot-festival'}}"
+          wx:for="{{item.events}}"
+          wx:for-item="evt"
+          wx:for-index="evtIdx"
+          wx:key="id"
+          wx:if="{{evtIdx < 3}}"
+        ></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="legend">
+    <view class="legend-item">
+      <view class="legend-dot dot-term"></view>
+      <text class="legend-text">节气</text>
+    </view>
+    <view class="legend-item">
+      <view class="legend-dot dot-festival"></view>
+      <text class="legend-text">节日</text>
+    </view>
+  </view>
+
+  <view class="detail-section" wx:if="{{selectedEvents.length > 0 || showDetail}}">
+    <view class="selected-date-bar">
+      <text class="selected-date-text">{{selectedDate}}</text>
+      <text class="event-count" wx:if="{{selectedEvents.length > 0}}">{{selectedEvents.length}}个节气/节日</text>
+      <text class="event-count empty-hint" wx:else>当日无节气/节日</text>
+    </view>
+
+    <view class="event-tabs" wx:if="{{selectedEvents.length > 1}}">
+      <view
+        class="event-tab {{detailEvent.id === item.id ? 'active' : ''}}"
+        wx:for="{{selectedEvents}}"
+        wx:key="id"
+        bindtap="onEventTab"
+        data-index="{{index}}"
+      >
+        <text class="event-tab-name">{{item.name}}</text>
+      </view>
+    </view>
+
+    <view class="detail-card" wx:if="{{showDetail && detailEvent}}">
+      <view class="detail-header">
+        <view class="detail-type-badge {{detailEvent.type === 'solar_term' ? 'badge-term' : 'badge-festival'}}">
+          <text class="badge-text">{{detailEvent.type === 'solar_term' ? '节气' : '节日'}}</text>
+        </view>
+        <text class="detail-name">{{detailEvent.name}}</text>
+      </view>
+
+      <view class="detail-summary">
+        <text class="summary-text">{{detailEvent.summary}}</text>
+      </view>
+
+      <view class="detail-content">
+        <text class="content-text">{{detailEvent.content}}</text>
+      </view>
+
+      <view class="detail-section-title" wx:if="{{detailEvent.customs && detailEvent.customs.length > 0}}">
+        <text class="section-title-text">传统习俗</text>
+      </view>
+      <view class="customs-list" wx:if="{{detailEvent.customs && detailEvent.customs.length > 0}}">
+        <view class="custom-item" wx:for="{{detailEvent.customs}}" wx:key="*this">
+          <text class="custom-dot">●</text>
+          <text class="custom-text">{{item}}</text>
+        </view>
+      </view>
+
+      <view class="detail-section-title" wx:if="{{detailEvent.farming}}">
+        <text class="section-title-text">农事指南</text>
+      </view>
+      <view class="farming-info" wx:if="{{detailEvent.farming}}">
+        <text class="farming-text">{{detailEvent.farming}}</text>
+      </view>
+
+      <view class="subscribe-area">
+        <view
+          class="subscribe-btn {{isSubscribed ? 'subscribed' : ''}}"
+          bindtap="toggleSubscribe"
+        >
+          <text class="subscribe-icon">{{isSubscribed ? '✓' : '🔔'}}</text>
+          <text class="subscribe-text">{{isSubscribed ? '已订阅提醒' : '订阅提醒'}}</text>
+        </view>
+        <text class="subscribe-hint">{{isSubscribed ? '节日前将通知提醒您' : '订阅后节日前会提醒您'}}</text>
+      </view>
+
+      <view class="contribution-area" wx:if="{{detailEvent.hasContribution}}">
+        <view class="contribution-card" bindtap="goToPublish">
+          <view class="contribution-icon-wrap">
+            <text class="contribution-icon">✏️</text>
+          </view>
+          <view class="contribution-info">
+            <text class="contribution-title">{{detailEvent.contributionPrompt || '分享你的节日记忆'}}</text>
+            <text class="contribution-desc">投稿分享你的故事，让更多人了解传统节日</text>
+          </view>
+          <text class="contribution-arrow">›</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="related-section" wx:if="{{showDetail && relatedArticles.length > 0}}">
+    <view class="section-header">
+      <text class="section-header-title">相关文章</text>
+      <text class="section-header-more">按关键词匹配</text>
+    </view>
+    <view class="related-list">
+      <view
+        class="related-item"
+        wx:for="{{relatedArticles}}"
+        wx:key="id"
+        bindtap="goToArticleDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="related-item-content">
+          <text class="related-item-title">{{item.title}}</text>
+          <text class="related-item-summary">{{item.content}}</text>
+          <view class="related-item-meta">
+            <text class="related-item-author">{{item.authorName}}</text>
+            <text class="related-item-date">{{item.createTime}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="no-event-hint" wx:if="{{selectedEvents.length === 0 && selectedDate}}">
+    <text class="hint-icon">📅</text>
+    <text class="hint-text">当日暂无节气或节日</text>
+    <view class="hint-action" bindtap="goToEncyclopedia">
+      <text class="hint-action-text">浏览文化百科</text>
+    </view>
+  </view>
+</view>

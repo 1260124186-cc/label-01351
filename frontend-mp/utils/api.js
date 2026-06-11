@@ -6,6 +6,7 @@ const util = require('./util');
 const figureData = require('./figure-data');
 const quizData = require('./quiz-data');
 const interviewData = require('./interview-data');
+const calendarData = require('./calendar-data');
 
 const config = {
   useRemote: false,
@@ -2946,6 +2947,78 @@ const storageApi = {
       data: { ...collection, interviewList, relatedCollections, interviewCount: interviewList.length },
       message: 'success'
     };
+  },
+
+  getCalendarEvents: async (params = {}) => {
+    await delay(200);
+    const { year, month } = params;
+    if (!year || !month) {
+      return { code: 400, data: null, message: '年份和月份不能为空' };
+    }
+    const eventMap = calendarData.getEventsForMonth(year, month);
+    return { code: 200, data: eventMap, message: 'success' };
+  },
+
+  getCalendarDateDetail: async (params = {}) => {
+    await delay(200);
+    const { year, month, day } = params;
+    if (!year || !month || !day) {
+      return { code: 400, data: null, message: '日期参数不完整' };
+    }
+    const events = calendarData.getEventsForDate(year, month, day);
+    let relatedArticles = [];
+    if (events.length > 0) {
+      const articles = wx.getStorageSync('articles') || [];
+      relatedArticles = calendarData.matchArticlesByKeywords(events[0], articles).slice(0, 5);
+    }
+    return {
+      code: 200,
+      data: { events, relatedArticles },
+      message: 'success'
+    };
+  },
+
+  subscribeCalendarEvent: async (eventId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!eventId) {
+      return { code: 400, data: null, message: '事件ID不能为空' };
+    }
+    calendarData.subscribeEvent(eventId);
+    return { code: 200, data: { isSubscribed: true }, message: '订阅成功' };
+  },
+
+  unsubscribeCalendarEvent: async (eventId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!eventId) {
+      return { code: 400, data: null, message: '事件ID不能为空' };
+    }
+    calendarData.unsubscribeEvent(eventId);
+    return { code: 200, data: { isSubscribed: false }, message: '已取消订阅' };
+  },
+
+  checkCalendarSubscription: async (eventId) => {
+    await delay(100);
+    if (!eventId) {
+      return { code: 400, data: null, message: '事件ID不能为空' };
+    }
+    const isSubscribed = calendarData.isSubscribed(eventId);
+    return { code: 200, data: { isSubscribed }, message: 'success' };
+  },
+
+  getMyCalendarSubscriptions: async () => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const subs = calendarData.getSubscriptions();
+    const list = Object.keys(subs).filter(k => subs[k].subscribed).map(k => ({
+      eventId: k,
+      subscribeTime: subs[k].subscribeTime
+    }));
+    return { code: 200, data: { list, total: list.length }, message: 'success' };
   }
 };
 
@@ -3740,6 +3813,38 @@ const remoteApi = {
   getInterviewCollectionDetail: async (id) => {
     if (!id) return { code: 400, data: null, message: '合集ID不能为空' };
     return request({ url: `/api/interview/collection/detail/${id}`, method: 'GET' });
+  },
+
+  getCalendarEvents: async (params = {}) => {
+    const { year, month } = params;
+    return request({ url: '/api/calendar/events', method: 'GET', data: { year, month } });
+  },
+
+  getCalendarDateDetail: async (params = {}) => {
+    const { year, month, day } = params;
+    return request({ url: '/api/calendar/date-detail', method: 'GET', data: { year, month, day } });
+  },
+
+  subscribeCalendarEvent: async (eventId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/calendar/subscribe', method: 'POST', data: { eventId } });
+  },
+
+  unsubscribeCalendarEvent: async (eventId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/calendar/unsubscribe', method: 'POST', data: { eventId } });
+  },
+
+  checkCalendarSubscription: async (eventId) => {
+    return request({ url: '/api/calendar/subscription-check', method: 'GET', data: { eventId } });
+  },
+
+  getMyCalendarSubscriptions: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/calendar/my-subscriptions', method: 'GET' });
   }
 };
 
