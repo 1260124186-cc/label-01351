@@ -16,7 +16,6 @@ Page({
   },
 
   onShow() {
-    this.refreshData();
     this.updateFilterCount();
   },
 

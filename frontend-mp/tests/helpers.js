@@ -716,7 +716,10 @@ function mergeBehaviors(pageDef) {
 
   let mergedData = {};
   let mergedMethods = {};
-  const lifecycleHooks = ['created', 'attached', 'ready', 'moved', 'detached'];
+  let mergedProperties = {};
+  const componentLifecycleHooks = ['created', 'attached', 'ready', 'moved', 'detached'];
+  const pageLifecycleHooks = ['onLoad', 'onShow', 'onReady', 'onHide', 'onUnload', 'onPullDownRefresh', 'onReachBottom', 'onShareAppMessage', 'onPageScroll', 'onTabItemTap', 'onResize', 'onAddToFavorites'];
+  const allLifecycleHooks = [...componentLifecycleHooks, ...pageLifecycleHooks];
   let mergedLifecycles = {};
 
   for (const behavior of pageDef.behaviors) {
@@ -730,7 +733,12 @@ function mergeBehaviors(pageDef) {
         }
       });
     }
-    lifecycleHooks.forEach(hook => {
+    Object.keys(behavior).forEach(key => {
+      if (key !== 'data' && key !== 'methods' && !allLifecycleHooks.includes(key)) {
+        mergedProperties[key] = behavior[key];
+      }
+    });
+    allLifecycleHooks.forEach(hook => {
       if (typeof behavior[hook] === 'function') {
         if (!mergedLifecycles[hook]) {
           mergedLifecycles[hook] = [];
@@ -743,13 +751,19 @@ function mergeBehaviors(pageDef) {
   mergedData = { ...mergedData, ...pageDef.data };
 
   const pageMethods = Object.keys(pageDef).filter(
-    key => typeof pageDef[key] === 'function' && key !== 'behaviors' && !lifecycleHooks.includes(key)
+    key => typeof pageDef[key] === 'function' && key !== 'behaviors' && !allLifecycleHooks.includes(key)
   );
   pageMethods.forEach(method => {
     mergedMethods[method] = pageDef[method];
   });
 
-  lifecycleHooks.forEach(hook => {
+  Object.keys(pageDef).forEach(key => {
+    if (key !== 'data' && key !== 'behaviors' && typeof pageDef[key] !== 'function' && !allLifecycleHooks.includes(key)) {
+      mergedProperties[key] = pageDef[key];
+    }
+  });
+
+  allLifecycleHooks.forEach(hook => {
     if (typeof pageDef[hook] === 'function') {
       if (!mergedLifecycles[hook]) {
         mergedLifecycles[hook] = [];
@@ -758,7 +772,7 @@ function mergeBehaviors(pageDef) {
     }
   });
 
-  const result = { data: mergedData, ...mergedMethods };
+  const result = { data: mergedData, ...mergedProperties, ...mergedMethods };
 
   Object.keys(mergedLifecycles).forEach(hook => {
     const fns = mergedLifecycles[hook];

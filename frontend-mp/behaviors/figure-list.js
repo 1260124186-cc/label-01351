@@ -32,8 +32,9 @@ module.exports = Behavior({
     activeFilterTab: 'identity'
   },
 
+  _loadRequestId: 0,
+
   onLoad() {
-    this._loadRequestId = 0;
     this.loadFilterOptions();
   },
 
@@ -85,6 +86,9 @@ module.exports = Behavior({
     },
 
     async loadList() {
+      if (typeof this._loadRequestId !== 'number' || isNaN(this._loadRequestId)) {
+        this._loadRequestId = 0;
+      }
       const requestId = ++this._loadRequestId;
 
       this.setData({ loading: true });
