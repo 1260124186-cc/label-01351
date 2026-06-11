@@ -1,5 +1,5 @@
 const api = require('../../utils/api');
-const { initStorage, defaultUser } = require('../helpers');
+const { initStorage, defaultUser, logoutUser, loginAsUser } = require('../helpers');
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -4011,5 +4011,472 @@ describe('api.getAuthorProfile', () => {
     const res = await api.getAuthorProfile('notexist_author');
     expect(res.code).toBe(404);
     expect(res.message).toBe('作者不存在');
+  });
+});
+
+describe('文章草稿 - 草稿箱功能', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  describe('api.saveArticleDraft 保存/更新草稿', () => {
+    test('未登录返回 401', async () => {
+      logoutUser();
+      const res = await api.saveArticleDraft({ title: '草稿标题', content: '草稿内容' });
+      expect(res.code).toBe(401);
+      expect(res.message).toBe('请先登录');
+    });
+
+    test('标题和内容都为空时返回 400', async () => {
+      const res = await api.saveArticleDraft({ title: '', content: '' });
+      expect(res.code).toBe(400);
+      expect(res.message).toBe('请至少输入标题或内容');
+    });
+
+    test('只填标题可以保存草稿', async () => {
+      const res = await api.saveArticleDraft({ title: '只有标题的草稿' });
+      expect(res.code).toBe(200);
+      expect(res.data).toHaveProperty('id');
+      expect(res.data.status).toBe(0);
+      expect(res.data.title).toBe('只有标题的草稿');
+      expect(res.data).toHaveProperty('updateTime');
+    });
+
+    test('只填内容可以保存草稿', async () => {
+      const res = await api.saveArticleDraft({ content: '只有内容的草稿内容' });
+      expect(res.code).toBe(200);
+      expect(res.data).toHaveProperty('id');
+      expect(res.data.status).toBe(0);
+      expect(res.data.content).toBe('只有内容的草稿内容');
+    });
+
+    test('不选择分类也能保存草稿', async () => {
+      const res = await api.saveArticleDraft({ title: '未分类草稿', content: '有内容但没有分类' });
+      expect(res.code).toBe(200);
+      expect(res.data.status).toBe(0);
+      expect(res.data.category).toBe('');
+    });
+
+    test('内容不足10字也能保存草稿', async () => {
+      const res = await api.saveArticleDraft({ title: '内容短', content: '12345' });
+      expect(res.code).toBe(200);
+      expect(res.data.status).toBe(0);
+    });
+
+    test('携带 id 时更新现有草稿', async () => {
+      const saveRes = await api.saveArticleDraft({ title: '原始标题', content: '原始内容' });
+      const draftId = saveRes.data.id;
+
+      const updateRes = await api.saveArticleDraft({
+        id: draftId,
+        title: '更新后的标题',
+        content: '更新后的内容'
+      });
+      expect(updateRes.code).toBe(200);
+      expect(updateRes.data.id).toBe(draftId);
+      expect(updateRes.data.title).toBe('更新后的标题');
+      expect(updateRes.data.content).toBe('更新后的内容');
+
+      const articles = wx.getStorageSync('articles');
+      const draft = articles.find(a => a.id === draftId);
+      expect(draft.title).toBe('更新后的标题');
+    });
+
+    test('草稿的 status 必须是 0，且没有 createTime', async () => {
+      const res = await api.saveArticleDraft({
+        title: '测试草稿',
+        category: 'farming',
+        content: '测试草稿内容测试'
+      });
+      expect(res.code).toBe(200);
+      expect(res.data.status).toBe(0);
+      expect(res.data.createTime).toBe('');
+      expect(res.data).toHaveProperty('updateTime');
+    });
+
+    test('非作者尝试更新他人草稿返回 403', async () => {
+      const saveRes = await api.saveArticleDraft({ title: '他人草稿', content: '内容' });
+      const draftId = saveRes.data.id;
+
+      logoutUser();
+      loginAsUser('user_002', '李四', '13800000002');
+
+      const updateRes = await api.saveArticleDraft({
+        id: draftId,
+        title: '尝试修改'
+      });
+      expect(updateRes.code).toBe(403);
+      expect(updateRes.message).toBe('无权限修改此草稿');
+    });
+  });
+
+  describe('api.getArticleDraftList 获取草稿列表', () => {
+    test('未登录返回 401', async () => {
+      logoutUser();
+      const res = await api.getArticleDraftList();
+      expect(res.code).toBe(401);
+    });
+
+    test('返回当前用户的草稿列表（status=0）', async () => {
+      await api.saveArticleDraft({ title: '草稿1', content: '内容1' });
+      await api.saveArticleDraft({ title: '草稿2', content: '内容2' });
+
+      const res = await api.getArticleDraftList();
+      expect(res.code).toBe(200);
+      const list = res.data && res.data.list ? res.data.list : (res.data || []);
+      expect(Array.isArray(list)).toBe(true);
+      expect(list.length).toBeGreaterThanOrEqual(2);
+      expect(list.every(d => d.status === 0)).toBe(true);
+    });
+
+    test('草稿列表不包含已发布文章', async () => {
+      await api.saveArticleDraft({ title: '我是草稿', content: '内容测试' });
+      const draftRes = await api.getArticleDraftList();
+      const draftList = draftRes.data && draftRes.data.list ? draftRes.data.list : (draftRes.data || []);
+      const draftIds = draftList.map(d => d.id);
+
+      const articles = wx.getStorageSync('articles');
+      const publishedIds = articles.filter(a => a.authorId === 'user_001' && a.status === 1).map(a => a.id);
+      publishedIds.forEach(pid => {
+        expect(draftIds).not.toContain(pid);
+      });
+    });
+
+    test('草稿列表按 updateTime 倒序排列', async () => {
+      await api.saveArticleDraft({ title: '第一个草稿', content: 'A' });
+      await api.saveArticleDraft({ title: '第二个草稿', content: 'B' });
+      await api.saveArticleDraft({ title: '第三个草稿', content: 'C' });
+
+      const res = await api.getArticleDraftList();
+      const list = res.data && res.data.list ? res.data.list : (res.data || []);
+      for (let i = 1; i < list.length; i++) {
+        expect(new Date(list[i - 1].updateTime).getTime())
+          .toBeGreaterThanOrEqual(new Date(list[i].updateTime).getTime());
+      }
+    });
+
+    test('只返回当前用户的草稿，不返回其他用户的', async () => {
+      await api.saveArticleDraft({ title: 'user001草稿', content: '内容' });
+
+      logoutUser();
+      loginAsUser('user_002', '李四', '13800000002');
+      const res = await api.getArticleDraftList();
+      const list = res.data && res.data.list ? res.data.list : (res.data || []);
+      const titles = list.map(d => d.title);
+      expect(titles).not.toContain('user001草稿');
+    });
+  });
+
+  describe('api.getArticleDraftDetail 获取草稿详情', () => {
+    test('id为空返回 400', async () => {
+      const res = await api.getArticleDraftDetail('');
+      expect(res.code).toBe(400);
+    });
+
+    test('草稿不存在返回 404', async () => {
+      const res = await api.getArticleDraftDetail('not_exist_draft');
+      expect(res.code).toBe(404);
+    });
+
+    test('非作者查看他人草稿返回 403', async () => {
+      const saveRes = await api.saveArticleDraft({ title: '私密草稿', content: '内容' });
+      const draftId = saveRes.data.id;
+
+      logoutUser();
+      loginAsUser('user_002', '李四', '13800000002');
+
+      const detailRes = await api.getArticleDraftDetail(draftId);
+      expect(detailRes.code).toBe(403);
+      expect(detailRes.message).toBe('无权限查看此草稿');
+    });
+
+    test('已发布的文章不能作为草稿查看', async () => {
+      const articles = wx.getStorageSync('articles');
+      const publishedId = articles[0].id;
+
+      const res = await api.getArticleDraftDetail(publishedId);
+      expect(res.code).toBe(404);
+    });
+
+    test('作者可以查看自己草稿的完整信息', async () => {
+      const saveRes = await api.saveArticleDraft({
+        title: '草稿详情',
+        category: 'craft',
+        summary: '草稿摘要',
+        content: '草稿完整内容测试',
+        tags: ['tag1', 'tag2']
+      });
+      const draftId = saveRes.data.id;
+
+      const detailRes = await api.getArticleDraftDetail(draftId);
+      expect(detailRes.code).toBe(200);
+      expect(detailRes.data.id).toBe(draftId);
+      expect(detailRes.data.title).toBe('草稿详情');
+      expect(detailRes.data.category).toBe('craft');
+      expect(detailRes.data.summary).toBe('草稿摘要');
+      expect(detailRes.data.content).toBe('草稿完整内容测试');
+      expect(detailRes.data.status).toBe(0);
+    });
+  });
+
+  describe('api.updateArticleDraft 更新草稿字段', () => {
+    test('id为空返回 400', async () => {
+      const res = await api.updateArticleDraft('', { title: '测试' });
+      expect(res.code).toBe(400);
+    });
+
+    test('草稿不存在返回 404', async () => {
+      const res = await api.updateArticleDraft('invalid_id', { title: '测试' });
+      expect(res.code).toBe(404);
+    });
+
+    test('非作者更新返回 403', async () => {
+      const saveRes = await api.saveArticleDraft({ title: '原标题', content: '内容' });
+      const draftId = saveRes.data.id;
+
+      logoutUser();
+      loginAsUser('user_002', '李四', '13800000002');
+
+      const res = await api.updateArticleDraft(draftId, { title: '篡改' });
+      expect(res.code).toBe(403);
+    });
+
+    test('只能更新草稿，不能更新已发布文章', async () => {
+      const articles = wx.getStorageSync('articles');
+      const publishedId = articles[0].id;
+
+      const res = await api.updateArticleDraft(publishedId, { title: '尝试修改' });
+      expect(res.code).toBe(404);
+    });
+
+    test('更新指定字段成功，其他字段保持不变', async () => {
+      const saveRes = await api.saveArticleDraft({
+        title: '原标题',
+        category: 'farming',
+        content: '原内容',
+        tags: ['tag1']
+      });
+      const draftId = saveRes.data.id;
+
+      const updateRes = await api.updateArticleDraft(draftId, {
+        title: '只改标题'
+      });
+      expect(updateRes.code).toBe(200);
+      expect(updateRes.data.title).toBe('只改标题');
+      expect(updateRes.data.category).toBe('farming');
+      expect(updateRes.data.content).toBe('原内容');
+    });
+  });
+
+  describe('api.publishArticleDraft 发布草稿', () => {
+    test('id为空返回 400', async () => {
+      const res = await api.publishArticleDraft('');
+      expect(res.code).toBe(400);
+    });
+
+    test('草稿不存在返回 404', async () => {
+      const res = await api.publishArticleDraft('not_exist');
+      expect(res.code).toBe(404);
+    });
+
+    test('非作者发布返回 403', async () => {
+      const saveRes = await api.saveArticleDraft({
+        title: '完整草稿',
+        category: 'memory',
+        content: '完整内容超过十个字哦'
+      });
+      const draftId = saveRes.data.id;
+
+      logoutUser();
+      loginAsUser('user_002', '李四', '13800000002');
+
+      const publishRes = await api.publishArticleDraft(draftId);
+      expect(publishRes.code).toBe(403);
+    });
+
+    test('标题不足2字返回校验失败', async () => {
+      const saveRes = await api.saveArticleDraft({ title: 'A', category: 'farming', content: '内容够长的测试文字' });
+      const draftId = saveRes.data.id;
+
+      const publishRes = await api.publishArticleDraft(draftId);
+      expect(publishRes.code).toBe(400);
+      expect(publishRes.message).toContain('标题');
+    });
+
+    test('未选择分类返回校验失败', async () => {
+      const saveRes = await api.saveArticleDraft({ title: '完整标题', content: '内容够长的测试文字测试' });
+      const draftId = saveRes.data.id;
+
+      const publishRes = await api.publishArticleDraft(draftId);
+      expect(publishRes.code).toBe(400);
+      expect(publishRes.message).toContain('分类');
+    });
+
+    test('内容不足10字返回校验失败', async () => {
+      const saveRes = await api.saveArticleDraft({ title: '完整标题', category: 'folklore', content: '短内容' });
+      const draftId = saveRes.data.id;
+
+      const publishRes = await api.publishArticleDraft(draftId);
+      expect(publishRes.code).toBe(400);
+      expect(publishRes.message).toContain('内容');
+    });
+
+    test('包含敏感词返回校验失败', async () => {
+      const saveRes = await api.saveArticleDraft({
+        title: '完整标题',
+        category: 'folklore',
+        content: '这里有毒品，是敏感词测试内容'
+      });
+      const draftId = saveRes.data.id;
+
+      const publishRes = await api.publishArticleDraft(draftId);
+      expect(publishRes.code).toBe(400);
+      expect(publishRes.message).toContain('敏感词');
+    });
+
+    test('发布成功后 status 改为 1，写入 createTime', async () => {
+      const saveRes = await api.saveArticleDraft({
+        title: '发布测试',
+        category: 'craft',
+        content: '这里是完整的文章内容超过十个字哦'
+      });
+      const draftId = saveRes.data.id;
+
+      const publishRes = await api.publishArticleDraft(draftId);
+      expect(publishRes.code).toBe(200);
+      expect(publishRes.data.id).toBe(draftId);
+      expect(publishRes.data.status).toBe(1);
+      expect(publishRes.data.createTime).not.toBe('');
+      expect(publishRes.data.createTime).toBeTruthy();
+
+      const articles = wx.getStorageSync('articles');
+      const published = articles.find(a => a.id === draftId);
+      expect(published.status).toBe(1);
+      expect(published.createTime).toBeTruthy();
+    });
+
+    test('发布成功后草稿列表不再包含此文章', async () => {
+      const saveRes = await api.saveArticleDraft({
+        title: '发布后移除',
+        category: 'memory',
+        content: '完整的测试内容超过十个字哦'
+      });
+      const draftId = saveRes.data.id;
+
+      await api.publishArticleDraft(draftId);
+
+      const listRes = await api.getArticleDraftList();
+      const list = listRes.data && listRes.data.list ? listRes.data.list : (listRes.data || []);
+      const ids = list.map(d => d.id);
+      expect(ids).not.toContain(draftId);
+    });
+
+    test('发布成功后首页可以展示此文章', async () => {
+      const saveRes = await api.saveArticleDraft({
+        title: '首页展示测试',
+        category: 'farming',
+        content: '完整的文章内容超过十个字哦好的'
+      });
+      const draftId = saveRes.data.id;
+
+      await api.publishArticleDraft(draftId);
+
+      const listRes = await api.getArticleList();
+      const ids = listRes.data.list.map(a => a.id);
+      expect(ids).toContain(draftId);
+    });
+
+    test('发布时处理 figureId 关联', async () => {
+      const saveRes = await api.saveArticleDraft({
+        title: '关联人物发布',
+        category: 'folklore',
+        content: '完整内容超过十个字哦测试',
+        figureId: 'figure_001'
+      });
+      const draftId = saveRes.data.id;
+
+      const publishRes = await api.publishArticleDraft(draftId);
+      expect(publishRes.code).toBe(200);
+      expect(publishRes.data.figureId).toBe('figure_001');
+    });
+  });
+
+  describe('api.deleteArticleDraft 删除草稿', () => {
+    test('id为空返回 400', async () => {
+      const res = await api.deleteArticleDraft('');
+      expect(res.code).toBe(400);
+    });
+
+    test('草稿不存在返回 404', async () => {
+      const res = await api.deleteArticleDraft('not_exist');
+      expect(res.code).toBe(404);
+    });
+
+    test('非作者删除返回 403', async () => {
+      const saveRes = await api.saveArticleDraft({ title: '待删草稿', content: '内容测试' });
+      const draftId = saveRes.data.id;
+
+      logoutUser();
+      loginAsUser('user_002', '李四', '13800000002');
+
+      const delRes = await api.deleteArticleDraft(draftId);
+      expect(delRes.code).toBe(403);
+    });
+
+    test('不能删除已发布的文章', async () => {
+      const articles = wx.getStorageSync('articles');
+      const publishedId = articles[0].id;
+
+      const res = await api.deleteArticleDraft(publishedId);
+      expect(res.code).toBe(404);
+    });
+
+    test('删除草稿成功，从列表中移除', async () => {
+      const saveRes = await api.saveArticleDraft({ title: '马上删除', content: '内容' });
+      const draftId = saveRes.data.id;
+
+      const delRes = await api.deleteArticleDraft(draftId);
+      expect(delRes.code).toBe(200);
+
+      const listRes = await api.getArticleDraftList();
+      const list = listRes.data && listRes.data.list ? listRes.data.list : (listRes.data || []);
+      const ids = list.map(d => d.id);
+      expect(ids).not.toContain(draftId);
+
+      const articles = wx.getStorageSync('articles');
+      const found = articles.find(a => a.id === draftId);
+      expect(found).toBeUndefined();
+    });
+  });
+
+  describe('草稿不展示在首页', () => {
+    test('首页文章列表过滤掉草稿（status !== 1）', async () => {
+      const saveRes = await api.saveArticleDraft({
+        title: '首页不应该看到我',
+        category: 'folklore',
+        content: '草稿内容测试文字'
+      });
+      const draftId = saveRes.data.id;
+
+      const res = await api.getArticleList();
+      expect(res.code).toBe(200);
+      const ids = res.data.list.map(a => a.id);
+      expect(ids).not.toContain(draftId);
+    });
+
+    test('我的投稿列表过滤掉草稿', async () => {
+      const saveRes = await api.saveArticleDraft({
+        title: '我的投稿不应该看到',
+        category: 'farming',
+        content: '草稿内容测试'
+      });
+      const draftId = saveRes.data.id;
+
+      const res = await api.getMyArticles();
+      expect(res.code).toBe(200);
+      const list = res.data && res.data.list ? res.data.list : (res.data || []);
+      const ids = list.map(a => a.id);
+      expect(ids).not.toContain(draftId);
+    });
   });
 });

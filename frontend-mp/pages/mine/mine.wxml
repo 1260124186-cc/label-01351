@@ -158,24 +158,34 @@
           class="article-item"
           wx:for="{{myArticles}}"
           wx:key="id"
-          bindtap="goToDetail"
-          data-id="{{item.id}}"
         >
-          <view class="article-main">
-            <view class="article-title">{{item.title}}</view>
-            <view class="article-meta">
-              <text class="meta-category tag-{{item.category}}">{{item.categoryName}}</text>
-              <text class="meta-date">{{item.createTime}}</text>
+          <view class="article-content" bindtap="goToDetail" data-id="{{item.id}}">
+            <view class="article-main">
+              <view class="article-title">{{item.title}}</view>
+              <view class="article-meta">
+                <text class="meta-category tag-{{item.category}}">{{item.categoryName}}</text>
+                <text class="meta-date">{{item.createTime}}</text>
+              </view>
+            </view>
+            <view class="article-stats">
+              <view class="mini-stat">
+                <text class="mini-icon">阅读</text>
+                <text class="mini-value">{{item.viewCount}}</text>
+              </view>
+              <view class="mini-stat">
+                <text class="mini-icon">点赞</text>
+                <text class="mini-value">{{item.likeCount}}</text>
+              </view>
             </view>
           </view>
-          <view class="article-stats">
-            <view class="mini-stat">
-              <text class="mini-icon">阅读</text>
-              <text class="mini-value">{{item.viewCount}}</text>
+          <view class="article-actions">
+            <view class="action-btn edit-btn" catchtap="onEditArticle" data-id="{{item.id}}">
+              <text class="action-btn-icon">✏️</text>
+              <text class="action-btn-text">编辑</text>
             </view>
-            <view class="mini-stat">
-              <text class="mini-icon">点赞</text>
-              <text class="mini-value">{{item.likeCount}}</text>
+            <view class="action-btn delete-btn" catchtap="onDeleteArticle" data-id="{{item.id}}">
+              <text class="action-btn-icon">🗑️</text>
+              <text class="action-btn-text">删除</text>
             </view>
           </view>
         </view>

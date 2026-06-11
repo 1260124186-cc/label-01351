@@ -13,8 +13,8 @@
   <block wx:else>
     <!-- 页面标题 -->
     <view class="page-header">
-      <text class="header-title">分享你的故事</text>
-      <text class="header-desc">记录乡村记忆，传承文化智慧</text>
+      <text class="header-title">{{isEditingArticle ? '编辑文章' : '分享你的故事'}}</text>
+      <text class="header-desc">{{isEditingArticle ? '修改文章内容，保存后立即生效' : '记录乡村记忆，传承文化智慧'}}</text>
     </view>
 
     <!-- 表单区域 -->
@@ -260,20 +260,22 @@
 
       <!-- 发布按钮 -->
       <view class="form-actions">
-        <button class="btn-draft" bindtap="onSaveDraft" disabled="{{savingDraft}}">
+        <button class="btn-draft" bindtap="onSaveDraft" disabled="{{savingDraft || isEditingArticle}}" wx:if="{{!isEditingArticle}}">
           <text wx:if="{{savingDraft}}">保存中...</text>
           <text wx:elif="{{isEditingDraft}}">更新草稿</text>
           <text wx:else>保存草稿</text>
         </button>
-        <button class="btn-preview" bindtap="onPreview" disabled="{{!canSubmit}}">
+        <button class="btn-preview" bindtap="onPreview" disabled="{{!canSubmit}}" wx:if="{{!isEditingArticle}}">
           <text>预览排版</text>
         </button>
         <button
-          class="btn-publish"
+          class="btn-publish {{isEditingArticle ? 'btn-save' : ''}}"
           bindtap="onSubmit"
           disabled="{{!canSubmit || submitting}}"
         >
-          <text wx:if="{{submitting}}">发布中...</text>
+          <text wx:if="{{submitting && isEditingArticle}}">保存中...</text>
+          <text wx:elif="{{submitting}}">发布中...</text>
+          <text wx:elif="{{isEditingArticle}}">保存修改</text>
           <text wx:else>发布文章</text>
         </button>
       </view>
@@ -322,7 +324,9 @@
     <view class="preview-footer">
       <button class="btn-preview-back" bindtap="closePreview">返回修改</button>
       <button class="btn-preview-publish" bindtap="onSubmit" disabled="{{submitting}}">
-        <text wx:if="{{submitting}}">发布中...</text>
+        <text wx:if="{{submitting && isEditingArticle}}">保存中...</text>
+        <text wx:elif="{{submitting}}">发布中...</text>
+        <text wx:elif="{{isEditingArticle}}">确认保存</text>
         <text wx:else>确认发布</text>
       </button>
     </view>

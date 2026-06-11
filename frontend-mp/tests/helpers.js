@@ -626,11 +626,17 @@ function initStorage(overrides = {}) {
   wx.setStorageSync('articles', overrides.articles || JSON.parse(JSON.stringify(defaultArticles)));
   wx.setStorageSync('categories', overrides.categories || JSON.parse(JSON.stringify(defaultCategories)));
   wx.setStorageSync('figures', overrides.figures || JSON.parse(JSON.stringify(defaultFigures)));
-  if (overrides.userInfo) {
-    wx.setStorageSync('userInfo', overrides.userInfo);
+  if (overrides.userInfo !== undefined) {
+    if (overrides.userInfo) {
+      wx.setStorageSync('userInfo', overrides.userInfo);
+    }
+  } else {
+    wx.setStorageSync('userInfo', JSON.parse(JSON.stringify(defaultUser)));
   }
-  if (overrides.isLoggedIn) {
+  if (overrides.isLoggedIn !== undefined) {
     wx.setStorageSync('isLoggedIn', overrides.isLoggedIn);
+  } else {
+    wx.setStorageSync('isLoggedIn', true);
   }
   if (overrides.favorites) {
     wx.setStorageSync('favorites', overrides.favorites);
@@ -714,6 +720,33 @@ function initStorage(overrides = {}) {
   } else {
     wx.setStorageSync('search_history', []);
   }
+  if (overrides.users) {
+    wx.setStorageSync('users', overrides.users);
+  } else {
+    wx.setStorageSync('users', [
+      { id: 'user_001', nickname: '张大爷', avatar: '', phone: '13800000001', createTime: '2024-01-01', role: 'user' },
+      { id: 'user_002', nickname: '李阿姨', avatar: '', phone: '13800000002', createTime: '2024-01-02', role: 'user' }
+    ]);
+  }
+}
+
+function logoutUser() {
+  wx.removeStorageSync('isLoggedIn');
+  wx.removeStorageSync('userInfo');
+  wx.setStorageSync('isLoggedIn', false);
+}
+
+function loginAsUser(userId, nickname, phone) {
+  const users = wx.getStorageSync('users') || [];
+  let user = users.find(u => u.id === userId);
+  if (!user) {
+    user = { id: userId, nickname: nickname || '用户', avatar: '', phone: phone || '', createTime: new Date().toISOString().split('T')[0], role: 'user' };
+    users.push(user);
+    wx.setStorageSync('users', users);
+  }
+  wx.setStorageSync('isLoggedIn', true);
+  wx.setStorageSync('userInfo', user);
+  return user;
 }
 
 function mergeBehaviors(pageDef) {
@@ -833,5 +866,7 @@ module.exports = {
   defaultInterviews,
   defaultComments,
   initStorage,
-  createPageInstance
+  createPageInstance,
+  logoutUser,
+  loginAsUser
 };

@@ -198,6 +198,52 @@ Page({
     });
   },
 
+  onEditArticle(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({
+      url: '/pages/publish/publish?articleId=' + id
+    });
+  },
+
+  onDeleteArticle(e) {
+    const id = e.currentTarget.dataset.id;
+    const article = this.data.myArticles.find(item => item.id === id);
+    if (!article) return;
+
+    wx.showModal({
+      title: '确认删除',
+      content: `确定要删除文章「${article.title}」吗？\n删除后无法恢复，相关的收藏和点赞数据也会被清理。`,
+      confirmText: '删除',
+      confirmColor: '#ff4d4f',
+      success: async (res) => {
+        if (res.confirm) {
+          await this.doDeleteArticle(id);
+        }
+      }
+    });
+  },
+
+  async doDeleteArticle(id) {
+    try {
+      wx.showLoading({ title: '删除中...' });
+      const res = await api.deleteArticle(id);
+      wx.hideLoading();
+
+      if (res.code === 200) {
+        const myArticles = this.data.myArticles.filter(item => item.id !== id);
+        this.setData({ myArticles });
+        this.loadStats();
+        wx.showToast({ title: '删除成功', icon: 'success' });
+      } else {
+        wx.showToast({ title: res.message || '删除失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('[Mine] 删除文章异常:', error);
+      wx.showToast({ title: '网络错误，请重试', icon: 'none' });
+    }
+  },
+
   // 进入管理后台（含权限校验）
   goToAdmin() {
     const app = getApp();

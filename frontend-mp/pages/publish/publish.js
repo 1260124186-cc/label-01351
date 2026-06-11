@@ -34,6 +34,10 @@ Page({
     savingDraft: false,
     draftSaved: false,
 
+    // 编辑已发布文章
+    articleId: '',
+    isEditingArticle: false,
+
     // 标签相关
     suggestedTags: [],
     tagInput: '',
@@ -65,7 +69,11 @@ Page({
     this._categoriesLoaded = true;
     this.setData({ suggestedTags: util.SUGGESTED_TAGS });
 
-    if (options && options.draftId) {
+    if (options && options.articleId) {
+      this.setData({ articleId: options.articleId, isEditingArticle: true });
+      wx.setNavigationBarTitle({ title: '编辑文章' });
+      this.loadArticleDetail(options.articleId);
+    } else if (options && options.draftId) {
       this.setData({ draftId: options.draftId, isEditingDraft: true });
       this.loadDraftDetail(options.draftId);
     }
@@ -85,7 +93,7 @@ Page({
         this.loadFigures();
         this._figuresLoaded = true;
       }
-      if (!this.data.isEditingDraft) {
+      if (!this.data.isEditingDraft && !this.data.isEditingArticle) {
         this.checkCanSubmit();
       }
     }
@@ -128,6 +136,43 @@ Page({
     }
   },
 
+  async loadArticleDetail(articleId) {
+    try {
+      wx.showLoading({ title: '加载中...' });
+      const res = await api.getArticleDetail(articleId);
+      wx.hideLoading();
+      if (res.code === 200 && res.data) {
+        const article = res.data;
+        const formData = {
+          title: article.title || '',
+          category: article.category || '',
+          summary: article.summary || '',
+          content: article.content || '',
+          figureId: article.figureId || '',
+          tags: article.tags || []
+        };
+
+        let selectedFigure = null;
+        if (article.figureId && this.data.allFigures.length > 0) {
+          selectedFigure = this.data.allFigures.find(f => f.id === article.figureId) || null;
+        }
+
+        this.setData({
+          formData,
+          selectedFigure
+        }, () => {
+          this.checkCanSubmit();
+        });
+      } else {
+        wx.showToast({ title: res.message || '加载文章失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('[Publish] 加载文章异常:', error);
+      wx.showToast({ title: '网络错误，请重试', icon: 'none' });
+    }
+  },
+
   goToLogin() {
     wx.navigateTo({
       url: '/pages/login/login'
@@ -140,7 +185,7 @@ Page({
       if (res.code === 200 && res.data && res.data.list) {
         const figures = res.data.list.filter(item => item.status === 1);
         let selectedFigure = null;
-        if (this.data.isEditingDraft && this.data.formData.figureId) {
+        if ((this.data.isEditingDraft || this.data.isEditingArticle) && this.data.formData.figureId) {
           selectedFigure = figures.find(f => f.id === this.data.formData.figureId) || null;
         }
         this.setData({
@@ -464,12 +509,26 @@ Page({
       return;
     }
 
+    const isEditingArticle = this.data.isEditingArticle;
+    const actionText = isEditingArticle ? '保存中...' : '发布中...';
+
     this.setData({ submitting: true });
-    wx.showLoading({ title: '发布中...' });
+    wx.showLoading({ title: actionText });
 
     try {
       let res;
-      if (this.data.draftId) {
+      if (isEditingArticle) {
+        const articleId = this.data.articleId;
+        const updateData = {
+          title: titleTrimmed,
+          category,
+          summary: autoSummary,
+          content: contentTrimmed,
+          tags: tags && tags.length > 0 ? tags : [],
+          figureId: figureId || ''
+        };
+        res = await api.updateArticle(articleId, updateData);
+      } else if (this.data.draftId) {
         const updateRes = await api.updateArticleDraft(this.data.draftId, {
           title: titleTrimmed,
           category,
@@ -502,29 +561,36 @@ Page({
       wx.hideLoading();
 
       if (res.code === 200) {
-        this.setData({
-          showPreview: false,
-          previewData: null,
-          showSuccess: true,
-          newArticleId: res.data.id,
-          draftId: '',
-          isEditingDraft: false,
-          formData: {
-            title: '',
-            category: '',
-            summary: '',
-            content: '',
-            figureId: '',
-            tags: []
-          },
-          selectedFigure: null,
-          canSubmit: false
-        });
+        if (isEditingArticle) {
+          wx.showToast({ title: '保存成功', icon: 'success' });
+          setTimeout(() => {
+            wx.navigateBack();
+          }, 1000);
+        } else {
+          this.setData({
+            showPreview: false,
+            previewData: null,
+            showSuccess: true,
+            newArticleId: res.data.id,
+            draftId: '',
+            isEditingDraft: false,
+            formData: {
+              title: '',
+              category: '',
+              summary: '',
+              content: '',
+              figureId: '',
+              tags: []
+            },
+            selectedFigure: null,
+            canSubmit: false
+          });
+        }
       } else {
-        wx.showToast({ title: res.message || '发布失败', icon: 'none' });
+        wx.showToast({ title: res.message || (isEditingArticle ? '保存失败' : '发布失败'), icon: 'none' });
       }
     } catch (error) {
-      console.error('[Publish] 发布文章异常:', error);
+      console.error('[Publish] 提交文章异常:', error);
       wx.hideLoading();
       wx.showToast({ title: '网络错误，请重试', icon: 'none' });
     } finally {
