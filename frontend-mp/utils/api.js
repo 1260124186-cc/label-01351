@@ -121,14 +121,7 @@ const getCurrentUserId = () => {
 };
 
 const generateMockToken = (userId) => {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
-  const payload = Buffer.from(JSON.stringify({
-    sub: userId,
-    iat: Date.now(),
-    exp: Date.now() + 7 * 24 * 60 * 60 * 1000
-  })).toString('base64');
-  const signature = Buffer.from(header + '.' + payload + '.secret').toString('base64');
-  return header + '.' + payload + '.' + signature;
+  return util.generateToken(userId);
 };
 
 const storageApi = {

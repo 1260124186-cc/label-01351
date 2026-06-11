@@ -238,6 +238,50 @@ const SUGGESTED_TAGS = [
   '婚俗', '丧礼', '庙会', '戏曲', '山歌', '民谣'
 ];
 
+const base64Encode = (str) => {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(str).toString('base64');
+  }
+  const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let out = '';
+  let i = 0;
+  const len = str.length;
+  while (i < len) {
+    const c1 = str.charCodeAt(i++) & 0xff;
+    if (i === len) {
+      out += CHARS.charAt(c1 >> 2);
+      out += CHARS.charAt((c1 & 0x3) << 4);
+      out += '==';
+      break;
+    }
+    const c2 = str.charCodeAt(i++);
+    if (i === len) {
+      out += CHARS.charAt(c1 >> 2);
+      out += CHARS.charAt(((c1 & 0x3) << 4) | ((c2 & 0xf0) >> 4));
+      out += CHARS.charAt((c2 & 0xf) << 2);
+      out += '=';
+      break;
+    }
+    const c3 = str.charCodeAt(i++);
+    out += CHARS.charAt(c1 >> 2);
+    out += CHARS.charAt(((c1 & 0x3) << 4) | ((c2 & 0xf0) >> 4));
+    out += CHARS.charAt(((c2 & 0xf) << 2) | ((c3 & 0xc0) >> 6));
+    out += CHARS.charAt(c3 & 0x3f);
+  }
+  return out;
+};
+
+const generateToken = (userId) => {
+  const header = base64Encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = base64Encode(JSON.stringify({
+    sub: userId,
+    iat: Date.now(),
+    exp: Date.now() + 7 * 24 * 60 * 60 * 1000
+  }));
+  const signature = base64Encode(header + '.' + payload + '.secret');
+  return header + '.' + payload + '.' + signature;
+};
+
 module.exports = {
   formatDate,
   formatRelativeTime,
@@ -256,5 +300,7 @@ module.exports = {
   formatActivityTime,
   SENSITIVE_WORDS,
   checkSensitiveWords,
-  SUGGESTED_TAGS
+  SUGGESTED_TAGS,
+  base64Encode,
+  generateToken
 };

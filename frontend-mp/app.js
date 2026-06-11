@@ -1,18 +1,8 @@
 // app.js
 const api = require('./utils/api');
+const util = require('./utils/util');
 const figureData = require('./utils/figure-data');
 const quizData = require('./utils/quiz-data');
-
-const generateToken = (userId) => {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
-  const payload = Buffer.from(JSON.stringify({
-    sub: userId,
-    iat: Date.now(),
-    exp: Date.now() + 7 * 24 * 60 * 60 * 1000
-  })).toString('base64');
-  const signature = Buffer.from(header + '.' + payload + '.secret').toString('base64');
-  return header + '.' + payload + '.' + signature;
-};
 
 App({
   globalData: {
@@ -102,7 +92,7 @@ App({
     if (!user.openid) user.openid = '';
     if (!user.loginType) user.loginType = 'nickname';
 
-    const token = generateToken(user.id);
+    const token = util.generateToken(user.id);
 
     wx.setStorageSync('userInfo', user);
     wx.setStorageSync('isLoggedIn', true);
