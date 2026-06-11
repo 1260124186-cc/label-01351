@@ -98,6 +98,42 @@ describe('api.getArticleList', () => {
     expect(res.data.list.length).toBeGreaterThan(0);
   });
 
+  test('按最新发布排序（默认）', async () => {
+    const res = await api.getArticleList({ sort: 'latest' });
+    expect(res.code).toBe(200);
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect(new Date(list[i].createTime) >= new Date(list[i + 1].createTime)).toBe(true);
+    }
+  });
+
+  test('按最多阅读排序', async () => {
+    const res = await api.getArticleList({ sort: 'views' });
+    expect(res.code).toBe(200);
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect((list[i].viewCount || 0) >= (list[i + 1].viewCount || 0)).toBe(true);
+    }
+  });
+
+  test('按最多点赞排序', async () => {
+    const res = await api.getArticleList({ sort: 'likes' });
+    expect(res.code).toBe(200);
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect((list[i].likeCount || 0) >= (list[i + 1].likeCount || 0)).toBe(true);
+    }
+  });
+
+  test('默认按最新发布排序', async () => {
+    const res = await api.getArticleList();
+    expect(res.code).toBe(200);
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect(new Date(list[i].createTime) >= new Date(list[i + 1].createTime)).toBe(true);
+    }
+  });
+
   test('标签+分类组合筛选', async () => {
     const articles = wx.getStorageSync('articles');
     if (articles[4]) {
@@ -841,6 +877,42 @@ describe('api.getFavoriteList', () => {
     expect(res.code).toBe(200);
     expect(res.data.list.length).toBe(1);
     expect(res.data.hasMore).toBe(true);
+  });
+
+  test('按最新发布排序收藏', async () => {
+    await api.favoriteArticle('article_001');
+    await api.favoriteArticle('article_002');
+
+    const res = await api.getFavoriteList({ sort: 'latest' });
+    expect(res.code).toBe(200);
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect(new Date(list[i].createTime) >= new Date(list[i + 1].createTime)).toBe(true);
+    }
+  });
+
+  test('按最多阅读排序收藏', async () => {
+    await api.favoriteArticle('article_001');
+    await api.favoriteArticle('article_002');
+
+    const res = await api.getFavoriteList({ sort: 'views' });
+    expect(res.code).toBe(200);
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect((list[i].viewCount || 0) >= (list[i + 1].viewCount || 0)).toBe(true);
+    }
+  });
+
+  test('按最多点赞排序收藏', async () => {
+    await api.favoriteArticle('article_001');
+    await api.favoriteArticle('article_002');
+
+    const res = await api.getFavoriteList({ sort: 'likes' });
+    expect(res.code).toBe(200);
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect((list[i].likeCount || 0) >= (list[i + 1].likeCount || 0)).toBe(true);
+    }
   });
 });
 

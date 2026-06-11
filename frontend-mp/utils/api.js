@@ -192,7 +192,7 @@ const storageApi = {
 
   getArticleList: async (params = {}) => {
     await delay(500);
-    const { category = 'all', page = 1, pageSize = 10, keyword = '', tag = '' } = params;
+    const { category = 'all', page = 1, pageSize = 10, keyword = '', tag = '', sort = 'latest' } = params;
     let articles = wx.getStorageSync('articles') || [];
     articles = articles.filter(item => item.status === 1);
     if (category && category !== 'all') {
@@ -212,7 +212,13 @@ const storageApi = {
         (Array.isArray(item.tags) && item.tags.some(t => t.toLowerCase().includes(kw)))
       );
     }
-    articles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    if (sort === 'views') {
+      articles.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+    } else if (sort === 'likes') {
+      articles.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
+    } else {
+      articles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    }
     const total = articles.length;
     const start = (page - 1) * pageSize;
     const list = articles.slice(start, start + pageSize);
@@ -583,7 +589,7 @@ const storageApi = {
     await delay(500);
     const authError = requireLogin();
     if (authError) return authError;
-    const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    const { category = 'all', page = 1, pageSize = 10, keyword = '', sort = 'latest' } = params;
     const userId = getCurrentUserId();
     const favorites = wx.getStorageSync('favorites') || {};
     const userFavorites = favorites[userId] || [];
@@ -606,7 +612,13 @@ const storageApi = {
         item.content.toLowerCase().includes(kw)
       );
     }
-    articles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    if (sort === 'views') {
+      articles.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+    } else if (sort === 'likes') {
+      articles.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
+    } else {
+      articles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    }
     const total = articles.length;
     const start = (page - 1) * pageSize;
     const list = articles.slice(start, start + pageSize);

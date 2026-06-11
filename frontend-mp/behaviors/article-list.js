@@ -1,6 +1,10 @@
 const api = require('../utils/api');
 const util = require('../utils/util');
 
+const SEARCH_HISTORY_KEY = 'search_history';
+const MAX_SEARCH_HISTORY = 10;
+const HOT_ARTICLES_KEY = 'hot_articles';
+
 module.exports = Behavior({
   data: {
     categories: [],
@@ -11,17 +15,31 @@ module.exports = Behavior({
     keyword: '',
     tag: '',
     loading: false,
-    loadingMore: false
+    loadingMore: false,
+    sortType: 'latest',
+    sortOptions: [
+      { id: 'latest', name: '最新发布' },
+      { id: 'views', name: '最多阅读' },
+      { id: 'likes', name: '最多点赞' }
+    ],
+    searchHistory: [],
+    showSearchHistory: false,
+    hotArticles: [],
+    emptyResultType: 'normal'
   },
 
   _loadRequestId: 0,
+  _debouncedSearch: null,
+
+  created() {
+    this._initDebouncedSearch();
+    this._loadSearchHistory();
+  },
 
   onLoad() {
-    this.loadCategories();
   },
 
   onShow() {
-    this.refreshData();
   },
 
   onPullDownRefresh() {
@@ -37,6 +55,89 @@ module.exports = Behavior({
   },
 
   methods: {
+    _initDebouncedSearch() {
+      this._debouncedSearch = util.debounce(async () => {
+        await this._triggerSearch();
+      }, 300);
+    },
+
+    _loadSearchHistory() {
+      try {
+        const history = wx.getStorageSync(SEARCH_HISTORY_KEY) || [];
+        this.setData({ searchHistory: history });
+      } catch (error) {
+        console.error('[ArticleList] 加载搜索历史失败:', error);
+      }
+    },
+
+    _saveSearchHistory(keyword) {
+      if (!keyword || !keyword.trim()) return;
+
+      try {
+        let history = wx.getStorageSync(SEARCH_HISTORY_KEY) || [];
+        const trimmedKw = keyword.trim();
+
+        history = history.filter(item => item !== trimmedKw);
+        history.unshift(trimmedKw);
+        history = history.slice(0, MAX_SEARCH_HISTORY);
+
+        wx.setStorageSync(SEARCH_HISTORY_KEY, history);
+        this.setData({ searchHistory: history });
+      } catch (error) {
+        console.error('[ArticleList] 保存搜索历史失败:', error);
+      }
+    },
+
+    async _loadHotArticles() {
+      try {
+        const res = await api.getArticleList({
+          page: 1,
+          pageSize: 5,
+          sort: 'views'
+        });
+        if (res.code === 200 && res.data.list) {
+          const hotList = res.data.list.map(item => ({
+            ...item,
+            categoryName: util.getCategoryName(item.category)
+          }));
+          this.setData({ hotArticles: hotList });
+        }
+      } catch (error) {
+        console.error('[ArticleList] 加载热门文章失败:', error);
+        this.setData({ hotArticles: [] });
+      }
+    },
+
+    async _triggerSearch() {
+      const listKey = this.getListKey();
+      this.setData({
+        page: 1,
+        [listKey]: [],
+        hasMore: true,
+        showSearchHistory: false
+      });
+
+      if (this.data.keyword && this.data.keyword.trim()) {
+        this._saveSearchHistory(this.data.keyword);
+      }
+
+      const result = await this.loadList();
+
+      if (this.data.keyword && this.data.keyword.trim()) {
+        const list = this.data[listKey];
+        if (list && list.length === 0) {
+          this.setData({ emptyResultType: 'search' });
+          await this._loadHotArticles();
+        } else {
+          this.setData({ emptyResultType: 'normal' });
+        }
+      } else {
+        this.setData({ emptyResultType: 'normal' });
+      }
+
+      return result;
+    },
+
     getListKey() {
       throw new Error('getListKey must be implemented by page');
     },
@@ -84,7 +185,8 @@ module.exports = Behavior({
           page: this.data.page,
           pageSize: this.data.pageSize,
           keyword: this.data.keyword,
-          tag: this.data.tag
+          tag: this.data.tag,
+          sort: this.data.sortType
         });
 
         if (requestId !== this._loadRequestId) {
@@ -95,7 +197,8 @@ module.exports = Behavior({
           const list = res.data.list.map(item => ({
             ...item,
             categoryName: util.getCategoryName(item.category),
-            summary: util.truncateText(item.content, 100)
+            summary: util.truncateText(item.content, 100),
+            relativeTime: util.formatRelativeTime(item.createTime)
           }));
 
           this.setData({
@@ -158,18 +261,69 @@ module.exports = Behavior({
       return this.loadList();
     },
 
-    onSearchInput(e) {
-      this.setData({ keyword: e.detail.value });
-    },
+    onSortChange(e) {
+      const sortType = e.currentTarget.dataset.sort;
+      if (sortType === this.data.sortType) return;
 
-    async onSearch() {
       const listKey = this.getListKey();
       this.setData({
+        sortType,
         page: 1,
         [listKey]: [],
         hasMore: true
       });
+
       return this.loadList();
+    },
+
+    onSearchInput(e) {
+      const value = e.detail.value;
+      this.setData({
+        keyword: value,
+        showSearchHistory: !!(value && value.trim())
+      });
+
+      if (this._debouncedSearch) {
+        this._debouncedSearch.call(this);
+      }
+    },
+
+    onSearchFocus() {
+      if (this.data.searchHistory.length > 0 && !this.data.keyword) {
+        this.setData({ showSearchHistory: true });
+      }
+    },
+
+    onSearchBlur() {
+      setTimeout(() => {
+        this.setData({ showSearchHistory: false });
+      }, 200);
+    },
+
+    onHistoryItemTap(e) {
+      const keyword = e.currentTarget.dataset.keyword;
+      this.setData({
+        keyword,
+        showSearchHistory: false
+      });
+      this._triggerSearch();
+    },
+
+    clearSearchHistory() {
+      wx.showModal({
+        title: '提示',
+        content: '确定要清空搜索历史吗？',
+        success: (res) => {
+          if (res.confirm) {
+            wx.removeStorageSync(SEARCH_HISTORY_KEY);
+            this.setData({ searchHistory: [], showSearchHistory: false });
+          }
+        }
+      });
+    },
+
+    async onSearch() {
+      return this._triggerSearch();
     },
 
     async clearSearch() {
@@ -178,12 +332,22 @@ module.exports = Behavior({
         keyword: '',
         page: 1,
         [listKey]: [],
-        hasMore: true
+        hasMore: true,
+        showSearchHistory: false,
+        emptyResultType: 'normal',
+        hotArticles: []
       });
       return this.loadList();
     },
 
     goToDetail(e) {
+      const id = e.currentTarget.dataset.id;
+      wx.navigateTo({
+        url: `/pages/detail/detail?id=${id}`
+      });
+    },
+
+    goToHotArticle(e) {
       const id = e.currentTarget.dataset.id;
       wx.navigateTo({
         url: `/pages/detail/detail?id=${id}`

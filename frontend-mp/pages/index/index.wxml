@@ -19,8 +19,31 @@
         value="{{keyword}}"
         bindinput="onSearchInput"
         bindconfirm="onSearch"
+        bindfocus="onSearchFocus"
+        bindblur="onSearchBlur"
+        confirm-type="search"
       />
       <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+
+    <!-- 搜索历史 -->
+    <view class="search-history" wx:if="{{showSearchHistory && searchHistory.length > 0}}">
+      <view class="search-history-header">
+        <text class="history-title">搜索历史</text>
+        <text class="history-clear" bindtap="clearSearchHistory">清空</text>
+      </view>
+      <view class="search-history-list">
+        <view
+          class="history-item"
+          wx:for="{{searchHistory}}"
+          wx:key="*this"
+          bindtap="onHistoryItemTap"
+          data-keyword="{{item}}"
+        >
+          <text class="history-icon">🕐</text>
+          <text class="history-text">{{item}}</text>
+        </view>
+      </view>
     </view>
   </view>
 
@@ -90,6 +113,22 @@
     </view>
   </scroll-view>
 
+  <!-- 排序切换 -->
+  <view class="sort-bar">
+    <view class="sort-label">排序：</view>
+    <view class="sort-options">
+      <view
+        class="sort-item {{sortType === item.id ? 'active' : ''}}"
+        wx:for="{{sortOptions}}"
+        wx:key="id"
+        bindtap="onSortChange"
+        data-sort="{{item.id}}"
+      >
+        <text class="sort-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
   <!-- 标签筛选器 -->
   <view class="tag-filter-bar" wx:if="{{tag}}">
     <view class="tag-filter-wrap">
@@ -113,7 +152,39 @@
       <text class="loading-text">加载中...</text>
     </view>
 
-    <!-- 空状态 -->
+    <!-- 搜索空结果 -->
+    <view class="empty-wrap empty-search" wx:elif="{{!loading && articleList.length === 0 && emptyResultType === 'search'}}">
+      <text class="empty-icon">🔍</text>
+      <text class="empty-text">未找到相关文章</text>
+      <text class="empty-hint">换个关键词试试吧</text>
+
+      <!-- 热门文章推荐 -->
+      <view class="hot-articles" wx:if="{{hotArticles.length > 0}}">
+        <view class="hot-articles-header">
+          <text class="hot-title">🔥 热门文章推荐</text>
+        </view>
+        <view class="hot-articles-list">
+          <view
+            class="hot-article-item"
+            wx:for="{{hotArticles}}"
+            wx:key="id"
+            bindtap="goToHotArticle"
+            data-id="{{item.id}}"
+          >
+            <view class="hot-article-rank">{{index + 1}}</view>
+            <view class="hot-article-info">
+              <text class="hot-article-title">{{item.title}}</text>
+              <view class="hot-article-meta">
+                <text class="hot-category tag-{{item.category}}">{{item.categoryName}}</text>
+                <text class="hot-views">👁 {{item.viewCount}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 普通空状态 -->
     <view class="empty-wrap" wx:elif="{{!loading && articleList.length === 0}}">
       <text class="empty-icon">📚</text>
       <text class="empty-text">暂无文章</text>
@@ -132,7 +203,7 @@
         <view class="article-category tag-{{item.category}}">
           {{item.categoryName}}
         </view>
-        <text class="article-date">{{item.createTime}}</text>
+        <text class="article-date">{{item.relativeTime}}</text>
       </view>
 
       <view class="article-title">{{item.title}}</view>

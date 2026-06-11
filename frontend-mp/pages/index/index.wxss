@@ -69,6 +69,98 @@
   padding: 8rpx;
 }
 
+/* 搜索历史 */
+.search-history {
+  margin-top: 16rpx;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.search-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.history-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.history-clear {
+  font-size: 24rpx;
+  color: var(--color-text-light);
+}
+
+.search-history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 20rpx;
+  background-color: var(--color-bg);
+  border-radius: 24rpx;
+}
+
+.history-icon {
+  font-size: 24rpx;
+  margin-right: 8rpx;
+  color: var(--color-text-light);
+}
+
+.history-text {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
+/* 排序栏 */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  padding: 0 24rpx 20rpx;
+}
+
+.sort-label {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  margin-right: 16rpx;
+}
+
+.sort-options {
+  display: flex;
+  flex: 1;
+  gap: 12rpx;
+}
+
+.sort-item {
+  padding: 10rpx 24rpx;
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+}
+
+.sort-item.active {
+  background-color: var(--color-primary);
+}
+
+.sort-item.active .sort-name {
+  color: #FFFFFF;
+}
+
+.sort-name {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
 /* 金刚区入口 */
 .quick-entry {
   display: flex;
@@ -431,5 +523,112 @@
   text-align: center;
   padding: 32rpx 0;
   font-size: 26rpx;
+  color: var(--color-text-light);
+}
+
+/* 搜索空结果 */
+.empty-search {
+  padding-top: 80rpx;
+}
+
+/* 热门文章推荐 */
+.hot-articles {
+  margin-top: 40rpx;
+  width: 100%;
+  padding: 0 24rpx;
+}
+
+.hot-articles-header {
+  margin-bottom: 20rpx;
+}
+
+.hot-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: var(--color-text);
+}
+
+.hot-articles-list {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.hot-article-item {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  border-bottom: 1rpx solid var(--color-border);
+  transition: background-color 0.2s;
+}
+
+.hot-article-item:last-child {
+  border-bottom: none;
+}
+
+.hot-article-item:active {
+  background-color: var(--color-bg);
+}
+
+.hot-article-rank {
+  width: 40rpx;
+  height: 40rpx;
+  line-height: 40rpx;
+  text-align: center;
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #FFFFFF;
+  background-color: var(--color-primary);
+  border-radius: 50%;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.hot-article-item:nth-child(1) .hot-article-rank {
+  background-color: #FF6B6B;
+}
+
+.hot-article-item:nth-child(2) .hot-article-rank {
+  background-color: #FF8E53;
+}
+
+.hot-article-item:nth-child(3) .hot-article-rank {
+  background-color: #FFD700;
+  color: #333;
+}
+
+.hot-article-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hot-article-title {
+  font-size: 26rpx;
+  color: var(--color-text);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  margin-bottom: 8rpx;
+}
+
+.hot-article-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.hot-category {
+  display: inline-flex;
+  padding: 4rpx 12rpx;
+  border-radius: 4rpx;
+  font-size: 20rpx;
+  font-weight: 500;
+}
+
+.hot-views {
+  font-size: 22rpx;
   color: var(--color-text-light);
 }

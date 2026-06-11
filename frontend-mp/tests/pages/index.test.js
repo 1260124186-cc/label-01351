@@ -36,6 +36,16 @@ describe('Index 首页', () => {
     expect(page.data.keyword).toBe('');
     expect(page.data.loading).toBe(false);
     expect(page.data.loadingMore).toBe(false);
+    expect(page.data.sortType).toBe('latest');
+    expect(page.data.sortOptions).toEqual([
+      { id: 'latest', name: '最新发布' },
+      { id: 'views', name: '最多阅读' },
+      { id: 'likes', name: '最多点赞' }
+    ]);
+    expect(page.data.searchHistory).toEqual([]);
+    expect(page.data.showSearchHistory).toBe(false);
+    expect(page.data.hotArticles).toEqual([]);
+    expect(page.data.emptyResultType).toBe('normal');
   });
 
   describe('loadArticles', () => {
@@ -209,6 +219,113 @@ describe('Index 首页', () => {
       page.clearSearch();
       expect(page.data.keyword).toBe('');
       expect(page.data.page).toBe(1);
+    });
+  });
+
+  describe('onSortChange', () => {
+    test('切换排序方式时重置分页', () => {
+      page.data.sortType = 'latest';
+      page.data.articleList = [{ id: 'old' }];
+      page.data.page = 3;
+
+      page.onSortChange({ currentTarget: { dataset: { sort: 'views' } } });
+
+      expect(page.data.sortType).toBe('views');
+      expect(page.data.page).toBe(1);
+      expect(page.data.articleList).toEqual([]);
+      expect(page.data.hasMore).toBe(true);
+    });
+
+    test('点击当前排序方式不做操作', () => {
+      page.data.sortType = 'latest';
+      page.data.articleList = [{ id: 'existing' }];
+
+      page.onSortChange({ currentTarget: { dataset: { sort: 'latest' } } });
+
+      expect(page.data.articleList).toEqual([{ id: 'existing' }]);
+    });
+  });
+
+  describe('搜索历史', () => {
+    test('搜索关键词会保存到历史记录', () => {
+      page._saveSearchHistory('农耕文化');
+
+      const history = wx.getStorageSync('search_history');
+      expect(history).toContain('农耕文化');
+      expect(page.data.searchHistory).toContain('农耕文化');
+    });
+
+    test('搜索历史最多保存10条', () => {
+      for (let i = 0; i < 15; i++) {
+        page._saveSearchHistory(`关键词${i}`);
+      }
+
+      const history = wx.getStorageSync('search_history');
+      expect(history.length).toBeLessThanOrEqual(10);
+    });
+
+    test('重复搜索的关键词会移到最前面', () => {
+      page._saveSearchHistory('农耕');
+      page._saveSearchHistory('民俗');
+      page._saveSearchHistory('农耕');
+
+      const history = wx.getStorageSync('search_history');
+      expect(history[0]).toBe('农耕');
+      expect(history.filter(k => k === '农耕').length).toBe(1);
+    });
+
+    test('点击历史记录项触发搜索', () => {
+      page._triggerSearch = jest.fn();
+      page.onHistoryItemTap({ currentTarget: { dataset: { keyword: '历史关键词' } } });
+      expect(page.data.keyword).toBe('历史关键词');
+      expect(page.data.showSearchHistory).toBe(false);
+      expect(page._triggerSearch).toHaveBeenCalled();
+    });
+
+    test('空关键词不保存到历史记录', () => {
+      wx.setStorageSync('search_history', []);
+      page._saveSearchHistory('');
+      page._saveSearchHistory('   ');
+      const history = wx.getStorageSync('search_history');
+      expect(history).toEqual([]);
+    });
+
+    test('清空搜索历史', () => {
+      wx.setStorageSync('search_history', ['农耕', '民俗']);
+      page.setData({ searchHistory: ['农耕', '民俗'] });
+
+      wx.showModal = jest.fn(({ success }) => {
+        success({ confirm: true });
+      });
+
+      page.clearSearchHistory();
+
+      expect(wx.getStorageSync('search_history')).toEqual('');
+      expect(page.data.searchHistory).toEqual([]);
+    });
+
+    test('取消清空搜索历史时不做操作', () => {
+      wx.setStorageSync('search_history', ['农耕', '民俗']);
+      page.setData({ searchHistory: ['农耕', '民俗'] });
+
+      wx.showModal = jest.fn(({ success }) => {
+        success({ confirm: false });
+      });
+
+      page.clearSearchHistory();
+
+      expect(wx.getStorageSync('search_history')).toEqual(['农耕', '民俗']);
+      expect(page.data.searchHistory).toEqual(['农耕', '民俗']);
+    });
+  });
+
+  describe('时间格式化', () => {
+    test('文章列表包含相对时间字段', async () => {
+      await page.loadArticles();
+      expect(page.data.articleList.length).toBeGreaterThan(0);
+      const article = page.data.articleList[0];
+      expect(article).toHaveProperty('relativeTime');
+      expect(typeof article.relativeTime).toBe('string');
     });
   });
 

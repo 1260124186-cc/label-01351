@@ -709,6 +709,11 @@ function initStorage(overrides = {}) {
   } else {
     wx.setStorageSync('commentLikes', {});
   }
+  if (overrides.searchHistory) {
+    wx.setStorageSync('search_history', overrides.searchHistory);
+  } else {
+    wx.setStorageSync('search_history', []);
+  }
 }
 
 function mergeBehaviors(pageDef) {

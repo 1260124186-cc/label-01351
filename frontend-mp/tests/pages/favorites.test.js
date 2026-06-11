@@ -60,6 +60,16 @@ describe('Favorites 收藏页', () => {
     expect(page.data.keyword).toBe('');
     expect(page.data.loading).toBe(false);
     expect(page.data.loadingMore).toBe(false);
+    expect(page.data.sortType).toBe('latest');
+    expect(page.data.sortOptions).toEqual([
+      { id: 'latest', name: '最新发布' },
+      { id: 'views', name: '最多阅读' },
+      { id: 'likes', name: '最多点赞' }
+    ]);
+    expect(page.data.searchHistory).toEqual([]);
+    expect(page.data.showSearchHistory).toBe(false);
+    expect(page.data.hotArticles).toEqual([]);
+    expect(page.data.emptyResultType).toBe('normal');
   });
 
   describe('登录守卫', () => {
@@ -343,6 +353,40 @@ describe('Favorites 收藏页', () => {
       page.clearSearch();
       expect(page.data.keyword).toBe('');
       expect(page.data.page).toBe(1);
+    });
+  });
+
+  describe('onSortChange', () => {
+    test('切换排序方式时重置分页', () => {
+      page.data.sortType = 'latest';
+      page.data.favoriteList = [{ id: 'old' }];
+      page.data.page = 3;
+
+      page.onSortChange({ currentTarget: { dataset: { sort: 'likes' } } });
+
+      expect(page.data.sortType).toBe('likes');
+      expect(page.data.page).toBe(1);
+      expect(page.data.favoriteList).toEqual([]);
+      expect(page.data.hasMore).toBe(true);
+    });
+
+    test('点击当前排序方式不做操作', () => {
+      page.data.sortType = 'latest';
+      page.data.favoriteList = [{ id: 'existing' }];
+
+      page.onSortChange({ currentTarget: { dataset: { sort: 'latest' } } });
+
+      expect(page.data.favoriteList).toEqual([{ id: 'existing' }]);
+    });
+  });
+
+  describe('时间格式化', () => {
+    test('收藏文章包含相对时间字段', async () => {
+      await api.favoriteArticle('article_001');
+      await page.loadFavorites();
+      const item = page.data.favoriteList[0];
+      expect(item).toHaveProperty('relativeTime');
+      expect(typeof item.relativeTime).toBe('string');
     });
   });
 

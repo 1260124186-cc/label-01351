@@ -42,6 +42,98 @@
   padding: 8rpx;
 }
 
+/* 搜索历史 */
+.search-history {
+  margin-top: 16rpx;
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.search-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.history-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.history-clear {
+  font-size: 24rpx;
+  color: var(--color-text-light);
+}
+
+.search-history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 20rpx;
+  background-color: var(--color-bg);
+  border-radius: 24rpx;
+}
+
+.history-icon {
+  font-size: 24rpx;
+  margin-right: 8rpx;
+  color: var(--color-text-light);
+}
+
+.history-text {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
+/* 排序栏 */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  padding: 0 24rpx 20rpx;
+}
+
+.sort-label {
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+  margin-right: 16rpx;
+}
+
+.sort-options {
+  display: flex;
+  flex: 1;
+  gap: 12rpx;
+}
+
+.sort-item {
+  padding: 10rpx 24rpx;
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+}
+
+.sort-item.active {
+  background-color: var(--color-primary);
+}
+
+.sort-item.active .sort-name {
+  color: #FFFFFF;
+}
+
+.sort-name {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
 /* 分类标签 */
 .category-scroll {
   white-space: nowrap;

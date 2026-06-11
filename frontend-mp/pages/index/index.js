@@ -15,6 +15,14 @@ Page({
     return 'getArticleList';
   },
 
+  onLoad() {
+    this.loadCategories();
+  },
+
+  onShow() {
+    this.refreshData();
+  },
+
   async loadArticles() {
     return this.loadList();
   },

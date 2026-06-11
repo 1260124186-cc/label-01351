@@ -22,8 +22,31 @@
         value="{{keyword}}"
         bindinput="onSearchInput"
         bindconfirm="onSearch"
+        bindfocus="onSearchFocus"
+        bindblur="onSearchBlur"
+        confirm-type="search"
       />
       <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+
+    <!-- 搜索历史 -->
+    <view class="search-history" wx:if="{{showSearchHistory && searchHistory.length > 0}}">
+      <view class="search-history-header">
+        <text class="history-title">搜索历史</text>
+        <text class="history-clear" bindtap="clearSearchHistory">清空</text>
+      </view>
+      <view class="search-history-list">
+        <view
+          class="history-item"
+          wx:for="{{searchHistory}}"
+          wx:key="*this"
+          bindtap="onHistoryItemTap"
+          data-keyword="{{item}}"
+        >
+          <text class="history-icon">🕐</text>
+          <text class="history-text">{{item}}</text>
+        </view>
+      </view>
     </view>
   </view>
 
@@ -39,6 +62,22 @@
       <text class="category-name">{{item.name}}</text>
     </view>
   </scroll-view>
+
+  <!-- 排序切换 -->
+  <view class="sort-bar">
+    <view class="sort-label">排序：</view>
+    <view class="sort-options">
+      <view
+        class="sort-item {{sortType === item.id ? 'active' : ''}}"
+        wx:for="{{sortOptions}}"
+        wx:key="id"
+        bindtap="onSortChange"
+        data-sort="{{item.id}}"
+      >
+        <text class="sort-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
 
   <!-- 收藏列表 -->
   <view class="favorite-list">
@@ -66,7 +105,7 @@
           <view class="article-category tag-{{item.category}}">
             {{item.categoryName}}
           </view>
-          <text class="article-date">{{item.createTime}}</text>
+          <text class="article-date">{{item.relativeTime}}</text>
         </view>
 
         <view class="article-title">{{item.title}}</view>
