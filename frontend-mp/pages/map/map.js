@@ -41,8 +41,12 @@ Page({
       const res = await api.getLandmarkList({ category });
       if (res.code === 200 && res.data) {
         const { list } = res.data;
+        const processedList = list.map(item => ({
+          ...item,
+          categoryName: this.getCategoryName(item.category)
+        }));
         this.setData({
-          landmarkList: list,
+          landmarkList: processedList,
           markers: list.map(item => ({
             id: item.id,
             latitude: item.latitude,

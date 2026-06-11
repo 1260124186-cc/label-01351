@@ -33,7 +33,7 @@
     <view class="entry-list" wx:else>
       <view class="entry-card" wx:for="{{entryList}}" wx:key="id">
         <view class="entry-hero">
-          <text class="entry-letter">{{item.title.charAt(0)}}</text>
+          <text class="entry-letter">{{item.title[0]}}</text>
         </view>
         <view class="entry-info">
           <view class="entry-header">

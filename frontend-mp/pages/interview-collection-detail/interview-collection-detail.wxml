@@ -44,7 +44,7 @@
       data-id="{{item.id}}"
     >
       <view class="card-avatar">
-        <text class="avatar-text">{{item.intervieweeName.charAt(0)}}</text>
+        <text class="avatar-text">{{item.intervieweeName[0]}}</text>
       </view>
       <view class="card-content">
         <view class="card-title-row">

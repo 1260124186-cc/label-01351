@@ -10,6 +10,7 @@ Page({
     currentIndex: 0,
     answers: [],
     remaining: 60,
+    remainingDisplay: '1:00',
     timer: null,
     showResult: false,
     resultData: null
@@ -34,7 +35,8 @@ Page({
           totalCount: d.totalCount,
           questions: d.questions,
           answers: new Array(d.totalCount).fill(null),
-          remaining: d.duration
+          remaining: d.duration,
+          remainingDisplay: this.formatTime(d.duration)
         });
         this.startTimer();
       } else {
@@ -54,13 +56,13 @@ Page({
       const remaining = this.data.remaining - 1;
       if (remaining <= 0) {
         clearInterval(timer);
-        this.setData({ timer: null, remaining: 0 });
+        this.setData({ timer: null, remaining: 0, remainingDisplay: '0:00' });
         if (!this.data.showResult && !this.data.submitting) {
           wx.showToast({ title: '时间到！自动提交', icon: 'none' });
           await this.submitAnswers(true);
         }
       } else {
-        this.setData({ remaining });
+        this.setData({ remaining, remainingDisplay: this.formatTime(remaining) });
       }
     }, 1000);
     this.setData({ timer });

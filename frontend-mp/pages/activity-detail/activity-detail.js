@@ -256,6 +256,8 @@ Page({
     });
   },
 
+  stopPropagation() {},
+
   onShareAppMessage() {
     const { activity } = this.data;
     if (!activity) return {};

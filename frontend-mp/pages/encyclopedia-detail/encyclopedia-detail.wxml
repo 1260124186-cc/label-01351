@@ -76,7 +76,7 @@
         <view class="content-card">
           <view class="section-title">词条内容</view>
           <view class="content-text">
-            <text wx:for="{{entry.content.split('\\n\\n')}}" wx:key="*this">{{item}}\n\n</text>
+            <text wx:for="{{contentParagraphs}}" wx:key="*this">{{item}}</text>
           </view>
         </view>
       </block>

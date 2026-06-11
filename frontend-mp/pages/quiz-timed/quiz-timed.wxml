@@ -8,7 +8,7 @@
     <view class="timed-header">
       <view class="time-display {{remaining <= 10 ? 'urgent' : ''}}">
         <text class="time-icon">⏱️</text>
-        <text class="time-num">{{formatTime(remaining)}}</text>
+        <text class="time-num">{{remainingDisplay}}</text>
       </view>
       <view class="progress-info">
         <text class="progress-text">{{currentIndex + 1}} / {{totalCount}}</text>

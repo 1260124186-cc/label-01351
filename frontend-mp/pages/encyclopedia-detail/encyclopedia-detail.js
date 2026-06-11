@@ -4,6 +4,7 @@ Page({
   data: {
     entryId: '',
     entry: null,
+    contentParagraphs: [],
     loading: true,
     isLoggedIn: false,
     activeTab: 'content',
@@ -35,6 +36,7 @@ Page({
 
       if (res.code === 200 && res.data) {
         const entry = res.data;
+        const contentParagraphs = (entry.content || '').split('\n\n').filter(p => p.trim());
 
         wx.setNavigationBarTitle({
           title: entry.title.length > 12
@@ -44,6 +46,7 @@ Page({
 
         this.setData({
           entry,
+          contentParagraphs,
           loading: false
         });
       } else {

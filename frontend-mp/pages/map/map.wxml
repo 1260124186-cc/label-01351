@@ -57,7 +57,7 @@
         <image class="landmark-cover" src="{{item.cover || '/assets/icons/home.png'}}" mode="aspectFill" />
         <view class="landmark-info">
           <view class="landmark-name">{{ item.name }}</view>
-          <view class="landmark-category">{{ getCategoryName(item.category) }}</view>
+          <view class="landmark-category">{{item.categoryName}}</view>
           <view class="landmark-desc">{{ item.description }}</view>
           <view class="landmark-meta">
             <text class="meta-item">📍 {{ item.address }}</text>

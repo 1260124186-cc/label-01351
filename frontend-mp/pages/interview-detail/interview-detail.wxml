@@ -4,7 +4,7 @@
   <view class="profile-header">
     <view class="profile-avatar-wrap">
       <view class="profile-avatar-placeholder">
-        <text class="avatar-text">{{interview.intervieweeName.charAt(0)}}</text>
+        <text class="avatar-text">{{interview.intervieweeName[0]}}</text>
       </view>
     </view>
     
