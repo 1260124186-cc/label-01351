@@ -799,3 +799,42 @@
   justify-content: center;
   white-space: nowrap;
 }
+
+.settings-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 32rpx;
+  padding: 32rpx 36rpx;
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  margin-top: 32rpx;
+}
+
+.settings-entry:active {
+  background-color: #faf8f5;
+}
+
+.settings-entry-left {
+  display: flex;
+  align-items: center;
+}
+
+.settings-icon {
+  font-size: 40rpx;
+  margin-right: 24rpx;
+}
+
+.settings-text {
+  font-size: 30rpx;
+  color: #333333;
+  font-weight: 500;
+}
+
+.settings-arrow {
+  font-size: 36rpx;
+  color: #cccccc;
+  font-weight: 300;
+  line-height: 1;
+}

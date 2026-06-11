@@ -231,5 +231,11 @@ Page({
     } else {
       wx.showToast({ title: '切换失败', icon: 'none' });
     }
+  },
+
+  goToSettings() {
+    wx.navigateTo({
+      url: '/pages/settings/settings'
+    });
   }
 });

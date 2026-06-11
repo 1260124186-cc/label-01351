@@ -149,6 +149,15 @@
       </view>
     </view>
 
+    <!-- 设置入口 -->
+    <view class="settings-entry" bindtap="goToSettings">
+      <view class="settings-entry-left">
+        <text class="settings-icon">⚙️</text>
+        <text class="settings-text">设置</text>
+      </view>
+      <text class="settings-arrow">›</text>
+    </view>
+
     <!-- 退出登录 -->
     <view class="logout-section">
       <button class="btn-logout" bindtap="onLogout">退出登录</button>

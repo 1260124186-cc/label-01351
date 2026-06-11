@@ -1,0 +1,119 @@
+<view class="page-container">
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">通用设置</text>
+    </view>
+
+    <view class="setting-item" bindtap="onClearCache">
+      <view class="setting-left">
+        <text class="setting-icon">🗑️</text>
+        <text class="setting-label">清除缓存</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-value">{{cacheSize}}</text>
+        <text class="setting-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="setting-item" bindtap="onRestoreDefaultData">
+      <view class="setting-left">
+        <text class="setting-icon">🔄</text>
+        <text class="setting-label">恢复默认数据</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">开发模式</text>
+    </view>
+
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">🔌</text>
+        <text class="setting-label">远程数据源</text>
+      </view>
+      <view class="setting-right">
+        <switch
+          checked="{{useRemote}}"
+          bindchange="onSwitchDataSource"
+          color="#8B4513"
+        />
+      </view>
+    </view>
+
+    <view class="setting-item" bindtap="onToggleBaseUrlEdit">
+      <view class="setting-left">
+        <text class="setting-icon">🌐</text>
+        <text class="setting-label">服务地址</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-value">{{baseUrl}}</text>
+        <text class="setting-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="base-url-edit" wx:if="{{showBaseUrlEdit}}">
+      <input
+        class="url-input"
+        placeholder="请输入服务地址"
+        value="{{baseUrlInput}}"
+        bindinput="onBaseUrlInput"
+      />
+      <button class="btn-save-url" bindtap="onSaveBaseUrl">保存</button>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">关于</text>
+    </view>
+
+    <view class="setting-item" bindtap="goToAbout">
+      <view class="setting-left">
+        <text class="setting-icon">ℹ️</text>
+        <text class="setting-label">关于我们</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="setting-item" bindtap="goToUserAgreement">
+      <view class="setting-left">
+        <text class="setting-icon">📄</text>
+        <text class="setting-label">用户协议</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="setting-item" bindtap="goToPrivacyPolicy">
+      <view class="setting-left">
+        <text class="setting-icon">🔒</text>
+        <text class="setting-label">隐私政策</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">📌</text>
+        <text class="setting-label">版本号</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-value">v{{version}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer">
+    <text class="footer-text">乡村文化库 · 传承乡村记忆</text>
+  </view>
+</view>
