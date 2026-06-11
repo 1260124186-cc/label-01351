@@ -721,6 +721,67 @@ app.get('/api/user/stats', (req, res) => {
   });
 });
 
+// 获取作者主页信息
+app.get('/api/author/profile', (req, res) => {
+  const { authorId } = req.query;
+
+  if (!authorId) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '作者ID不能为空'
+    });
+  }
+
+  const authorArticles = articles.filter(item => item.authorId === authorId && item.status === 1);
+
+  if (authorArticles.length === 0) {
+    const author = users[authorId];
+    if (author) {
+      return res.json({
+        code: 200,
+        data: {
+          authorId: author.id,
+          authorName: author.nickname,
+          authorAvatar: author.avatar || '',
+          articleCount: 0,
+          likeCount: 0,
+          viewCount: 0,
+          articles: []
+        },
+        message: 'success'
+      });
+    }
+    return res.json({
+      code: 404,
+      data: null,
+      message: '作者不存在'
+    });
+  }
+
+  const totalLikes = authorArticles.reduce((sum, item) => sum + (item.likeCount || 0), 0);
+  const totalViews = authorArticles.reduce((sum, item) => sum + (item.viewCount || 0), 0);
+
+  authorArticles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+  const firstArticle = authorArticles[0];
+  const user = users[authorId] || {};
+
+  res.json({
+    code: 200,
+    data: {
+      authorId: firstArticle.authorId,
+      authorName: firstArticle.authorName,
+      authorAvatar: user.avatar || '',
+      articleCount: authorArticles.length,
+      likeCount: totalLikes,
+      viewCount: totalViews,
+      articles: authorArticles
+    },
+    message: 'success'
+  });
+});
+
 // 获取通知列表
 app.get('/api/notification/list', (req, res) => {
   const { userId, type = 'all', readStatus = 'all', page = 1, pageSize = 10 } = req.query;
@@ -1038,6 +1099,7 @@ app.listen(PORT, () => {
 ║   - GET  /api/user/info            用户信息                ║
 ║   - POST /api/user/update          更新用户                ║
 ║   - GET  /api/user/stats           用户统计                ║
+║   - GET  /api/author/profile       作者主页信息            ║
 ║                                                            ║
 ║   - GET  /api/notification/list             通知列表       ║
 ║   - GET  /api/notification/unread-count     未读数量       ║

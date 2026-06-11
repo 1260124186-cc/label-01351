@@ -382,4 +382,19 @@ describe('Detail 文章详情页', () => {
       expect(shareInfo).toEqual({});
     });
   });
+
+  describe('goToAuthorHome', () => {
+    test('有 authorId 时跳转到作者主页', () => {
+      page.goToAuthorHome({ currentTarget: { dataset: { authorid: 'user_001' } } });
+      expect(wx.navigateTo).toHaveBeenCalledWith({
+        url: '/pages/author-home/author-home?id=user_001'
+      });
+    });
+
+    test('无 authorId 时不跳转', () => {
+      wx.navigateTo.mockClear();
+      page.goToAuthorHome({ currentTarget: { dataset: {} } });
+      expect(wx.navigateTo).not.toHaveBeenCalled();
+    });
+  });
 });

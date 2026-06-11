@@ -377,6 +377,60 @@ const storageApi = {
     };
   },
 
+  getAuthorProfile: async (authorId) => {
+    await delay(300);
+    if (!authorId) {
+      return { code: 400, data: null, message: '作者ID不能为空' };
+    }
+    const articles = wx.getStorageSync('articles') || [];
+    const authorArticles = articles.filter(item => item.authorId === authorId && item.status === 1);
+    if (authorArticles.length === 0) {
+      const users = wx.getStorageSync('users') || [];
+      const author = users.find(u => u.id === authorId);
+      if (author) {
+        return {
+          code: 200,
+          data: {
+            authorId: author.id,
+            authorName: author.nickname,
+            authorAvatar: author.avatar || '',
+            articleCount: 0,
+            likeCount: 0,
+            viewCount: 0,
+            articles: []
+          },
+          message: 'success'
+        };
+      }
+      return { code: 404, data: null, message: '作者不存在' };
+    }
+
+    const totalLikes = authorArticles.reduce((sum, item) => sum + (item.likeCount || 0), 0);
+    const totalViews = authorArticles.reduce((sum, item) => sum + (item.viewCount || 0), 0);
+
+    authorArticles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+    const articlesWithCategory = authorArticles.map(item => ({
+      ...item,
+      categoryName: util.getCategoryName(item.category)
+    }));
+
+    const firstArticle = authorArticles[0];
+    return {
+      code: 200,
+      data: {
+        authorId: firstArticle.authorId,
+        authorName: firstArticle.authorName,
+        authorAvatar: '',
+        articleCount: authorArticles.length,
+        likeCount: totalLikes,
+        viewCount: totalViews,
+        articles: articlesWithCategory
+      },
+      message: 'success'
+    };
+  },
+
   likeArticle: async (id) => {
     await delay(200);
     const authError = requireLogin();
@@ -3729,6 +3783,17 @@ const remoteApi = {
       url: '/api/user/stats',
       method: 'GET',
       data: { userId }
+    });
+  },
+
+  getAuthorProfile: async (authorId) => {
+    if (!authorId) {
+      return { code: 400, data: null, message: '作者ID不能为空' };
+    }
+    return request({
+      url: '/api/author/profile',
+      method: 'GET',
+      data: { authorId }
     });
   },
 

@@ -172,6 +172,26 @@
   font-weight: 500;
 }
 
+.clickable {
+  transition: opacity 0.2s;
+}
+
+.clickable:active {
+  opacity: 0.7;
+}
+
+.author-link {
+  color: #8B4513;
+  font-weight: 500;
+}
+
+.author-arrow {
+  font-size: 32rpx;
+  color: #8B4513;
+  margin-left: 4rpx;
+  opacity: 0.7;
+}
+
 .meta-date {
   font-size: 26rpx;
   color: var(--color-text-light);
@@ -296,6 +316,15 @@
   color: var(--color-text);
 }
 
+.comment-author-link {
+  color: #8B4513;
+  transition: opacity 0.2s;
+}
+
+.comment-author-link:active {
+  opacity: 0.7;
+}
+
 .author-tag {
   display: inline-flex;
   align-items: center;
@@ -411,6 +440,15 @@
   font-size: 26rpx;
   font-weight: 500;
   color: var(--color-text);
+}
+
+.reply-author-link {
+  color: #8B4513;
+  transition: opacity 0.2s;
+}
+
+.reply-author-link:active {
+  opacity: 0.7;
 }
 
 .reply-prefix {

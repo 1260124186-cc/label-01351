@@ -49,11 +49,12 @@
 
       <!-- 作者信息 -->
       <view class="article-meta">
-        <view class="meta-author">
+        <view class="meta-author clickable" bindtap="goToAuthorHome" data-authorid="{{article.authorId}}">
           <view class="author-avatar">
             <text class="avatar-text">{{article.authorName[0]}}</text>
           </view>
-          <text class="author-name">{{article.authorName}}</text>
+          <text class="author-name author-link">{{article.authorName}}</text>
+          <text class="author-arrow">›</text>
         </view>
         <text class="meta-date">{{article.createTime}}</text>
       </view>
@@ -97,7 +98,7 @@
                 </view>
                 <view class="comment-info">
                   <view class="comment-author-row">
-                    <text class="comment-author-name">{{comment.authorName}}</text>
+                    <text class="comment-author-name comment-author-link" bindtap="goToAuthorHome" data-authorid="{{comment.authorId}}">{{comment.authorName}}</text>
                     <text class="author-tag" wx:if="{{comment.isAuthor}}">作者</text>
                   </view>
                   <text class="comment-time">{{comment.relativeTime}}</text>
@@ -131,7 +132,7 @@
                       </view>
                       <view class="reply-info">
                         <view class="reply-author-row">
-                          <text class="reply-author-name">{{reply.authorName}}</text>
+                          <text class="reply-author-name reply-author-link" bindtap="goToAuthorHome" data-authorid="{{reply.authorId}}">{{reply.authorName}}</text>
                           <text class="author-tag" wx:if="{{reply.isAuthor}}">作者</text>
                           <text class="reply-prefix" wx:if="{{reply.replyToUserName}}">回复 {{reply.replyToUserName}}</text>
                         </view>

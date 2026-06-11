@@ -534,5 +534,13 @@ Page({
         }, 100);
       }
     });
+  },
+
+  goToAuthorHome(e) {
+    const authorId = e.currentTarget.dataset.authorid;
+    if (!authorId) return;
+    wx.navigateTo({
+      url: '/pages/author-home/author-home?id=' + authorId
+    });
   }
 });

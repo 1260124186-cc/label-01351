@@ -3750,3 +3750,73 @@ describe('api.submitFeedback', () => {
     expect(feedbacks[0].content).toBe('第二条反馈内容测试');
   });
 });
+
+describe('api.getAuthorProfile', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('作者ID为空时返回 400', async () => {
+    const res = await api.getAuthorProfile('');
+    expect(res.code).toBe(400);
+    expect(res.message).toBe('作者ID不能为空');
+  });
+
+  test('有文章的作者返回正确信息', async () => {
+    const res = await api.getAuthorProfile('user_001');
+    expect(res.code).toBe(200);
+    expect(res.data.authorId).toBe('user_001');
+    expect(res.data.authorName).toBe('张大爷');
+    expect(res.data).toHaveProperty('articleCount');
+    expect(res.data).toHaveProperty('likeCount');
+    expect(res.data).toHaveProperty('viewCount');
+    expect(res.data).toHaveProperty('articles');
+    expect(Array.isArray(res.data.articles)).toBe(true);
+  });
+
+  test('作者统计数据正确', async () => {
+    const res = await api.getAuthorProfile('user_001');
+    const articles = wx.getStorageSync('articles').filter(a => a.authorId === 'user_001' && a.status === 1);
+    expect(res.data.articleCount).toBe(articles.length);
+    const expectedLikes = articles.reduce((sum, a) => sum + (a.likeCount || 0), 0);
+    const expectedViews = articles.reduce((sum, a) => sum + (a.viewCount || 0), 0);
+    expect(res.data.likeCount).toBe(expectedLikes);
+    expect(res.data.viewCount).toBe(expectedViews);
+  });
+
+  test('作者文章列表包含 categoryName', async () => {
+    const res = await api.getAuthorProfile('user_001');
+    expect(res.data.articles.length).toBeGreaterThan(0);
+    res.data.articles.forEach(article => {
+      expect(article).toHaveProperty('categoryName');
+    });
+  });
+
+  test('作者文章按时间倒序排列', async () => {
+    const res = await api.getAuthorProfile('user_001');
+    const articles = res.data.articles;
+    for (let i = 1; i < articles.length; i++) {
+      expect(new Date(articles[i - 1].createTime).getTime())
+        .toBeGreaterThanOrEqual(new Date(articles[i].createTime).getTime());
+    }
+  });
+
+  test('有用户信息但无文章的作者返回正确信息', async () => {
+    const users = [{ id: 'user_no_articles', nickname: '无文章用户', avatar: '' }];
+    wx.setStorageSync('users', users);
+    const res = await api.getAuthorProfile('user_no_articles');
+    expect(res.code).toBe(200);
+    expect(res.data.authorId).toBe('user_no_articles');
+    expect(res.data.authorName).toBe('无文章用户');
+    expect(res.data.articleCount).toBe(0);
+    expect(res.data.likeCount).toBe(0);
+    expect(res.data.viewCount).toBe(0);
+    expect(res.data.articles).toEqual([]);
+  });
+
+  test('作者不存在返回 404', async () => {
+    const res = await api.getAuthorProfile('notexist_author');
+    expect(res.code).toBe(404);
+    expect(res.message).toBe('作者不存在');
+  });
+});

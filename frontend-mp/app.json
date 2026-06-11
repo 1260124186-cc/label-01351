@@ -38,7 +38,8 @@
     "pages/interview-collection-detail/interview-collection-detail",
     "pages/calendar/calendar",
     "pages/settings/settings",
-    "pages/history/history"
+    "pages/history/history",
+    "pages/author-home/author-home"
   ],
   "window": {
     "backgroundTextStyle": "dark",
