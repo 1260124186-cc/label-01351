@@ -15,7 +15,8 @@
     <view class="user-card">
       <view class="user-content">
         <view class="user-avatar">
-          <text class="avatar-text">{{userInfo.nickname[0] || '用'}}</text>
+          <image wx:if="{{userInfo.avatar}}" class="avatar-image" src="{{userInfo.avatar}}" mode="aspectFill" />
+          <text wx:else class="avatar-text">{{userInfo.nickname[0] || '用'}}</text>
         </view>
         <view class="user-info">
           <view class="user-name-row">
@@ -23,6 +24,11 @@
             <view class="user-role-tag {{isAdmin ? 'role-admin' : 'role-user'}}">
               {{isAdmin ? '🛡 管理员' : '👤 普通用户'}}
             </view>
+          </view>
+          <view class="user-login-type" wx:if="{{userInfo.loginType}}">
+            <text class="login-type-tag {{userInfo.loginType === 'wechat' ? 'type-wechat' : 'type-nickname'}}">
+              {{userInfo.loginType === 'wechat' ? '🟢 微信登录' : '📝 昵称登录'}}
+            </text>
           </view>
         </view>
       </view>

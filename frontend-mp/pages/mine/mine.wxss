@@ -59,6 +59,32 @@
   text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.2);
 }
 
+.avatar-image {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+}
+
+.user-login-type {
+  margin-top: 8rpx;
+}
+
+.login-type-tag {
+  font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.login-type-tag.type-wechat {
+  background: rgba(7, 193, 96, 0.1);
+  color: #07C160;
+}
+
+.login-type-tag.type-nickname {
+  background: rgba(139, 69, 19, 0.1);
+  color: #8B4513;
+}
+
 .user-info {
   flex: 1;
   padding: 20rpx 0 20rpx 28rpx;

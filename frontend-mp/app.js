@@ -3,10 +3,22 @@ const api = require('./utils/api');
 const figureData = require('./utils/figure-data');
 const quizData = require('./utils/quiz-data');
 
+const generateToken = (userId) => {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
+  const payload = Buffer.from(JSON.stringify({
+    sub: userId,
+    iat: Date.now(),
+    exp: Date.now() + 7 * 24 * 60 * 60 * 1000
+  })).toString('base64');
+  const signature = Buffer.from(header + '.' + payload + '.secret').toString('base64');
+  return header + '.' + payload + '.' + signature;
+};
+
 App({
   globalData: {
     userInfo: null,
     isLoggedIn: false,
+    token: null,
     baseUrl: 'http://localhost:3000',
     useRemote: false
   },
@@ -42,62 +54,77 @@ App({
     console.log('[API] baseUrl 已更新:', baseUrl);
   },
 
-  // 检查登录状态
   checkLoginStatus() {
     const isLoggedIn = wx.getStorageSync('isLoggedIn') || false;
     const userInfo = wx.getStorageSync('userInfo');
+    const token = wx.getStorageSync('token');
 
-    if (isLoggedIn && userInfo) {
-      // 严格校验 role：只有 'admin' 字符串才算管理员，其余降级为 user
+    if (isLoggedIn && userInfo && token) {
       const normalizedUserInfo = {
         ...userInfo,
+        openid: userInfo.openid || '',
+        loginType: userInfo.loginType || 'nickname',
         role: userInfo.role === 'admin' ? 'admin' : 'user'
       };
       this.globalData.isLoggedIn = true;
       this.globalData.userInfo = normalizedUserInfo;
-      // 同步写回 Storage（规范化 role）
+      this.globalData.token = token;
       try { wx.setStorageSync('userInfo', normalizedUserInfo); } catch (e) {}
     } else {
       this.globalData.isLoggedIn = false;
       this.globalData.userInfo = null;
+      this.globalData.token = null;
+      if (!isLoggedIn) {
+        wx.removeStorageSync('token');
+      }
     }
     console.log('[App] 登录状态校验:', {
       isLoggedIn: this.globalData.isLoggedIn,
-      role: this.globalData.userInfo ? this.globalData.userInfo.role : 'guest'
+      role: this.globalData.userInfo ? this.globalData.userInfo.role : 'guest',
+      loginType: this.globalData.userInfo ? this.globalData.userInfo.loginType : 'none',
+      hasToken: !!this.globalData.token
     });
   },
 
-  // 登录
   login(userInfo) {
     const user = userInfo || {
       id: 'user_' + Date.now(),
+      openid: '',
       nickname: '乡村文化爱好者',
       avatar: '',
       phone: '',
+      loginType: 'nickname',
       createTime: new Date().toISOString().split('T')[0],
       role: 'user'
     };
-    // 默认 role 为 user，若显式传了 admin 则保留
+
     if (!user.role) user.role = 'user';
+    if (!user.openid) user.openid = '';
+    if (!user.loginType) user.loginType = 'nickname';
+
+    const token = generateToken(user.id);
 
     wx.setStorageSync('userInfo', user);
     wx.setStorageSync('isLoggedIn', true);
+    wx.setStorageSync('token', token);
     this.globalData.userInfo = user;
     this.globalData.isLoggedIn = true;
+    this.globalData.token = token;
 
-    console.log('[App] 登录成功, role:', user.role);
-    return user;
+    console.log('[App] 登录成功, loginType:', user.loginType, 'role:', user.role);
+    return { ...user, token };
   },
 
-  // 退出登录
   logout() {
     wx.removeStorageSync('isLoggedIn');
     wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('token');
     this.globalData.isLoggedIn = false;
     this.globalData.userInfo = null;
+    this.globalData.token = null;
+    console.log('[App] 已退出登录，token 与用户信息已清除');
   },
 
-  // 检查是否登录，未登录则跳转登录页
   checkLogin() {
     if (!this.globalData.isLoggedIn) {
       wx.navigateTo({
@@ -108,36 +135,34 @@ App({
     return true;
   },
 
-  // 获取用户信息
   getUserInfo() {
     return this.globalData.userInfo;
   },
 
-  // 获取登录状态
   getLoginStatus() {
     return this.globalData.isLoggedIn;
   },
 
-  // 更新用户信息
+  getToken() {
+    return this.globalData.token;
+  },
+
   updateUserInfo(userInfo) {
     this.globalData.userInfo = userInfo;
     wx.setStorageSync('userInfo', userInfo);
   },
 
-  // 判断是否管理员
   isAdmin() {
     const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
     return !!(userInfo && userInfo.role === 'admin');
   },
 
-  // 获取当前角色
   getUserRole() {
     const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
     if (!userInfo) return 'guest';
     return userInfo.role === 'admin' ? 'admin' : 'user';
   },
 
-  // 调试：切换用户角色（写入 Storage 并同步 globalData）
   updateUserRole(role) {
     const normalizedRole = role === 'admin' ? 'admin' : 'user';
     const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
@@ -152,12 +177,9 @@ App({
     return false;
   },
 
-  // 初始化 Mock 数据
   initMockData() {
-    // 初始化人物数据
     figureData.initFigureData();
 
-    // 检查是否已有文章数据
     const articles = wx.getStorageSync('articles');
     if (!articles || articles.length === 0) {
       const defaultArticles = [
@@ -225,7 +247,6 @@ App({
       wx.setStorageSync('articles', defaultArticles);
     }
 
-    // 初始化分类数据
     const categories = wx.getStorageSync('categories');
     if (!categories || categories.length === 0) {
       const defaultCategories = [
@@ -238,7 +259,6 @@ App({
       wx.setStorageSync('categories', defaultCategories);
     }
 
-    // 初始化专题数据
     const topics = wx.getStorageSync('topics');
     if (!topics || topics.length === 0) {
       const defaultTopics = [
@@ -345,7 +365,6 @@ App({
       wx.setStorageSync('topics', defaultTopics);
     }
 
-    // 初始化百科词条数据
     const encyclopedia = wx.getStorageSync('encyclopedia');
     if (!encyclopedia || encyclopedia.length === 0) {
       const defaultEncyclopedia = [

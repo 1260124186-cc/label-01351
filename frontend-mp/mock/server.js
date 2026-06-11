@@ -5,16 +5,62 @@ const cors = require('cors');
 const app = express();
 const PORT = 3000;
 
-// 中间件
 app.use(cors());
 app.use(express.json());
 
-// Mock 数据存储
 let likes = {};
 let favorites = {};
 let notifications = {};
 let reports = [];
 let feedbacks = [];
+let tokenStore = {};
+
+const generateServerToken = (userId) => {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
+  const payload = Buffer.from(JSON.stringify({
+    sub: userId,
+    iat: Date.now(),
+    exp: Date.now() + 7 * 24 * 60 * 60 * 1000
+  })).toString('base64');
+  const signature = Buffer.from(header + '.' + payload + '.server_secret').toString('base64');
+  return header + '.' + payload + '.' + signature;
+};
+
+const verifyToken = (token) => {
+  if (!token) return null;
+  if (tokenStore[token]) return tokenStore[token];
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+    if (payload.exp && payload.exp < Date.now()) return null;
+    return payload.sub;
+  } catch (e) {
+    return null;
+  }
+};
+
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      code: 401,
+      data: null,
+      message: '未提供认证令牌'
+    });
+  }
+  const token = authHeader.substring(7);
+  const userId = verifyToken(token);
+  if (!userId) {
+    return res.status(401).json({
+      code: 401,
+      data: null,
+      message: '令牌无效或已过期'
+    });
+  }
+  req.userId = userId;
+  next();
+};
 
 let articles = [
   {
@@ -115,6 +161,96 @@ const requireAuth = (userId) => {
 // 健康检查
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// 微信登录
+app.post('/api/auth/wechat-login', (req, res) => {
+  const { code, avatar, nickname } = req.body;
+
+  const openid = 'mock_openid_' + (code || Date.now());
+  const userId = 'wx_' + Date.now();
+  const token = generateServerToken(userId);
+  tokenStore[token] = userId;
+
+  const userInfo = {
+    id: userId,
+    openid,
+    nickname: nickname || '微信用户',
+    avatar: avatar || '',
+    phone: '',
+    loginType: 'wechat',
+    createTime: new Date().toISOString().split('T')[0],
+    role: 'user'
+  };
+
+  users[userId] = userInfo;
+
+  res.json({
+    code: 200,
+    data: { token, userInfo },
+    message: '微信登录成功'
+  });
+});
+
+// 昵称登录
+app.post('/api/auth/nickname-login', (req, res) => {
+  const { nickname } = req.body;
+
+  if (!nickname || nickname.trim().length < 2) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '昵称需要至少2个字符'
+    });
+  }
+
+  const userId = 'user_' + Date.now();
+  const token = generateServerToken(userId);
+  tokenStore[token] = userId;
+
+  const userInfo = {
+    id: userId,
+    openid: '',
+    nickname: nickname.trim(),
+    avatar: '',
+    phone: '',
+    loginType: 'nickname',
+    createTime: new Date().toISOString().split('T')[0],
+    role: 'user'
+  };
+
+  users[userId] = userInfo;
+
+  res.json({
+    code: 200,
+    data: { token, userInfo },
+    message: '登录成功'
+  });
+});
+
+// 退出登录
+app.post('/api/auth/logout', authMiddleware, (req, res) => {
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    delete tokenStore[token];
+  }
+
+  res.json({
+    code: 200,
+    data: null,
+    message: '退出成功'
+  });
+});
+
+// 验证 token 有效性
+app.get('/api/auth/check', authMiddleware, (req, res) => {
+  const userInfo = users[req.userId] || { id: req.userId };
+  res.json({
+    code: 200,
+    data: { valid: true, userInfo },
+    message: 'success'
+  });
 });
 
 // 获取文章列表
@@ -877,6 +1013,12 @@ app.listen(PORT, () => {
 ║   🌾 乡村文化库 Mock Server 已启动                          ║
 ║                                                            ║
 ║   服务地址: http://localhost:${PORT}                         ║
+║                                                            ║
+║   认证接口:                                                ║
+║   - POST /api/auth/wechat-login    微信登录                ║
+║   - POST /api/auth/nickname-login  昵称登录                ║
+║   - POST /api/auth/logout          退出登录                ║
+║   - GET  /api/auth/check           验证Token               ║
 ║                                                            ║
 ║   API 接口:                                                ║
 ║   - GET  /api/health               健康检查                ║

@@ -37,6 +37,12 @@ const wx = {
   stopPullDownRefresh: jest.fn(),
 
   request: jest.fn(),
+
+  login: jest.fn(({ success }) => {
+    if (success) {
+      success({ code: 'mock_wx_code_123' });
+    }
+  })
 };
 
 global.wx = wx;
@@ -45,26 +51,35 @@ global.getApp = jest.fn(() => ({
   globalData: {
     userInfo: null,
     isLoggedIn: false,
+    token: null,
     baseUrl: 'http://localhost:3000'
   },
   login(userInfo) {
     this.globalData.userInfo = userInfo;
     this.globalData.isLoggedIn = true;
+    const token = 'mock_token_' + Date.now();
+    this.globalData.token = token;
     wx.setStorageSync('userInfo', userInfo);
     wx.setStorageSync('isLoggedIn', true);
-    return userInfo;
+    wx.setStorageSync('token', token);
+    return { ...userInfo, token };
   },
   logout() {
     wx.removeStorageSync('isLoggedIn');
     wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('token');
     this.globalData.isLoggedIn = false;
     this.globalData.userInfo = null;
+    this.globalData.token = null;
   },
   getLoginStatus() {
     return this.globalData.isLoggedIn;
   },
   getUserInfo() {
     return this.globalData.userInfo;
+  },
+  getToken() {
+    return this.globalData.token;
   },
   checkLogin() {
     if (!this.globalData.isLoggedIn) {
@@ -80,9 +95,11 @@ global.getApp = jest.fn(() => ({
   checkLoginStatus() {
     const isLoggedIn = wx.getStorageSync('isLoggedIn') || false;
     const userInfo = wx.getStorageSync('userInfo');
-    if (isLoggedIn && userInfo) {
+    const token = wx.getStorageSync('token');
+    if (isLoggedIn && userInfo && token) {
       this.globalData.isLoggedIn = true;
       this.globalData.userInfo = userInfo;
+      this.globalData.token = token;
     }
   }
 }));

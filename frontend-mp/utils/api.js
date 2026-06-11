@@ -50,16 +50,33 @@ const request = (options) => {
 
     const fullUrl = config.baseUrl + url;
 
+    const authHeader = { ...header };
+    const token = wx.getStorageSync('token');
+    if (token) {
+      authHeader['Authorization'] = 'Bearer ' + token;
+    }
+
     wx.request({
       url: fullUrl,
       method,
       data,
       header: {
         'content-type': 'application/json',
-        ...header
+        ...authHeader
       },
       timeout: config.timeout,
       success: (res) => {
+        if (res.statusCode === 401) {
+          wx.removeStorageSync('token');
+          wx.removeStorageSync('isLoggedIn');
+          wx.removeStorageSync('userInfo');
+          resolve({
+            code: 401,
+            data: null,
+            message: '登录已过期，请重新登录'
+          });
+          return;
+        }
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data);
         } else {
@@ -103,7 +120,71 @@ const getCurrentUserId = () => {
   return userInfo.id;
 };
 
+const generateMockToken = (userId) => {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
+  const payload = Buffer.from(JSON.stringify({
+    sub: userId,
+    iat: Date.now(),
+    exp: Date.now() + 7 * 24 * 60 * 60 * 1000
+  })).toString('base64');
+  const signature = Buffer.from(header + '.' + payload + '.secret').toString('base64');
+  return header + '.' + payload + '.' + signature;
+};
+
 const storageApi = {
+  wechatLogin: async (data = {}) => {
+    await delay(500);
+    const { code = 'mock_code_' + Date.now(), avatar = '', nickname = '微信用户' } = data;
+    const openid = 'mock_openid_' + code;
+    const userId = 'wx_' + Date.now();
+    const token = generateMockToken(userId);
+    const userInfo = {
+      id: userId,
+      openid,
+      nickname,
+      avatar,
+      phone: '',
+      loginType: 'wechat',
+      createTime: new Date().toISOString().split('T')[0],
+      role: 'user'
+    };
+    return {
+      code: 200,
+      data: { token, userInfo },
+      message: '微信登录成功'
+    };
+  },
+
+  nicknameLogin: async (data = {}) => {
+    await delay(500);
+    const { nickname } = data;
+    if (!nickname || nickname.trim().length < 2) {
+      return { code: 400, data: null, message: '昵称需要至少2个字符' };
+    }
+    const userId = 'user_' + Date.now();
+    const token = generateMockToken(userId);
+    const userInfo = {
+      id: userId,
+      openid: '',
+      nickname: nickname.trim(),
+      avatar: '',
+      phone: '',
+      loginType: 'nickname',
+      createTime: new Date().toISOString().split('T')[0],
+      role: 'user'
+    };
+    return {
+      code: 200,
+      data: { token, userInfo },
+      message: '登录成功'
+    };
+  },
+
+  authLogout: async () => {
+    await delay(200);
+    return { code: 200, data: null, message: '退出成功' };
+  },
+
   getArticleList: async (params = {}) => {
     await delay(500);
     const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
@@ -3391,6 +3472,29 @@ const storageApi = {
 };
 
 const remoteApi = {
+  wechatLogin: async (data = {}) => {
+    return request({
+      url: '/api/auth/wechat-login',
+      method: 'POST',
+      data
+    });
+  },
+
+  nicknameLogin: async (data = {}) => {
+    return request({
+      url: '/api/auth/nickname-login',
+      method: 'POST',
+      data
+    });
+  },
+
+  authLogout: async () => {
+    return request({
+      url: '/api/auth/logout',
+      method: 'POST'
+    });
+  },
+
   getArticleList: async (params = {}) => {
     const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
     return request({

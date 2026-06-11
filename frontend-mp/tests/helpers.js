@@ -131,6 +131,8 @@ const defaultUser = {
   nickname: '测试用户',
   avatar: '',
   phone: '',
+  openid: '',
+  loginType: 'nickname',
   createTime: '2024-01-01'
 };
 

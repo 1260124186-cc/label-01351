@@ -35,6 +35,146 @@
   color: #888888;
 }
 
+.wechat-login-section {
+  padding: 0 20rpx;
+}
+
+.wechat-avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40rpx;
+}
+
+.avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  line-height: normal;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar-btn::after {
+  border: none;
+}
+
+.wechat-avatar-img {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  border: 4rpx solid #e0d5c8;
+  background: #faf8f5;
+}
+
+.avatar-edit-hint {
+  font-size: 24rpx;
+  color: #8B4513;
+  margin-top: 12rpx;
+}
+
+.wechat-nickname-input-wrap {
+  width: 100%;
+  margin-top: 24rpx;
+}
+
+.wechat-nickname-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 28rpx;
+  border: 2rpx solid #e0d5c8;
+  border-radius: 16rpx;
+  font-size: 30rpx;
+  box-sizing: border-box;
+  background: #faf8f5;
+  text-align: center;
+}
+
+.wechat-nickname-input:focus {
+  border-color: #8B4513;
+  background: #ffffff;
+}
+
+.wechat-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx 0 60rpx;
+}
+
+.wechat-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.step-icon-wrap {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-icon {
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.step-text {
+  font-size: 24rpx;
+  color: #666666;
+  white-space: nowrap;
+}
+
+.step-connector {
+  width: 60rpx;
+  height: 4rpx;
+  background: #e0d5c8;
+  margin: 0 12rpx;
+  margin-bottom: 28rpx;
+}
+
+.btn-wechat-login {
+  width: 100%;
+  height: 96rpx;
+  background: linear-gradient(135deg, #07C160 0%, #06AD56 100%);
+  color: #FFFFFF;
+  font-size: 32rpx;
+  font-weight: bold;
+  border-radius: 48rpx;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-wechat-login.loading {
+  opacity: 0.7;
+}
+
+.btn-wechat-login[disabled] {
+  opacity: 0.6;
+  color: #FFFFFF;
+}
+
+.switch-mode {
+  text-align: center;
+  margin-top: 32rpx;
+  padding-bottom: 8rpx;
+}
+
+.switch-text {
+  font-size: 28rpx;
+  color: #8B4513;
+}
+
 .login-form {
   padding: 0 20rpx;
 }
