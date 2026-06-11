@@ -55,6 +55,10 @@
           <text class="stat-icon">💬</text>
           <text class="stat-value">{{article.commentCount || 0}} 评论</text>
         </view>
+        <view class="stat-item report-action" bindtap="onReportTap">
+          <text class="stat-icon">🚨</text>
+          <text class="stat-value">举报</text>
+        </view>
       </view>
 
       <!-- 评论区 -->
@@ -157,6 +161,59 @@
       <text class="error-icon">😕</text>
       <text class="error-text">文章不存在或已删除</text>
       <button class="btn-back" bindtap="goBack">返回首页</button>
+    </view>
+
+    <!-- 举报弹窗 -->
+    <view class="report-modal {{showReportModal ? 'show' : ''}}">
+      <view class="report-mask" bindtap="onCloseReport"></view>
+      <view class="report-content">
+        <view class="report-header">
+          <text class="report-title">举报内容</text>
+          <view class="report-close" bindtap="onCloseReport">✕</view>
+        </view>
+        <view class="report-body">
+          <view class="report-options">
+            <view class="report-option {{reportReason === 'illegal' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="illegal">
+              <view class="option-radio">
+                <view class="radio-inner"></view>
+              </view>
+              <text class="option-text">违法违规</text>
+            </view>
+            <view class="report-option {{reportReason === 'false' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="false">
+              <view class="option-radio">
+                <view class="radio-inner"></view>
+              </view>
+              <text class="option-text">虚假信息</text>
+            </view>
+            <view class="report-option {{reportReason === 'infringement' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="infringement">
+              <view class="option-radio">
+                <view class="radio-inner"></view>
+              </view>
+              <text class="option-text">侵权</text>
+            </view>
+            <view class="report-option {{reportReason === 'other' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="other">
+              <view class="option-radio">
+                <view class="radio-inner"></view>
+              </view>
+              <text class="option-text">其他</text>
+            </view>
+          </view>
+          <view class="report-desc-wrap">
+            <textarea
+              class="report-desc"
+              placeholder="补充说明（选填）"
+              value="{{reportDescription}}"
+              bindinput="onReportDescInput"
+              maxlength="200"
+            />
+            <text class="report-desc-count">{{reportDescription.length}}/200</text>
+          </view>
+        </view>
+        <view class="report-footer">
+          <button class="btn-report-cancel" bindtap="onCloseReport">取消</button>
+          <button class="btn-report-submit" bindtap="onSubmitReport" disabled="{{!reportReason}}">提交举报</button>
+        </view>
+      </view>
     </view>
 
     <!-- 底部评论输入栏 -->

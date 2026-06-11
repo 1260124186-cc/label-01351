@@ -3376,3 +3376,240 @@ describe('api 评论功能', () => {
     });
   });
 });
+
+describe('api.submitReport', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('成功提交举报', async () => {
+    const res = await api.submitReport({
+      articleId: 'article_001',
+      reason: 'illegal'
+    });
+
+    expect(res.code).toBe(200);
+    expect(res.data).toHaveProperty('id');
+    expect(res.data.articleId).toBe('article_001');
+    expect(res.data.reason).toBe('illegal');
+    expect(res.data.status).toBe('pending');
+    expect(res.data).toHaveProperty('createTime');
+  });
+
+  test('举报记录存入 reports 存储', async () => {
+    await api.submitReport({
+      articleId: 'article_001',
+      reason: 'false'
+    });
+
+    const reports = wx.getStorageSync('reports');
+    expect(reports.length).toBe(1);
+    expect(reports[0].articleId).toBe('article_001');
+    expect(reports[0].reason).toBe('false');
+    expect(reports[0].status).toBe('pending');
+  });
+
+  test('缺少 articleId 返回 400', async () => {
+    const res = await api.submitReport({
+      reason: 'illegal'
+    });
+
+    expect(res.code).toBe(400);
+    expect(res.message).toBe('文章ID不能为空');
+  });
+
+  test('缺少 reason 返回 400', async () => {
+    const res = await api.submitReport({
+      articleId: 'article_001'
+    });
+
+    expect(res.code).toBe(400);
+    expect(res.message).toBe('请选择举报原因');
+  });
+
+  test('不合法的 reason 返回 400', async () => {
+    const res = await api.submitReport({
+      articleId: 'article_001',
+      reason: 'invalid_reason'
+    });
+
+    expect(res.code).toBe(400);
+    expect(res.message).toBe('举报原因不合法');
+  });
+
+  test('重复举报同一文章返回 400', async () => {
+    await api.submitReport({
+      articleId: 'article_001',
+      reason: 'illegal'
+    });
+
+    const res = await api.submitReport({
+      articleId: 'article_001',
+      reason: 'false'
+    });
+
+    expect(res.code).toBe(400);
+    expect(res.message).toBe('您已举报过该文章，请等待处理');
+  });
+
+  test('举报不同文章不视为重复', async () => {
+    await api.submitReport({
+      articleId: 'article_001',
+      reason: 'illegal'
+    });
+
+    const res = await api.submitReport({
+      articleId: 'article_002',
+      reason: 'false'
+    });
+
+    expect(res.code).toBe(200);
+    const reports = wx.getStorageSync('reports');
+    expect(reports.length).toBe(2);
+  });
+
+  test('未登录返回 401', async () => {
+    wx.removeStorageSync('isLoggedIn');
+    wx.removeStorageSync('userInfo');
+
+    const res = await api.submitReport({
+      articleId: 'article_001',
+      reason: 'illegal'
+    });
+
+    expect(res.code).toBe(401);
+  });
+
+  test('四种合法 reason 均可提交', async () => {
+    const reasons = ['illegal', 'false', 'infringement', 'other'];
+    const articleIds = ['article_001', 'article_002', 'article_003', 'article_004'];
+
+    for (let i = 0; i < reasons.length; i++) {
+      wx.setStorageSync('reports', []);
+      const res = await api.submitReport({
+        articleId: articleIds[i],
+        reason: reasons[i]
+      });
+      expect(res.code).toBe(200);
+      expect(res.data.reason).toBe(reasons[i]);
+    }
+  });
+
+  test('举报可附带 description', async () => {
+    const res = await api.submitReport({
+      articleId: 'article_001',
+      reason: 'other',
+      description: '这个内容不太合适'
+    });
+
+    expect(res.code).toBe(200);
+    expect(res.data.description).toBe('这个内容不太合适');
+  });
+});
+
+describe('api.submitFeedback', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('成功提交反馈', async () => {
+    const res = await api.submitFeedback({
+      content: '希望能增加更多乡村故事的内容'
+    });
+
+    expect(res.code).toBe(200);
+    expect(res.data).toHaveProperty('id');
+    expect(res.data.content).toBe('希望能增加更多乡村故事的内容');
+    expect(res.data.status).toBe('pending');
+    expect(res.data).toHaveProperty('createTime');
+  });
+
+  test('反馈记录存入 feedbacks 存储', async () => {
+    await api.submitFeedback({
+      content: '这个功能很好用，建议优化一下界面'
+    });
+
+    const feedbacks = wx.getStorageSync('feedbacks');
+    expect(feedbacks.length).toBe(1);
+    expect(feedbacks[0].content).toBe('这个功能很好用，建议优化一下界面');
+    expect(feedbacks[0].status).toBe('pending');
+  });
+
+  test('反馈包含联系方式', async () => {
+    const res = await api.submitFeedback({
+      content: '希望能增加搜索功能',
+      contact: 'test@example.com'
+    });
+
+    expect(res.code).toBe(200);
+    expect(res.data.contact).toBe('test@example.com');
+  });
+
+  test('联系方式为空时存空字符串', async () => {
+    const res = await api.submitFeedback({
+      content: '反馈内容至少五个字才行'
+    });
+
+    expect(res.code).toBe(200);
+    expect(res.data.contact).toBe('');
+  });
+
+  test('缺少 content 返回 400', async () => {
+    const res = await api.submitFeedback({});
+
+    expect(res.code).toBe(400);
+    expect(res.message).toBe('请输入反馈内容');
+  });
+
+  test('content 少于5个字符返回 400', async () => {
+    const res = await api.submitFeedback({
+      content: '太短了'
+    });
+
+    expect(res.code).toBe(400);
+    expect(res.message).toBe('反馈内容至少5个字符');
+  });
+
+  test('content 超过500字符返回 400', async () => {
+    const longContent = 'a'.repeat(501);
+    const res = await api.submitFeedback({
+      content: longContent
+    });
+
+    expect(res.code).toBe(400);
+    expect(res.message).toBe('反馈内容不能超过500字符');
+  });
+
+  test('未登录返回 401', async () => {
+    wx.removeStorageSync('isLoggedIn');
+    wx.removeStorageSync('userInfo');
+
+    const res = await api.submitFeedback({
+      content: '需要登录才能提交反馈'
+    });
+
+    expect(res.code).toBe(401);
+  });
+
+  test('content 前后空格会被 trim', async () => {
+    const res = await api.submitFeedback({
+      content: '  有效反馈内容需要去掉空格  '
+    });
+
+    expect(res.code).toBe(200);
+    expect(res.data.content).toBe('有效反馈内容需要去掉空格');
+  });
+
+  test('多条反馈按时间倒序排列', async () => {
+    await api.submitFeedback({ content: '第一条反馈内容测试' });
+    await api.submitFeedback({ content: '第二条反馈内容测试' });
+
+    const feedbacks = wx.getStorageSync('feedbacks');
+    expect(feedbacks.length).toBe(2);
+    expect(feedbacks[0].content).toBe('第二条反馈内容测试');
+  });
+});

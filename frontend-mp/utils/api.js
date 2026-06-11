@@ -3311,6 +3311,82 @@ const storageApi = {
     const comments = wx.getStorageSync('comments') || [];
     const count = comments.filter(c => c.articleId === articleId && c.status === 1).length;
     return { code: 200, data: { count }, message: 'success' };
+  },
+
+  submitReport: async (data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!data.articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+    if (!data.reason) {
+      return { code: 400, data: null, message: '请选择举报原因' };
+    }
+
+    const validReasons = ['illegal', 'false', 'infringement', 'other'];
+    if (!validReasons.includes(data.reason)) {
+      return { code: 400, data: null, message: '举报原因不合法' };
+    }
+
+    const userId = getCurrentUserId();
+    const reports = wx.getStorageSync('reports') || [];
+
+    const duplicate = reports.find(r =>
+      r.articleId === data.articleId && r.userId === userId && r.status === 'pending'
+    );
+    if (duplicate) {
+      return { code: 400, data: null, message: '您已举报过该文章，请等待处理' };
+    }
+
+    const newReport = {
+      id: util.generateId('report'),
+      articleId: data.articleId,
+      userId,
+      reason: data.reason,
+      description: data.description || '',
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 'pending'
+    };
+
+    reports.unshift(newReport);
+    wx.setStorageSync('reports', reports);
+
+    return { code: 200, data: newReport, message: '举报成功，我们会尽快处理' };
+  },
+
+  submitFeedback: async (data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!data.content || !data.content.trim()) {
+      return { code: 400, data: null, message: '请输入反馈内容' };
+    }
+    if (data.content.trim().length < 5) {
+      return { code: 400, data: null, message: '反馈内容至少5个字符' };
+    }
+    if (data.content.trim().length > 500) {
+      return { code: 400, data: null, message: '反馈内容不能超过500字符' };
+    }
+
+    const userId = getCurrentUserId();
+    const feedbacks = wx.getStorageSync('feedbacks') || [];
+
+    const newFeedback = {
+      id: util.generateId('feedback'),
+      userId,
+      content: data.content.trim(),
+      contact: data.contact ? data.contact.trim() : '',
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 'pending'
+    };
+
+    feedbacks.unshift(newFeedback);
+    wx.setStorageSync('feedbacks', feedbacks);
+
+    return { code: 200, data: newFeedback, message: '感谢您的反馈，我们会认真处理' };
   }
 };
 
@@ -4196,6 +4272,28 @@ const remoteApi = {
     return request({
       url: `/api/comment/count/${articleId}`,
       method: 'GET'
+    });
+  },
+
+  submitReport: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/report/submit',
+      method: 'POST',
+      data: { ...data, userId }
+    });
+  },
+
+  submitFeedback: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/feedback/submit',
+      method: 'POST',
+      data: { ...data, userId }
     });
   }
 };

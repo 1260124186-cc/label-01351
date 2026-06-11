@@ -158,6 +158,52 @@
       <text class="settings-arrow">›</text>
     </view>
 
+    <!-- 意见反馈入口 -->
+    <view class="feedback-entry" bindtap="onFeedbackTap">
+      <view class="feedback-entry-left">
+        <text class="feedback-icon">📝</text>
+        <text class="feedback-text">意见反馈</text>
+      </view>
+      <text class="feedback-arrow">›</text>
+    </view>
+
+    <!-- 意见反馈弹窗 -->
+    <view class="feedback-modal {{showFeedbackModal ? 'show' : ''}}">
+      <view class="feedback-mask" bindtap="onCloseFeedback"></view>
+      <view class="feedback-content">
+        <view class="feedback-header">
+          <text class="feedback-title">意见反馈</text>
+          <view class="feedback-close" bindtap="onCloseFeedback">✕</view>
+        </view>
+        <view class="feedback-body">
+          <view class="feedback-textarea-wrap">
+            <textarea
+              class="feedback-textarea"
+              placeholder="请输入您的反馈内容（5-500字）"
+              value="{{feedbackContent}}"
+              bindinput="onFeedbackContentInput"
+              maxlength="500"
+            />
+            <text class="feedback-char-count">{{feedbackContent.length}}/500</text>
+          </view>
+          <view class="feedback-contact-wrap">
+            <text class="feedback-contact-label">联系方式（选填）</text>
+            <input
+              class="feedback-contact-input"
+              placeholder="手机号/邮箱/微信号"
+              value="{{feedbackContact}}"
+              bindinput="onFeedbackContactInput"
+              maxlength="50"
+            />
+          </view>
+        </view>
+        <view class="feedback-footer">
+          <button class="btn-feedback-cancel" bindtap="onCloseFeedback">取消</button>
+          <button class="btn-feedback-submit" bindtap="onSubmitFeedback" disabled="{{!feedbackContent.trim() || feedbackContent.trim().length < 5}}">提交反馈</button>
+        </view>
+      </view>
+    </view>
+
     <!-- 退出登录 -->
     <view class="logout-section">
       <button class="btn-logout" bindtap="onLogout">退出登录</button>

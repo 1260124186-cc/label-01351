@@ -38,7 +38,11 @@ Page({
     // 加载状态
     loading: false,
 
-    unreadNotificationCount: 0
+    unreadNotificationCount: 0,
+
+    showFeedbackModal: false,
+    feedbackContent: '',
+    feedbackContact: ''
   },
 
   onLoad() {
@@ -230,6 +234,65 @@ Page({
       });
     } else {
       wx.showToast({ title: '切换失败', icon: 'none' });
+    }
+  },
+
+  onFeedbackTap() {
+    this.setData({ showFeedbackModal: true });
+  },
+
+  onCloseFeedback() {
+    this.setData({
+      showFeedbackModal: false,
+      feedbackContent: '',
+      feedbackContact: ''
+    });
+  },
+
+  onFeedbackContentInput(e) {
+    this.setData({ feedbackContent: e.detail.value });
+  },
+
+  onFeedbackContactInput(e) {
+    this.setData({ feedbackContact: e.detail.value });
+  },
+
+  async onSubmitFeedback() {
+    const { feedbackContent, feedbackContact } = this.data;
+    const trimmedContent = feedbackContent.trim();
+
+    if (!trimmedContent) {
+      wx.showToast({ title: '请输入反馈内容', icon: 'none' });
+      return;
+    }
+    if (trimmedContent.length < 5) {
+      wx.showToast({ title: '反馈内容至少5个字符', icon: 'none' });
+      return;
+    }
+    if (trimmedContent.length > 500) {
+      wx.showToast({ title: '反馈内容不能超过500字符', icon: 'none' });
+      return;
+    }
+
+    try {
+      const res = await api.submitFeedback({
+        content: trimmedContent,
+        contact: feedbackContact.trim()
+      });
+
+      if (res.code === 200) {
+        wx.showToast({ title: '提交成功', icon: 'success' });
+        this.setData({
+          showFeedbackModal: false,
+          feedbackContent: '',
+          feedbackContact: ''
+        });
+      } else {
+        wx.showToast({ title: res.message || '提交失败', icon: 'none' });
+      }
+    } catch (error) {
+      console.error('[Mine] 提交反馈失败:', error);
+      wx.showToast({ title: '网络错误，请重试', icon: 'none' });
     }
   },
 

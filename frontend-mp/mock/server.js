@@ -13,6 +13,8 @@ app.use(express.json());
 let likes = {};
 let favorites = {};
 let notifications = {};
+let reports = [];
+let feedbacks = [];
 
 let articles = [
   {
@@ -754,6 +756,119 @@ app.post('/api/notification/create', (req, res) => {
   });
 });
 
+app.post('/api/report/submit', (req, res) => {
+  const { articleId, userId, reason, description } = req.body;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
+
+  if (!articleId) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '文章ID不能为空'
+    });
+  }
+
+  if (!reason) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '请选择举报原因'
+    });
+  }
+
+  const validReasons = ['illegal', 'false', 'infringement', 'other'];
+  if (!validReasons.includes(reason)) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '举报原因不合法'
+    });
+  }
+
+  const duplicate = reports.find(r =>
+    r.articleId === articleId && r.userId === userId && r.status === 'pending'
+  );
+  if (duplicate) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '您已举报过该文章，请等待处理'
+    });
+  }
+
+  const newReport = {
+    id: generateId('report'),
+    articleId,
+    userId,
+    reason,
+    description: description || '',
+    createTime: new Date().toISOString(),
+    status: 'pending'
+  };
+
+  reports.unshift(newReport);
+
+  res.json({
+    code: 200,
+    data: newReport,
+    message: '举报成功，我们会尽快处理'
+  });
+});
+
+app.post('/api/feedback/submit', (req, res) => {
+  const { userId, content, contact } = req.body;
+
+  const authError = requireAuth(userId);
+  if (authError) {
+    return res.json(authError);
+  }
+
+  if (!content || !content.trim()) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '请输入反馈内容'
+    });
+  }
+
+  if (content.trim().length < 5) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '反馈内容至少5个字符'
+    });
+  }
+
+  if (content.trim().length > 500) {
+    return res.json({
+      code: 400,
+      data: null,
+      message: '反馈内容不能超过500字符'
+    });
+  }
+
+  const newFeedback = {
+    id: generateId('feedback'),
+    userId,
+    content: content.trim(),
+    contact: contact ? contact.trim() : '',
+    createTime: new Date().toISOString(),
+    status: 'pending'
+  };
+
+  feedbacks.unshift(newFeedback);
+
+  res.json({
+    code: 200,
+    data: newFeedback,
+    message: '感谢您的反馈，我们会认真处理'
+  });
+});
+
 // 启动服务器
 app.listen(PORT, () => {
   console.log(`
@@ -787,6 +902,9 @@ app.listen(PORT, () => {
 ║   - POST /api/notification/read-all         全部已读       ║
 ║   - POST /api/notification/delete/:id       删除通知       ║
 ║   - POST /api/notification/create           创建通知       ║
+║                                                            ║
+║   - POST /api/report/submit                 提交举报       ║
+║   - POST /api/feedback/submit               提交反馈       ║
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
   `);

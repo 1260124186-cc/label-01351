@@ -21,7 +21,10 @@ Page({
     replyToId: null,
     replyToUserName: '',
     replyToUserId: null,
-    showReplyInput: false
+    showReplyInput: false,
+    showReportModal: false,
+    reportReason: '',
+    reportDescription: ''
   },
 
   /**
@@ -431,6 +434,63 @@ Page({
     wx.navigateTo({
       url: '/pages/login/login'
     });
+  },
+
+  onReportTap() {
+    const app = getApp();
+    if (!app.getLoginStatus()) {
+      wx.navigateTo({ url: '/pages/login/login' });
+      return;
+    }
+    this.setData({ showReportModal: true });
+  },
+
+  onCloseReport() {
+    this.setData({
+      showReportModal: false,
+      reportReason: '',
+      reportDescription: ''
+    });
+  },
+
+  onSelectReportReason(e) {
+    const { reason } = e.currentTarget.dataset;
+    this.setData({ reportReason: reason });
+  },
+
+  onReportDescInput(e) {
+    this.setData({ reportDescription: e.detail.value });
+  },
+
+  async onSubmitReport() {
+    const { articleId, reportReason, reportDescription } = this.data;
+
+    if (!reportReason) {
+      wx.showToast({ title: '请选择举报原因', icon: 'none' });
+      return;
+    }
+
+    try {
+      const res = await api.submitReport({
+        articleId,
+        reason: reportReason,
+        description: reportDescription
+      });
+
+      if (res.code === 200) {
+        wx.showToast({ title: '举报成功', icon: 'success' });
+        this.setData({
+          showReportModal: false,
+          reportReason: '',
+          reportDescription: ''
+        });
+      } else {
+        wx.showToast({ title: res.message || '举报失败', icon: 'none' });
+      }
+    } catch (error) {
+      console.error('[Detail] 提交举报失败:', error);
+      wx.showToast({ title: '网络错误，请重试', icon: 'none' });
+    }
   },
 
   onShareAppMessage() {
