@@ -11,6 +11,7 @@
     "pages/figure-create/figure-create",
     "pages/login/login",
     "pages/favorites/favorites",
+    "pages/likes/likes",
     "pages/topics/topics",
     "pages/topic-detail/topic-detail",
     "pages/encyclopedia/encyclopedia",

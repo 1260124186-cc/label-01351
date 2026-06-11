@@ -157,6 +157,12 @@ Page({
     });
   },
 
+  goToLikes() {
+    wx.navigateTo({
+      url: '/pages/likes/likes'
+    });
+  },
+
   goToMyActivities() {
     wx.navigateTo({
       url: '/pages/my-activities/my-activities'

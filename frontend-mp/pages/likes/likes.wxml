@@ -1,0 +1,110 @@
+<!--pages/likes/likes.wxml-->
+<view class="page-container">
+  <!-- 未登录状态 -->
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">👍</text>
+      <text class="login-text">登录后查看我的点赞</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <!-- 已登录状态 -->
+  <block wx:else>
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input
+        class="search-input"
+        placeholder="搜索点赞的文章"
+        placeholder-class="search-placeholder"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+  </view>
+
+  <!-- 分类标签 -->
+  <scroll-view class="category-scroll" scroll-x enable-flex>
+    <view
+      class="category-item {{currentCategory === item.id ? 'active' : ''}}"
+      wx:for="{{categories}}"
+      wx:key="id"
+      bindtap="onCategoryChange"
+      data-id="{{item.id}}"
+    >
+      <text class="category-name">{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 点赞列表 -->
+  <view class="like-list">
+    <!-- 加载中 -->
+    <view class="loading-wrap" wx:if="{{loading && likeList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-wrap" wx:elif="{{!loading && likeList.length === 0}}">
+      <text class="empty-icon">👍</text>
+      <text class="empty-text">暂无点赞</text>
+      <text class="empty-hint">快去点赞喜欢的文章吧</text>
+    </view>
+
+    <!-- 点赞卡片 -->
+    <view
+      class="like-card"
+      wx:for="{{likeList}}"
+      wx:key="id"
+    >
+      <view class="card-content" bindtap="goToDetail" data-id="{{item.id}}">
+        <view class="article-header">
+          <view class="article-category tag-{{item.category}}">
+            {{item.categoryName}}
+          </view>
+          <text class="article-date">{{item.createTime}}</text>
+        </view>
+
+        <view class="article-title">{{item.title}}</view>
+
+        <view class="article-content">{{item.summary}}</view>
+
+        <view class="article-footer">
+          <view class="article-author">
+            <text class="author-icon">👤</text>
+            <text class="author-name">{{item.authorName}}</text>
+          </view>
+          <view class="article-stats">
+            <view class="stat-item">
+              <text class="stat-icon">👁</text>
+              <text class="stat-value">{{item.viewCount}}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-icon">👍</text>
+              <text class="stat-value">{{item.likeCount}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="card-action">
+        <view class="unlike-btn" bindtap="onUnlike" data-id="{{item.id}}" data-index="{{index}}">
+          <text class="unlike-icon">👍</text>
+          <text class="unlike-text">取消点赞</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="load-more" wx:if="{{likeList.length > 0}}">
+      <text wx:if="{{loadingMore}}">加载中...</text>
+      <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+      <text wx:else bindtap="loadMore">点击加载更多</text>
+    </view>
+  </view>
+  </block>
+</view>

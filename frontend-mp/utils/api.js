@@ -617,6 +617,44 @@ const storageApi = {
     };
   },
 
+  getLikeList: async (params = {}) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { category = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    const userId = getCurrentUserId();
+    const likes = wx.getStorageSync('likes') || {};
+    const userLikes = likes[userId] || [];
+    if (userLikes.length === 0) {
+      return {
+        code: 200,
+        data: { list: [], total: 0, page, pageSize, hasMore: false },
+        message: 'success'
+      };
+    }
+    let articles = wx.getStorageSync('articles') || [];
+    articles = articles.filter(item => userLikes.includes(item.id));
+    if (category && category !== 'all') {
+      articles = articles.filter(item => item.category === category);
+    }
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      articles = articles.filter(item =>
+        item.title.toLowerCase().includes(kw) ||
+        item.content.toLowerCase().includes(kw)
+      );
+    }
+    articles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const total = articles.length;
+    const start = (page - 1) * pageSize;
+    const list = articles.slice(start, start + pageSize);
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
   getFigureList: async (params = {}) => {
     await delay(500);
     const { identity = 'all', craft = 'all', region = 'all', era = 'all', page = 1, pageSize = 10, keyword = '' } = params;

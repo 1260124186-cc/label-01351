@@ -69,6 +69,12 @@
         </view>
         <text class="action-text">我的收藏</text>
       </view>
+      <view class="action-item" bindtap="goToLikes">
+        <view class="action-icon-wrap">
+          <text class="action-icon">👍</text>
+        </view>
+        <text class="action-text">我的点赞</text>
+      </view>
       <view class="action-item" bindtap="goToMyActivities">
         <view class="action-icon-wrap">
           <text class="action-icon">🎭</text>

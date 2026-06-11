@@ -844,6 +844,71 @@ describe('api.getFavoriteList', () => {
   });
 });
 
+describe('api.getLikeList', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('无点赞时返回空列表', async () => {
+    const res = await api.getLikeList();
+    expect(res.code).toBe(200);
+    expect(res.data.list).toEqual([]);
+    expect(res.data.total).toBe(0);
+  });
+
+  test('返回已点赞的文章列表', async () => {
+    await api.likeArticle('article_001');
+    await api.likeArticle('article_002');
+
+    const res = await api.getLikeList();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBe(2);
+    expect(res.data.total).toBe(2);
+  });
+
+  test('按分类筛选点赞', async () => {
+    await api.likeArticle('article_001');
+    await api.likeArticle('article_002');
+
+    const res = await api.getLikeList({ category: 'craft' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(item => item.category === 'craft')).toBe(true);
+  });
+
+  test('按关键词搜索点赞', async () => {
+    await api.likeArticle('article_001');
+
+    const res = await api.getLikeList({ keyword: '农耕' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+  });
+
+  test('分页功能正常工作', async () => {
+    await api.likeArticle('article_001');
+    await api.likeArticle('article_002');
+
+    const res = await api.getLikeList({ page: 1, pageSize: 1 });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBe(1);
+    expect(res.data.hasMore).toBe(true);
+  });
+
+  test('取消点赞后从列表中移除', async () => {
+    await api.likeArticle('article_001');
+    await api.likeArticle('article_002');
+
+    let res = await api.getLikeList();
+    expect(res.data.list.length).toBe(2);
+
+    await api.unlikeArticle('article_001');
+    res = await api.getLikeList();
+    expect(res.data.list.length).toBe(1);
+    expect(res.data.list[0].id).toBe('article_002');
+  });
+});
+
 describe('api.withErrorHandler 异常捕获', () => {
   test('Storage 读取异常时返回 500', async () => {
     const original = wx.getStorageSync;
