@@ -74,9 +74,9 @@ App({
       this.globalData.isLoggedIn = false;
       this.globalData.userInfo = null;
       this.globalData.token = null;
-      if (!isLoggedIn) {
-        wx.removeStorageSync('token');
-      }
+      wx.removeStorageSync('isLoggedIn');
+      wx.removeStorageSync('token');
+      wx.removeStorageSync('userInfo');
     }
     console.log('[App] 登录状态校验:', {
       isLoggedIn: this.globalData.isLoggedIn,

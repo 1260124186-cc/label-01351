@@ -1,45 +1,87 @@
 const { initStorage, defaultUser } = require('../helpers');
 
+const generateToken = (userId) => {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
+  const payload = Buffer.from(JSON.stringify({
+    sub: userId,
+    iat: Date.now(),
+    exp: Date.now() + 7 * 24 * 60 * 60 * 1000
+  })).toString('base64');
+  const signature = Buffer.from(header + '.' + payload + '.secret').toString('base64');
+  return header + '.' + payload + '.' + signature;
+};
+
 function createApp() {
   const app = {
     globalData: {
       userInfo: null,
       isLoggedIn: false,
-      baseUrl: 'http://localhost:3000'
+      token: null,
+      baseUrl: 'http://localhost:3000',
+      useRemote: false
     },
 
     checkLoginStatus() {
       const isLoggedIn = wx.getStorageSync('isLoggedIn') || false;
       const userInfo = wx.getStorageSync('userInfo');
-      if (isLoggedIn && userInfo) {
+      const token = wx.getStorageSync('token');
+
+      if (isLoggedIn && userInfo && token) {
+        const normalizedUserInfo = {
+          ...userInfo,
+          openid: userInfo.openid || '',
+          loginType: userInfo.loginType || 'nickname',
+          role: userInfo.role === 'admin' ? 'admin' : 'user'
+        };
         this.globalData.isLoggedIn = true;
-        this.globalData.userInfo = userInfo;
+        this.globalData.userInfo = normalizedUserInfo;
+        this.globalData.token = token;
+        try { wx.setStorageSync('userInfo', normalizedUserInfo); } catch (e) {}
       } else {
         this.globalData.isLoggedIn = false;
         this.globalData.userInfo = null;
+        this.globalData.token = null;
+        wx.removeStorageSync('isLoggedIn');
+        wx.removeStorageSync('token');
+        wx.removeStorageSync('userInfo');
       }
     },
 
     login(userInfo) {
       const user = userInfo || {
         id: 'user_' + Date.now(),
+        openid: '',
         nickname: '乡村文化爱好者',
         avatar: '',
         phone: '',
-        createTime: new Date().toISOString().split('T')[0]
+        loginType: 'nickname',
+        createTime: new Date().toISOString().split('T')[0],
+        role: 'user'
       };
+
+      if (!user.role) user.role = 'user';
+      if (!user.openid) user.openid = '';
+      if (!user.loginType) user.loginType = 'nickname';
+
+      const token = generateToken(user.id);
+
       wx.setStorageSync('userInfo', user);
       wx.setStorageSync('isLoggedIn', true);
+      wx.setStorageSync('token', token);
       this.globalData.userInfo = user;
       this.globalData.isLoggedIn = true;
-      return user;
+      this.globalData.token = token;
+
+      return { ...user, token };
     },
 
     logout() {
       wx.removeStorageSync('isLoggedIn');
       wx.removeStorageSync('userInfo');
+      wx.removeStorageSync('token');
       this.globalData.isLoggedIn = false;
       this.globalData.userInfo = null;
+      this.globalData.token = null;
     },
 
     checkLogin() {
@@ -58,9 +100,24 @@ function createApp() {
       return this.globalData.isLoggedIn;
     },
 
+    getToken() {
+      return this.globalData.token;
+    },
+
     updateUserInfo(userInfo) {
       this.globalData.userInfo = userInfo;
       wx.setStorageSync('userInfo', userInfo);
+    },
+
+    isAdmin() {
+      const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+      return !!(userInfo && userInfo.role === 'admin');
+    },
+
+    getUserRole() {
+      const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+      if (!userInfo) return 'guest';
+      return userInfo.role === 'admin' ? 'admin' : 'user';
     },
 
     initMockData() {
@@ -87,24 +144,43 @@ describe('App - 全局状态管理', () => {
 
   describe('login', () => {
     test('登录后更新 globalData 和 Storage', () => {
-      const user = app.login(defaultUser);
+      const result = app.login(defaultUser);
       expect(app.globalData.isLoggedIn).toBe(true);
       expect(app.globalData.userInfo).toEqual(defaultUser);
+      expect(app.globalData.token).toBeTruthy();
       expect(wx.getStorageSync('userInfo')).toEqual(defaultUser);
       expect(wx.getStorageSync('isLoggedIn')).toBe(true);
+      expect(wx.getStorageSync('token')).toBeTruthy();
     });
 
-    test('登录返回用户信息', () => {
-      const user = app.login(defaultUser);
-      expect(user.id).toBe('user_001');
-      expect(user.nickname).toBe('测试用户');
+    test('登录返回用户信息和token', () => {
+      const result = app.login(defaultUser);
+      expect(result.id).toBe('user_001');
+      expect(result.nickname).toBe('测试用户');
+      expect(result.token).toBeTruthy();
     });
 
     test('不传参数时使用默认用户信息', () => {
-      const user = app.login();
-      expect(user.nickname).toBe('乡村文化爱好者');
-      expect(user.id).toMatch(/^user_\d+$/);
+      const result = app.login();
+      expect(result.nickname).toBe('乡村文化爱好者');
+      expect(result.id).toMatch(/^user_\d+$/);
+      expect(result.token).toBeTruthy();
       expect(app.globalData.isLoggedIn).toBe(true);
+    });
+
+    test('登录后生成有效的 token', () => {
+      const result = app.login(defaultUser);
+      expect(result.token).toMatch(/^[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=]+$/);
+      expect(app.globalData.token).toBe(result.token);
+      expect(wx.getStorageSync('token')).toBe(result.token);
+    });
+
+    test('登录时自动补全缺失字段', () => {
+      const partialUser = { id: 'test_001', nickname: '测试' };
+      const result = app.login(partialUser);
+      expect(result.openid).toBe('');
+      expect(result.loginType).toBe('nickname');
+      expect(result.role).toBe('user');
     });
   });
 
@@ -114,6 +190,7 @@ describe('App - 全局状态管理', () => {
       app.logout();
       expect(app.globalData.isLoggedIn).toBe(false);
       expect(app.globalData.userInfo).toBeNull();
+      expect(app.globalData.token).toBeNull();
     });
 
     test('退出登录后清除 Storage 中的登录状态和用户信息', () => {
@@ -121,29 +198,85 @@ describe('App - 全局状态管理', () => {
       app.logout();
       expect(wx.getStorageSync('isLoggedIn')).toBe('');
       expect(wx.getStorageSync('userInfo')).toBe('');
+      expect(wx.getStorageSync('token')).toBe('');
     });
   });
 
   describe('checkLoginStatus', () => {
-    test('Storage 中有登录信息时恢复状态', () => {
+    test('Storage 中有完整登录信息时恢复状态', () => {
+      const token = 'test_token_123';
       wx.setStorageSync('isLoggedIn', true);
       wx.setStorageSync('userInfo', defaultUser);
+      wx.setStorageSync('token', token);
       app.checkLoginStatus();
       expect(app.globalData.isLoggedIn).toBe(true);
-      expect(app.globalData.userInfo).toEqual(defaultUser);
+      expect(app.globalData.userInfo).toEqual(expect.objectContaining(defaultUser));
+      expect(app.globalData.token).toBe(token);
     });
 
     test('Storage 中无登录信息时保持未登录', () => {
       app.checkLoginStatus();
       expect(app.globalData.isLoggedIn).toBe(false);
       expect(app.globalData.userInfo).toBeNull();
+      expect(app.globalData.token).toBeNull();
     });
 
-    test('Storage 中只有登录状态无用户信息时保持未登录', () => {
+    test('Storage 中只有登录状态无用户信息时清除所有登录信息', () => {
       wx.setStorageSync('isLoggedIn', true);
+      wx.setStorageSync('token', 'some_token');
       wx.removeStorageSync('userInfo');
       app.checkLoginStatus();
       expect(app.globalData.isLoggedIn).toBe(false);
+      expect(app.globalData.userInfo).toBeNull();
+      expect(app.globalData.token).toBeNull();
+      expect(wx.getStorageSync('isLoggedIn')).toBe('');
+      expect(wx.getStorageSync('token')).toBe('');
+    });
+
+    test('Storage 中有登录状态和用户信息但无token时清除所有登录信息', () => {
+      wx.setStorageSync('isLoggedIn', true);
+      wx.setStorageSync('userInfo', defaultUser);
+      wx.removeStorageSync('token');
+      app.checkLoginStatus();
+      expect(app.globalData.isLoggedIn).toBe(false);
+      expect(app.globalData.userInfo).toBeNull();
+      expect(app.globalData.token).toBeNull();
+      expect(wx.getStorageSync('isLoggedIn')).toBe('');
+      expect(wx.getStorageSync('userInfo')).toBe('');
+    });
+
+    test('登录信息不完整时清除不一致的状态', () => {
+      wx.setStorageSync('isLoggedIn', true);
+      wx.removeStorageSync('userInfo');
+      wx.removeStorageSync('token');
+      app.checkLoginStatus();
+      expect(app.globalData.isLoggedIn).toBe(false);
+      expect(wx.getStorageSync('isLoggedIn')).toBe('');
+      expect(wx.getStorageSync('userInfo')).toBe('');
+      expect(wx.getStorageSync('token')).toBe('');
+    });
+
+    test('恢复登录状态时自动补全用户信息字段', () => {
+      const token = 'test_token';
+      const partialUser = { id: 'user_001', nickname: '测试用户' };
+      wx.setStorageSync('isLoggedIn', true);
+      wx.setStorageSync('userInfo', partialUser);
+      wx.setStorageSync('token', token);
+      app.checkLoginStatus();
+      expect(app.globalData.userInfo.openid).toBe('');
+      expect(app.globalData.userInfo.loginType).toBe('nickname');
+      expect(app.globalData.userInfo.role).toBe('user');
+    });
+
+    test('admin 角色用户登录状态恢复', () => {
+      const token = 'test_token';
+      const adminUser = { ...defaultUser, role: 'admin' };
+      wx.setStorageSync('isLoggedIn', true);
+      wx.setStorageSync('userInfo', adminUser);
+      wx.setStorageSync('token', token);
+      app.checkLoginStatus();
+      expect(app.globalData.userInfo.role).toBe('admin');
+      expect(app.isAdmin()).toBe(true);
     });
   });
 

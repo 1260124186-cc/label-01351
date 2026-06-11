@@ -43,7 +43,7 @@ Page({
     const isLoggedIn = app.getLoginStatus();
     this.setData({ isLoggedIn });
 
-    if (isLoggedIn && this.data.articleId && !this.data.article) {
+    if (this.data.articleId && !this.data.article) {
       this.loadArticleDetail(this.data.articleId);
     }
   },
@@ -78,8 +78,11 @@ Page({
             : article.title
         });
 
-        await this.checkFavoriteStatus(id);
-        await this.checkLikeStatus(id);
+        const app = getApp();
+        if (app.getLoginStatus()) {
+          await this.checkFavoriteStatus(id);
+          await this.checkLikeStatus(id);
+        }
         this.loadComments(true);
       } else {
         this.setData({
@@ -105,6 +108,11 @@ Page({
   },
 
   async checkFavoriteStatus(id) {
+    const app = getApp();
+    if (!app.getLoginStatus()) {
+      this.setData({ favorited: false });
+      return;
+    }
     try {
       const res = await api.checkFavorite(id);
       if (res.code === 200) {
@@ -116,6 +124,11 @@ Page({
   },
 
   async checkLikeStatus(id) {
+    const app = getApp();
+    if (!app.getLoginStatus()) {
+      this.setData({ liked: false });
+      return;
+    }
     try {
       const res = await api.checkLike(id);
       if (res.code === 200) {

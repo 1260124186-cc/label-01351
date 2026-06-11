@@ -82,6 +82,15 @@ describe('Detail 文章详情页', () => {
       expect(page.loadArticleDetail).toHaveBeenCalledWith('article_001');
     });
 
+    test('未登录但有 articleId 时也加载文章详情', async () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      page.data.articleId = 'article_001';
+      page.data.article = null;
+      page.loadArticleDetail = jest.fn();
+      page.onShow();
+      expect(page.loadArticleDetail).toHaveBeenCalledWith('article_001');
+    });
+
     test('已登录但无 articleId 时不加载文章', () => {
       global.getApp = jest.fn(() => createMockApp(true));
       page.data.articleId = '';
@@ -164,6 +173,24 @@ describe('Detail 文章详情页', () => {
       page.checkLikeStatus = jest.fn();
       await page.loadArticleDetail('article_001');
       expect(page.checkLikeStatus).toHaveBeenCalledWith('article_001');
+    });
+
+    test('未登录时加载文章详情不检查收藏和点赞状态', async () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      page.checkFavoriteStatus = jest.fn();
+      page.checkLikeStatus = jest.fn();
+      await page.loadArticleDetail('article_001');
+      expect(page.data.article).not.toBeNull();
+      expect(page.checkFavoriteStatus).not.toHaveBeenCalled();
+      expect(page.checkLikeStatus).not.toHaveBeenCalled();
+    });
+
+    test('未登录用户可以成功加载文章详情', async () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      await page.loadArticleDetail('article_001');
+      expect(page.data.article).not.toBeNull();
+      expect(page.data.article.id).toBe('article_001');
+      expect(page.data.loading).toBe(false);
     });
   });
 
@@ -268,6 +295,13 @@ describe('Detail 文章详情页', () => {
       await page.checkFavoriteStatus('article_001');
       expect(page.data.favorited).toBe(false);
     });
+
+    test('未登录时设置 favorited 为 false', async () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      page.data.favorited = true;
+      await page.checkFavoriteStatus('article_001');
+      expect(page.data.favorited).toBe(false);
+    });
   });
 
   describe('checkLikeStatus', () => {
@@ -284,6 +318,13 @@ describe('Detail 文章详情页', () => {
     });
 
     test('未点赞时设置 liked 为 false', async () => {
+      await page.checkLikeStatus('article_001');
+      expect(page.data.liked).toBe(false);
+    });
+
+    test('未登录时设置 liked 为 false', async () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      page.data.liked = true;
       await page.checkLikeStatus('article_001');
       expect(page.data.liked).toBe(false);
     });
