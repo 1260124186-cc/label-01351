@@ -546,6 +546,62 @@ describe('api.updateUserInfo', () => {
       expect(a.authorName).not.toBe('张大爷新昵称');
     });
   });
+
+  test('更新个性签名', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.updateUserInfo({ signature: '热爱乡村文化' });
+    expect(res.code).toBe(200);
+    expect(res.data.signature).toBe('热爱乡村文化');
+    const stored = wx.getStorageSync('userInfo');
+    expect(stored.signature).toBe('热爱乡村文化');
+  });
+
+  test('个性签名超过100字返回 400', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.updateUserInfo({ signature: '啊'.repeat(101) });
+    expect(res.code).toBe(400);
+  });
+
+  test('个性签名0字更新成功', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, signature: '旧签名' });
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.updateUserInfo({ signature: '' });
+    expect(res.code).toBe(200);
+    expect(res.data.signature).toBe('');
+  });
+
+  test('更新地区', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.updateUserInfo({ location: '山东济南' });
+    expect(res.code).toBe(200);
+    expect(res.data.location).toBe('山东济南');
+    const stored = wx.getStorageSync('userInfo');
+    expect(stored.location).toBe('山东济南');
+  });
+
+  test('地区超过30字返回 400', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.updateUserInfo({ location: '啊'.repeat(31) });
+    expect(res.code).toBe(400);
+  });
+
+  test('同时更新昵称、签名和地区', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const res = await api.updateUserInfo({
+      nickname: '新昵称',
+      signature: '新签名',
+      location: '新地区'
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.nickname).toBe('新昵称');
+    expect(res.data.signature).toBe('新签名');
+    expect(res.data.location).toBe('新地区');
+  });
 });
 
 describe('api.getUserStats', () => {

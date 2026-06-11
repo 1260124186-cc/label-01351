@@ -351,6 +351,12 @@ const storageApi = {
     if (data.nickname && (data.nickname.length < 2 || data.nickname.length > 20)) {
       return { code: 400, data: null, message: '昵称需要2-20个字符' };
     }
+    if (data.signature !== undefined && data.signature.length > 100) {
+      return { code: 400, data: null, message: '个性签名不能超过100字' };
+    }
+    if (data.location !== undefined && data.location.length > 30) {
+      return { code: 400, data: null, message: '地区不能超过30字' };
+    }
     const userInfo = wx.getStorageSync('userInfo');
     const updatedInfo = { ...userInfo, ...data };
     wx.setStorageSync('userInfo', updatedInfo);

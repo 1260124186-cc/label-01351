@@ -1,0 +1,67 @@
+<!--pages/profile-edit/profile-edit.wxml-->
+<view class="page-container">
+  <view class="edit-section">
+    <view class="avatar-row" bindtap="onChooseAvatar">
+      <text class="field-label">头像</text>
+      <view class="avatar-right">
+        <view class="avatar-wrap">
+          <image wx:if="{{avatarUrl}}" class="avatar-image" src="{{avatarUrl}}" mode="aspectFill" />
+          <text wx:else class="avatar-text">{{nicknameFirstChar || '用'}}</text>
+        </view>
+        <text class="field-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="field-row" bindtap="onFocusNickname">
+      <text class="field-label">昵称</text>
+      <view class="field-right">
+        <input
+          class="field-input"
+          placeholder="请输入昵称（2-20字）"
+          value="{{nickname}}"
+          bindinput="onNicknameInput"
+          maxlength="20"
+          focus="{{nicknameFocus}}"
+          bindblur="onNicknameBlur"
+        />
+        <text class="field-char-count {{nickname.length < 2 ? 'char-invalid' : ''}}">{{nickname.length}}/20</text>
+      </view>
+    </view>
+
+    <view class="field-row field-row--top">
+      <text class="field-label">个性签名</text>
+    </view>
+    <view class="textarea-wrap">
+      <textarea
+        class="field-textarea"
+        placeholder="写一句话介绍自己（0-100字）"
+        value="{{signature}}"
+        bindinput="onSignatureInput"
+        maxlength="100"
+        auto-height
+      />
+      <text class="textarea-char-count">{{signature.length}}/100</text>
+    </view>
+
+    <view class="field-row" bindtap="onFocusLocation">
+      <text class="field-label">所在乡村/地区</text>
+      <view class="field-right">
+        <input
+          class="field-input field-input--location"
+          placeholder="选填"
+          value="{{location}}"
+          bindinput="onLocationInput"
+          maxlength="30"
+          focus="{{locationFocus}}"
+        />
+        <text class="field-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="save-section">
+    <button class="btn-save" bindtap="onSave" disabled="{{!canSave || saving}}">
+      {{saving ? '保存中...' : '保存'}}
+    </button>
+  </view>
+</view>

@@ -39,6 +39,7 @@
     "pages/interview-collection-detail/interview-collection-detail",
     "pages/calendar/calendar",
     "pages/settings/settings",
+    "pages/profile-edit/profile-edit",
     "pages/history/history",
     "pages/author-home/author-home"
   ],

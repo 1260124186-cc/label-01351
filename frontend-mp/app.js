@@ -113,6 +113,8 @@ App({
     if (!user.role) user.role = 'user';
     if (!user.openid) user.openid = '';
     if (!user.loginType) user.loginType = 'nickname';
+    if (!user.signature) user.signature = '';
+    if (!user.location) user.location = '';
 
     const token = util.generateToken(user.id);
 

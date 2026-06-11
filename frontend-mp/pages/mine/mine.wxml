@@ -25,11 +25,17 @@
               {{isAdmin ? '🛡 管理员' : '👤 普通用户'}}
             </view>
           </view>
+          <view class="user-signature" wx:if="{{userInfo.signature}}">{{userInfo.signature}}</view>
+          <view class="user-location" wx:if="{{userInfo.location}}">📍 {{userInfo.location}}</view>
           <view class="user-login-type" wx:if="{{userInfo.loginType}}">
             <text class="login-type-tag {{userInfo.loginType === 'wechat' ? 'type-wechat' : 'type-nickname'}}">
               {{userInfo.loginType === 'wechat' ? '🟢 微信登录' : '📝 昵称登录'}}
             </text>
           </view>
+        </view>
+        <view class="user-edit" bindtap="goToEditProfile">
+          <text class="edit-icon">✏️</text>
+          <text class="edit-text">编辑</text>
         </view>
       </view>
 

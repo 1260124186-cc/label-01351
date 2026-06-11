@@ -130,6 +130,21 @@
   border: 1rpx solid rgba(139, 69, 19, 0.2);
 }
 
+.user-signature {
+  font-size: 24rpx;
+  color: #999999;
+  margin-top: 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-location {
+  font-size: 24rpx;
+  color: #aaaaaa;
+  margin-top: 6rpx;
+}
+
 .user-welcome {
   font-size: 26rpx;
   color: #888888;

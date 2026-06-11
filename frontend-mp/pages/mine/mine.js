@@ -16,7 +16,9 @@ Page({
       avatar: '',
       phone: '',
       createTime: '',
-      role: 'user'
+      role: 'user',
+      signature: '',
+      location: ''
     },
 
     // 是否管理员
@@ -300,6 +302,12 @@ Page({
       console.error('[Mine] 提交反馈失败:', error);
       wx.showToast({ title: '网络错误，请重试', icon: 'none' });
     }
+  },
+
+  goToEditProfile() {
+    wx.navigateTo({
+      url: '/pages/profile-edit/profile-edit'
+    });
   },
 
   goToSettings() {
