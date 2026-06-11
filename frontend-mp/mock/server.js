@@ -1,6 +1,7 @@
 // mock/server.js - Mock 数据服务器
 const express = require('express');
 const cors = require('cors');
+const { base64Encode, base64Decode } = require('../utils/util');
 
 const app = express();
 const PORT = 3000;
@@ -16,13 +17,13 @@ let feedbacks = [];
 let tokenStore = {};
 
 const generateServerToken = (userId) => {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
-  const payload = Buffer.from(JSON.stringify({
+  const header = base64Encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = base64Encode(JSON.stringify({
     sub: userId,
     iat: Date.now(),
     exp: Date.now() + 7 * 24 * 60 * 60 * 1000
-  })).toString('base64');
-  const signature = Buffer.from(header + '.' + payload + '.server_secret').toString('base64');
+  }));
+  const signature = base64Encode(header + '.' + payload + '.server_secret');
   return header + '.' + payload + '.' + signature;
 };
 
@@ -32,7 +33,7 @@ const verifyToken = (token) => {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+    const payload = JSON.parse(base64Decode(parts[1]));
     if (payload.exp && payload.exp < Date.now()) return null;
     return payload.sub;
   } catch (e) {

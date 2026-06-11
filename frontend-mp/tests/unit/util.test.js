@@ -9,7 +9,10 @@ const {
   getCategoryName,
   checkSensitiveWords,
   SENSITIVE_WORDS,
-  SUGGESTED_TAGS
+  SUGGESTED_TAGS,
+  base64Encode,
+  base64Decode,
+  generateToken
 } = require('../../utils/util');
 
 describe('util.formatDate', () => {
@@ -324,5 +327,118 @@ describe('util.SUGGESTED_TAGS 推荐标签', () => {
       expect(typeof tag).toBe('string');
       expect(tag.length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe('util.base64Encode', () => {
+  test('正确编码空字符串', () => {
+    expect(base64Encode('')).toBe('');
+  });
+
+  test('正确编码单个字符', () => {
+    expect(base64Encode('A')).toBe('QQ==');
+  });
+
+  test('正确编码两个字符', () => {
+    expect(base64Encode('AB')).toBe('QUI=');
+  });
+
+  test('正确编码三个字符', () => {
+    expect(base64Encode('ABC')).toBe('QUJD');
+  });
+
+  test('正确编码JSON字符串', () => {
+    const json = JSON.stringify({ alg: 'HS256', typ: 'JWT' });
+    const encoded = base64Encode(json);
+    expect(typeof encoded).toBe('string');
+    expect(encoded.length).toBeGreaterThan(0);
+  });
+
+  test('编码结果只包含base64合法字符', () => {
+    const encoded = base64Encode('hello world test');
+    expect(encoded).toMatch(/^[A-Za-z0-9+/=]+$/);
+  });
+});
+
+describe('util.base64Decode', () => {
+  test('正确解码空字符串', () => {
+    expect(base64Decode('')).toBe('');
+  });
+
+  test('正确解码单个字符编码', () => {
+    expect(base64Decode('QQ==')).toBe('A');
+  });
+
+  test('正确解码两个字符编码', () => {
+    expect(base64Decode('QUI=')).toBe('AB');
+  });
+
+  test('正确解码三个字符编码', () => {
+    expect(base64Decode('QUJD')).toBe('ABC');
+  });
+
+  test('base64Encode和base64Decode互为逆运算', () => {
+    const original = '乡村文化小程序测试123！@#';
+    const encoded = base64Encode(original);
+    const decoded = base64Decode(encoded);
+    expect(decoded).toBe(original);
+  });
+
+  test('正确解码JSON字符串', () => {
+    const original = JSON.stringify({ alg: 'HS256', typ: 'JWT' });
+    const encoded = base64Encode(original);
+    const decoded = base64Decode(encoded);
+    expect(JSON.parse(decoded)).toEqual({ alg: 'HS256', typ: 'JWT' });
+  });
+});
+
+describe('util.generateToken', () => {
+  test('生成的token为三段式JWT格式', () => {
+    const token = generateToken('user_001');
+    const parts = token.split('.');
+    expect(parts.length).toBe(3);
+  });
+
+  test('不同用户ID生成不同token', () => {
+    const token1 = generateToken('user_001');
+    const token2 = generateToken('user_002');
+    expect(token1).not.toBe(token2);
+  });
+
+  test('token的payload可正确解码并包含用户ID', () => {
+    const userId = 'user_test_123';
+    const token = generateToken(userId);
+    const parts = token.split('.');
+    const payload = JSON.parse(base64Decode(parts[1]));
+    expect(payload.sub).toBe(userId);
+  });
+
+  test('token包含iat和exp时间戳', () => {
+    const token = generateToken('user_001');
+    const parts = token.split('.');
+    const payload = JSON.parse(base64Decode(parts[1]));
+    expect(typeof payload.iat).toBe('number');
+    expect(typeof payload.exp).toBe('number');
+    expect(payload.exp).toBeGreaterThan(payload.iat);
+  });
+
+  test('token过期时间为7天', () => {
+    const before = Date.now();
+    const token = generateToken('user_001');
+    const after = Date.now();
+    const parts = token.split('.');
+    const payload = JSON.parse(base64Decode(parts[1]));
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    expect(payload.exp - payload.iat).toBe(sevenDays);
+    expect(payload.iat).toBeGreaterThanOrEqual(before);
+    expect(payload.iat).toBeLessThanOrEqual(after);
+  });
+
+  test('token中header为正确的JWT格式', () => {
+    const token = generateToken('user_001');
+    const parts = token.split('.');
+    const header = JSON.parse(base64Decode(parts[0]));
+    expect(header.alg).toBe('HS256');
+    expect(header.typ).toBe('JWT');
   });
 });

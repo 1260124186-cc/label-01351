@@ -239,22 +239,41 @@ const SUGGESTED_TAGS = [
 ];
 
 const base64Encode = (str) => {
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(str).toString('base64');
-  }
   const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const utf8Bytes = [];
+  for (let i = 0; i < str.length; i++) {
+    let code = str.charCodeAt(i);
+    if (code < 0x80) {
+      utf8Bytes.push(code);
+    } else if (code < 0x800) {
+      utf8Bytes.push(0xc0 | (code >> 6));
+      utf8Bytes.push(0x80 | (code & 0x3f));
+    } else if (code < 0xd800 || code >= 0xe000) {
+      utf8Bytes.push(0xe0 | (code >> 12));
+      utf8Bytes.push(0x80 | ((code >> 6) & 0x3f));
+      utf8Bytes.push(0x80 | (code & 0x3f));
+    } else {
+      i++;
+      const code2 = str.charCodeAt(i);
+      const full = 0x10000 + (((code & 0x3ff) << 10) | (code2 & 0x3ff));
+      utf8Bytes.push(0xf0 | (full >> 18));
+      utf8Bytes.push(0x80 | ((full >> 12) & 0x3f));
+      utf8Bytes.push(0x80 | ((full >> 6) & 0x3f));
+      utf8Bytes.push(0x80 | (full & 0x3f));
+    }
+  }
   let out = '';
   let i = 0;
-  const len = str.length;
+  const len = utf8Bytes.length;
   while (i < len) {
-    const c1 = str.charCodeAt(i++) & 0xff;
+    const c1 = utf8Bytes[i++];
     if (i === len) {
       out += CHARS.charAt(c1 >> 2);
       out += CHARS.charAt((c1 & 0x3) << 4);
       out += '==';
       break;
     }
-    const c2 = str.charCodeAt(i++);
+    const c2 = utf8Bytes[i++];
     if (i === len) {
       out += CHARS.charAt(c1 >> 2);
       out += CHARS.charAt(((c1 & 0x3) << 4) | ((c2 & 0xf0) >> 4));
@@ -262,11 +281,56 @@ const base64Encode = (str) => {
       out += '=';
       break;
     }
-    const c3 = str.charCodeAt(i++);
+    const c3 = utf8Bytes[i++];
     out += CHARS.charAt(c1 >> 2);
     out += CHARS.charAt(((c1 & 0x3) << 4) | ((c2 & 0xf0) >> 4));
     out += CHARS.charAt(((c2 & 0xf) << 2) | ((c3 & 0xc0) >> 6));
     out += CHARS.charAt(c3 & 0x3f);
+  }
+  return out;
+};
+
+const base64Decode = (str) => {
+  const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const lookup = {};
+  for (let i = 0; i < CHARS.length; i++) {
+    lookup[CHARS.charAt(i)] = i;
+  }
+  const bytes = [];
+  for (let i = 0; i < str.length; i += 4) {
+    const c1 = lookup[str.charAt(i)] || 0;
+    const c2 = lookup[str.charAt(i + 1)] || 0;
+    const c3 = str.charAt(i + 2) !== '=' ? (lookup[str.charAt(i + 2)] || 0) : 0;
+    const c4 = str.charAt(i + 3) !== '=' ? (lookup[str.charAt(i + 3)] || 0) : 0;
+    bytes.push((c1 << 2) | (c2 >> 4));
+    if (str.charAt(i + 2) !== '=') {
+      bytes.push(((c2 & 0xf) << 4) | (c3 >> 2));
+    }
+    if (str.charAt(i + 3) !== '=') {
+      bytes.push(((c3 & 0x3) << 6) | c4);
+    }
+  }
+  let out = '';
+  let i = 0;
+  while (i < bytes.length) {
+    const b1 = bytes[i++];
+    if (b1 < 0x80) {
+      out += String.fromCharCode(b1);
+    } else if (b1 < 0xe0) {
+      const b2 = bytes[i++];
+      out += String.fromCharCode(((b1 & 0x1f) << 6) | (b2 & 0x3f));
+    } else if (b1 < 0xf0) {
+      const b2 = bytes[i++];
+      const b3 = bytes[i++];
+      out += String.fromCharCode(((b1 & 0x0f) << 12) | ((b2 & 0x3f) << 6) | (b3 & 0x3f));
+    } else {
+      const b2 = bytes[i++];
+      const b3 = bytes[i++];
+      const b4 = bytes[i++];
+      const full = ((b1 & 0x07) << 18) | ((b2 & 0x3f) << 12) | ((b3 & 0x3f) << 6) | (b4 & 0x3f);
+      const offset = full - 0x10000;
+      out += String.fromCharCode(0xd800 + (offset >> 10), 0xdc00 + (offset & 0x3ff));
+    }
   }
   return out;
 };
@@ -302,5 +366,6 @@ module.exports = {
   checkSensitiveWords,
   SUGGESTED_TAGS,
   base64Encode,
+  base64Decode,
   generateToken
 };
