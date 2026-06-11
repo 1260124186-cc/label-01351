@@ -1,0 +1,190 @@
+<!--pages/interview-detail/interview-detail.wxml-->
+<view class="page-container" wx:if="{{!loading && interview}}">
+  <!-- 受访者档案头部 -->
+  <view class="profile-header">
+    <view class="profile-avatar-wrap">
+      <view class="profile-avatar-placeholder">
+        <text class="avatar-text">{{interview.intervieweeName.charAt(0)}}</text>
+      </view>
+    </view>
+    
+    <view class="profile-info">
+      <view class="profile-name-row">
+        <text class="profile-name">{{interview.intervieweeName}}</text>
+        <view class="age-tag-large">
+          <text class="age-icon">🎂</text>
+          <text class="age-text">{{interview.age}}岁</text>
+        </view>
+      </view>
+
+      <view class="profile-basic">
+        <text>👤 {{interview.occupation}}</text>
+      </view>
+
+      <view class="profile-region">
+        <text>📍 {{regionName}}</text>
+        <text class="separator">·</text>
+        <text>📅 {{interview.birthYear}}年生</text>
+      </view>
+
+      <view class="profile-crafts">
+        <view class="craft-tag-large" wx:for="{{craftNames}}" wx:for-item="craft" wx:key="*this">
+          {{craft}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 访谈信息 -->
+  <view class="section-card">
+    <view class="section-title">
+      <text class="title-icon">📋</text>
+      <text class="title-text">访谈信息</text>
+    </view>
+    <view class="info-grid">
+      <view class="info-item">
+        <text class="info-label">采访日期</text>
+        <text class="info-value">{{interview.interviewDate}}</text>
+      </view>
+      <view class="info-item">
+        <text class="info-label">采访地点</text>
+        <text class="info-value">{{interview.interviewLocation}}</text>
+      </view>
+      <view class="info-item">
+        <text class="info-label">采访者</text>
+        <text class="info-value">{{interview.interviewer}}</text>
+      </view>
+      <view class="info-item">
+        <text class="info-label">记录人</text>
+        <text class="info-value">{{interview.authorName}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 访谈摘要 -->
+  <view class="section-card summary-card">
+    <view class="section-title">
+      <text class="title-icon">📝</text>
+      <text class="title-text">访谈摘要</text>
+    </view>
+    <view class="summary-content">"{{interview.summary}}"</view>
+  </view>
+
+  <!-- 访谈实录 -->
+  <view class="section-card">
+    <view class="section-title">
+      <text class="title-icon">💬</text>
+      <text class="title-text">访谈实录</text>
+    </view>
+    <view class="interview-content">
+      <view 
+        class="dialogue-item" 
+        wx:for="{{contentParagraphs}}" 
+        wx:key="index"
+      >
+        <view class="speaker-tag {{item.speaker === '采访者' ? 'interviewer' : 'interviewee'}}">
+          {{item.speaker}}
+        </view>
+        <view class="dialogue-text">{{item.text}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 相关标签 -->
+  <view class="section-card" wx:if="{{interview.tags && interview.tags.length > 0}}">
+    <view class="section-title">
+      <text class="title-icon">🏷️</text>
+      <text class="title-text">相关标签</text>
+    </view>
+    <view class="tags-container">
+      <view class="tag-item" wx:for="{{interview.tags}}" wx:key="*this">
+        #{{item}}
+      </view>
+    </view>
+  </view>
+
+  <!-- 关联人物 -->
+  <view class="section-card" wx:if="{{relatedFigure}}">
+    <view class="section-title">
+      <text class="title-icon">👤</text>
+      <text class="title-text">关联人物</text>
+    </view>
+    <view class="related-figure-card" bindtap="goToFigureDetail">
+      <image class="figure-avatar" src="{{relatedFigure.avatar}}" mode="aspectFill" />
+      <view class="figure-info">
+        <view class="figure-name-row">
+          <text class="figure-name">{{relatedFigure.name}}</text>
+          <view 
+            class="figure-identity-tag"
+            style="background-color: {{relatedFigure.identityInfo.color}}20; color: {{relatedFigure.identityInfo.color}};"
+          >
+            {{relatedFigure.identityInfo.icon}} {{relatedFigure.identityInfo.name}}
+          </view>
+        </view>
+        <view class="figure-desc">{{relatedFigure.detailedIntroduction}}</view>
+      </view>
+      <text class="arrow-icon">›</text>
+    </view>
+  </view>
+
+  <!-- 所属专题合集 -->
+  <view class="section-card" wx:if="{{collections && collections.length > 0}}">
+    <view class="section-title">
+      <text class="title-icon">📚</text>
+      <text class="title-text">所属专题</text>
+    </view>
+    <view class="collections-container">
+      <view 
+        class="collection-card" 
+        wx:for="{{collections}}" 
+        wx:key="id"
+        bindtap="goToCollectionDetail"
+        data-id="{{item.id}}"
+      >
+        <text class="collection-icon">{{item.icon}}</text>
+        <view class="collection-info">
+          <text class="collection-name">{{item.name}}</text>
+        </view>
+        <text class="arrow-icon">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar">
+    <view class="stats-info">
+      <view class="stat-item">
+        <text class="stat-icon">👁</text>
+        <text class="stat-value">{{interview.viewCount}}</text>
+        <text class="stat-label">浏览</text>
+      </view>
+    </view>
+    <view class="action-buttons">
+      <view 
+        class="like-btn {{isLike ? 'liked' : ''}}"
+        bindtap="toggleLike"
+      >
+        <text class="like-icon">{{isLike ? '❤️' : '🤍'}}</text>
+        <text class="like-text">{{isLike ? '已点赞' : '点赞'}}</text>
+        <text class="like-count" wx:if="{{likeCount > 0}}">{{likeCount}}</text>
+      </view>
+      <button class="share-btn" open-type="share">
+        <text class="share-icon">📤</text>
+        <text class="share-text">分享</text>
+      </button>
+    </view>
+  </view>
+</view>
+
+<!-- 加载状态 -->
+<view class="loading-container" wx:if="{{loading}}">
+  <view class="loading-spinner"></view>
+  <text class="loading-text">加载中...</text>
+</view>
+
+<!-- 错误状态 -->
+<view class="error-container" wx:if="{{!loading && !interview}}">
+  <text class="error-icon">❌</text>
+  <text class="error-text">加载失败</text>
+  <button class="retry-btn" bindtap="loadInterviewDetail">重新加载</button>
+</view>

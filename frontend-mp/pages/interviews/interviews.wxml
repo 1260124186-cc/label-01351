@@ -1,0 +1,189 @@
+<!--pages/interviews/interviews.wxml-->
+<view class="container">
+  <!-- 顶部标题区域 -->
+  <view class="header">
+    <view class="title-section">
+      <view class="main-title">口述史</view>
+      <view class="sub-title">聆听老人的故事，留住珍贵的记忆</view>
+    </view>
+    <view class="create-btn" bindtap="goToCreate">
+      <text class="create-icon">✍️</text>
+      <text class="create-text">记录一位老人</text>
+    </view>
+  </view>
+
+  <!-- Tab 切换 -->
+  <view class="tab-bar">
+    <view class="tab-item {{activeTab === 'list' ? 'active' : ''}}" bindtap="switchTab" data-tab="list">
+      <text>访谈列表</text>
+    </view>
+    <view class="tab-item {{activeTab === 'collections' ? 'active' : ''}}" bindtap="switchTab" data-tab="collections">
+      <text>专题合集</text>
+    </view>
+  </view>
+
+  <!-- 访谈列表视图 -->
+  <view class="content" wx:if="{{activeTab === 'list'}}">
+    <!-- 搜索栏 -->
+    <view class="search-bar">
+      <input
+        class="search-input"
+        placeholder="搜索受访者姓名、职业、关键词..."
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+        confirm-type="search"
+      />
+      <view class="filter-btn {{filterCount > 0 ? 'has-filter' : ''}}" bindtap="toggleFilter">
+        <text class="filter-icon">🔍</text>
+        <text class="filter-count" wx:if="{{filterCount > 0}}">{{filterCount}}</text>
+      </view>
+    </view>
+
+    <!-- 筛选面板 -->
+    <view class="filter-panel" wx:if="{{showFilter}}">
+      <view class="filter-section">
+        <view class="filter-title">按地区筛选</view>
+        <view class="filter-options">
+          <view
+            wx:for="{{regionList}}"
+            wx:key="id"
+            class="filter-option {{currentRegion === item.id ? 'selected' : ''}}"
+            bindtap="onFilterChange"
+            data-type="region"
+            data-id="{{item.id}}"
+          >
+            {{item.name}}
+          </view>
+        </view>
+      </view>
+
+      <view class="filter-section">
+        <view class="filter-title">按年龄筛选</view>
+        <view class="filter-options">
+          <view
+            wx:for="{{ageGroupList}}"
+            wx:key="id"
+            class="filter-option {{currentAgeGroup === item.id ? 'selected' : ''}}"
+            bindtap="onFilterChange"
+            data-type="ageGroup"
+            data-id="{{item.id}}"
+          >
+            {{item.name}}
+          </view>
+        </view>
+      </view>
+
+      <view class="filter-section">
+        <view class="filter-title">按技艺类型筛选</view>
+        <view class="filter-options">
+          <view
+            wx:for="{{craftList}}"
+            wx:key="id"
+            class="filter-option {{currentCraft === item.id ? 'selected' : ''}}"
+            bindtap="onFilterChange"
+            data-type="craft"
+            data-id="{{item.id}}"
+          >
+            {{item.name}}
+          </view>
+        </view>
+      </view>
+
+      <view class="filter-actions">
+        <view class="reset-btn" bindtap="resetFilters">重置筛选</view>
+      </view>
+    </view>
+
+    <!-- 访谈卡片列表 -->
+    <view class="interview-list">
+      <view
+        wx:for="{{interviewList}}"
+        wx:key="id"
+        class="interview-card"
+        bindtap="goToDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="card-header">
+          <view class="interviewee-info">
+            <view class="avatar-placeholder">
+              <text class="avatar-icon">👴</text>
+            </view>
+            <view class="interviewee-basic">
+              <view class="interviewee-name">{{item.intervieweeName}}</view>
+              <view class="interviewee-meta">
+                <text class="age-tag">{{item.age}}岁</text>
+                <text class="occupation-tag">{{item.occupation}}</text>
+              </view>
+            </view>
+          </view>
+          <view class="region-badge">{{item.regionName}}</view>
+        </view>
+
+        <view class="card-body">
+          <view class="summary">{{item.summary}}</view>
+        </view>
+
+        <view class="card-footer">
+          <view class="craft-tags">
+            <text wx:for="{{item.craftNames}}" wx:for-item="craft" wx:key="*this" class="craft-tag">
+              #{{craft}}
+            </text>
+          </view>
+          <view class="stats">
+            <text class="stat-item">👁 {{item.viewCount}}</text>
+            <text class="stat-item">❤️ {{item.likeCount}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 加载状态 -->
+      <view class="loading" wx:if="{{loading && interviewList.length > 0}}">
+        <text>加载中...</text>
+      </view>
+
+      <!-- 无数据 -->
+      <view class="empty" wx:if="{{!loading && interviewList.length === 0}}">
+        <text class="empty-icon">📝</text>
+        <text class="empty-text">暂无访谈记录</text>
+        <text class="empty-tip">点击"记录一位老人"开始您的第一篇访谈</text>
+      </view>
+
+      <!-- 没有更多 -->
+      <view class="no-more" wx:if="{{!hasMore && interviewList.length > 0}}">
+        <text>没有更多了</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 专题合集视图 -->
+  <view class="content" wx:if="{{activeTab === 'collections'}}">
+    <view class="collections-header">
+      <view class="collections-title">专题合集</view>
+      <view class="more-btn" bindtap="goToCollections">
+        查看全部 >
+      </view>
+    </view>
+
+    <view class="collection-grid">
+      <view
+        wx:for="{{collectionList}}"
+        wx:key="id"
+        class="collection-card"
+        bindtap="goToCollectionDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="collection-icon">{{item.icon}}</view>
+        <view class="collection-info">
+          <view class="collection-title">{{item.title}}</view>
+          <view class="collection-count">{{item.interviewCount}} 篇访谈</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty" wx:if="{{collectionList.length === 0}}">
+      <text class="empty-icon">📚</text>
+      <text class="empty-text">暂无专题合集</text>
+    </view>
+  </view>
+</view>

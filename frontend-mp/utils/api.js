@@ -5,6 +5,7 @@
 const util = require('./util');
 const figureData = require('./figure-data');
 const quizData = require('./quiz-data');
+const interviewData = require('./interview-data');
 
 const config = {
   useRemote: false,
@@ -2543,6 +2544,408 @@ const storageApi = {
       },
       message: 'success'
     };
+  },
+
+  initInterviewData: async () => {
+    interviewData.initInterviewData();
+    return { code: 200, data: null, message: 'success' };
+  },
+
+  getInterviewFilterOptions: async () => {
+    await delay(100);
+    const regionList = interviewData.REGIONS;
+    const ageGroupList = interviewData.AGE_GROUPS;
+    const craftList = interviewData.CRAFT_TYPES;
+
+    return {
+      code: 200,
+      data: { regionList, ageGroupList, craftList },
+      message: 'success'
+    };
+  },
+
+  getInterviewList: async (params = {}) => {
+    await delay(500);
+    interviewData.initInterviewData();
+    const { region = 'all', ageGroup = 'all', craft = 'all', page = 1, pageSize = 10, keyword = '', collectionId = '' } = params;
+    let interviews = wx.getStorageSync('interviews') || [];
+    interviews = interviews.filter(item => item.status === 1);
+
+    if (collectionId && collectionId.trim()) {
+      const collections = wx.getStorageSync('interviewCollections') || [];
+      const collection = collections.find(c => c.id === collectionId);
+      interviews = interviews.filter(item => {
+        const inCollectionIds = collection && collection.interviewIds
+          ? collection.interviewIds.includes(item.id)
+          : false;
+        const inItemIds = item.collectionIds && item.collectionIds.includes(collectionId);
+        return inCollectionIds || inItemIds;
+      });
+    }
+
+    interviews = interviewData.filterInterviews(interviews, { region, ageGroup, craft, keyword });
+    interviews.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+    const total = interviews.length;
+    const start = (page - 1) * pageSize;
+    const list = interviews.slice(start, start + pageSize).map(item => ({
+      ...item,
+      regionName: interviewData.getRegionName(item.region),
+      craftNames: interviewData.getCraftNames(item.crafts),
+      collectionNames: interviewData.getCollectionNames(item.collectionIds)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getInterviewDetail: async (id) => {
+    await delay(300);
+    interviewData.initInterviewData();
+    if (!id) {
+      return { code: 400, data: null, message: '访谈ID不能为空' };
+    }
+    const interviews = wx.getStorageSync('interviews') || [];
+    const interview = interviews.find(item => item.id === id);
+    if (!interview) {
+      return { code: 404, data: null, message: '访谈不存在' };
+    }
+
+    interview.viewCount = (interview.viewCount || 0) + 1;
+    wx.setStorageSync('interviews', interviews);
+
+    let relatedFigure = null;
+    if (interview.relatedFigureId) {
+      const figures = wx.getStorageSync('figures') || [];
+      relatedFigure = figures.find(f => f.id === interview.relatedFigureId) || null;
+      if (relatedFigure) {
+        relatedFigure.identityInfo = figureData.getIdentityInfo(relatedFigure.identity);
+      }
+    }
+
+    const collections = wx.getStorageSync('interviewCollections') || [];
+    const relatedCollections = (interview.collectionIds || [])
+      .map(cid => collections.find(c => c.id === cid))
+      .filter(Boolean)
+      .map(c => ({
+        id: c.id,
+        title: c.title,
+        icon: c.icon,
+        coverImage: c.coverImage,
+        interviewCount: (c.interviewIds || []).length
+      }));
+
+    const result = {
+      ...interview,
+      regionName: interviewData.getRegionName(interview.region),
+      craftNames: interviewData.getCraftNames(interview.crafts),
+      relatedFigure,
+      relatedCollections
+    };
+
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  createInterview: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!data.intervieweeName || !data.intervieweeName.trim()) {
+      return { code: 400, data: null, message: '请填写受访者姓名' };
+    }
+    if (!data.age || data.age < 0) {
+      return { code: 400, data: null, message: '请输入有效的年龄' };
+    }
+    if (!data.occupation || !data.occupation.trim()) {
+      return { code: 400, data: null, message: '请填写受访者职业' };
+    }
+    if (!data.interviewLocation || !data.interviewLocation.trim()) {
+      return { code: 400, data: null, message: '请填写采访地点' };
+    }
+    if (!data.interviewDate) {
+      return { code: 400, data: null, message: '请选择采访日期' };
+    }
+    if (!data.summary || !data.summary.trim()) {
+      return { code: 400, data: null, message: '请填写访谈摘要' };
+    }
+    if (data.summary.trim().length < 10) {
+      return { code: 400, data: null, message: '访谈摘要至少需要10个字符' };
+    }
+    if (!data.content || !data.content.trim()) {
+      return { code: 400, data: null, message: '请填写访谈正文' };
+    }
+    if (data.content.trim().length < 50) {
+      return { code: 400, data: null, message: '访谈正文至少需要50个字符' };
+    }
+
+    const userInfo = wx.getStorageSync('userInfo');
+    interviewData.initInterviewData();
+    const interviews = wx.getStorageSync('interviews') || [];
+
+    const newInterview = {
+      id: util.generateId('interview'),
+      type: 'interview',
+      intervieweeName: data.intervieweeName.trim(),
+      gender: data.gender || '',
+      age: parseInt(data.age),
+      birthYear: data.birthYear || null,
+      occupation: data.occupation.trim(),
+      region: data.region || '',
+      address: data.address || '',
+      interviewLocation: data.interviewLocation.trim(),
+      interviewDate: data.interviewDate,
+      interviewer: data.interviewer || (userInfo ? userInfo.nickname : ''),
+      crafts: data.crafts || [],
+      summary: data.summary.trim(),
+      content: data.content.trim(),
+      tags: data.tags || [],
+      collectionIds: data.collectionIds || [],
+      relatedFigureId: data.relatedFigureId || '',
+      viewCount: 0,
+      likeCount: 0,
+      status: 0,
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD')
+    };
+
+    interviews.unshift(newInterview);
+    wx.setStorageSync('interviews', interviews);
+
+    return { code: 200, data: newInterview, message: '发布成功' };
+  },
+
+  createInterviewDraft: async (data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userInfo = wx.getStorageSync('userInfo');
+    interviewData.initInterviewData();
+    const drafts = wx.getStorageSync('interviewDrafts') || [];
+
+    const newDraft = {
+      id: util.generateId('interview_draft'),
+      ...data,
+      submitterId: userInfo.id,
+      submitterName: userInfo.nickname,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 2,
+      reviewStatus: 'pending'
+    };
+
+    drafts.unshift(newDraft);
+    wx.setStorageSync('interviewDrafts', drafts);
+
+    return { code: 200, data: newDraft, message: '保存成功，等待审核' };
+  },
+
+  getMyInterviews: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    interviewData.initInterviewData();
+    let interviews = wx.getStorageSync('interviews') || [];
+    interviews = interviews.filter(item => item.authorId === userId);
+    interviews.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+    const list = interviews.map(item => ({
+      ...item,
+      regionName: interviewData.getRegionName(item.region),
+      craftNames: interviewData.getCraftNames(item.crafts)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total: list.length },
+      message: 'success'
+    };
+  },
+
+  getMyInterviewDrafts: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    interviewData.initInterviewData();
+    let drafts = wx.getStorageSync('interviewDrafts') || [];
+    drafts = drafts.filter(item => item.submitterId === userId);
+    drafts.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+    const list = drafts.map(item => ({
+      ...item,
+      regionName: interviewData.getRegionName(item.region),
+      craftNames: interviewData.getCraftNames(item.crafts)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total: list.length },
+      message: 'success'
+    };
+  },
+
+  likeInterview: async (id) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '访谈ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    interviewData.initInterviewData();
+    const interviews = wx.getStorageSync('interviews') || [];
+    const interview = interviews.find(item => item.id === id);
+    if (!interview) {
+      return { code: 404, data: null, message: '访谈不存在' };
+    }
+    const likes = wx.getStorageSync('interviewLikes') || {};
+    const userLikes = likes[userId] || [];
+    if (userLikes.includes(id)) {
+      return { code: 200, data: { isLike: true, likeCount: interview.likeCount }, message: '已点赞' };
+    }
+    interview.likeCount = (interview.likeCount || 0) + 1;
+    wx.setStorageSync('interviews', interviews);
+    userLikes.push(id);
+    likes[userId] = userLikes;
+    wx.setStorageSync('interviewLikes', likes);
+
+    if (interview.authorId && interview.authorId !== userId) {
+      const userInfo = wx.getStorageSync('userInfo');
+      storageApi.createNotification({
+        type: 'like',
+        fromUserId: userId,
+        fromUserName: userInfo ? userInfo.nickname : '',
+        targetUserId: interview.authorId,
+        targetId: id,
+        targetTitle: interview.intervieweeName + '访谈',
+        content: (userInfo ? userInfo.nickname : '有人') + ' 赞了您的访谈',
+        jumpType: 'interview',
+        jumpId: id
+      });
+    }
+
+    return { code: 200, data: { isLike: true, likeCount: interview.likeCount }, message: '点赞成功' };
+  },
+
+  unlikeInterview: async (id) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '访谈ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    interviewData.initInterviewData();
+    const interviews = wx.getStorageSync('interviews') || [];
+    const interview = interviews.find(item => item.id === id);
+    if (!interview) {
+      return { code: 404, data: null, message: '访谈不存在' };
+    }
+    interview.likeCount = Math.max((interview.likeCount || 0) - 1, 0);
+    wx.setStorageSync('interviews', interviews);
+    const likes = wx.getStorageSync('interviewLikes') || {};
+    const userLikes = likes[userId] || [];
+    const index = userLikes.indexOf(id);
+    if (index > -1) {
+      userLikes.splice(index, 1);
+      likes[userId] = userLikes;
+      wx.setStorageSync('interviewLikes', likes);
+    }
+    return { code: 200, data: { isLike: false, likeCount: interview.likeCount }, message: '已取消点赞' };
+  },
+
+  checkInterviewLike: async (id) => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '访谈ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const likes = wx.getStorageSync('interviewLikes') || {};
+    const userLikes = likes[userId] || [];
+    const isLike = userLikes.includes(id);
+    return { code: 200, data: { isLike }, message: 'success' };
+  },
+
+  getInterviewCollectionList: async (params = {}) => {
+    await delay(500);
+    interviewData.initInterviewData();
+    const { page = 1, pageSize = 10, keyword = '' } = params;
+    let collections = wx.getStorageSync('interviewCollections') || [];
+    collections = collections.filter(item => item.status === 1);
+
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      collections = collections.filter(item =>
+        item.title.toLowerCase().includes(kw) ||
+        item.description.toLowerCase().includes(kw)
+      );
+    }
+
+    collections.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const total = collections.length;
+    const start = (page - 1) * pageSize;
+    const list = collections.slice(start, start + pageSize).map(item => ({
+      ...item,
+      interviewCount: (item.interviewIds || []).length
+    }));
+
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getInterviewCollectionDetail: async (id) => {
+    await delay(300);
+    interviewData.initInterviewData();
+    if (!id) {
+      return { code: 400, data: null, message: '合集ID不能为空' };
+    }
+    const collections = wx.getStorageSync('interviewCollections') || [];
+    const collection = collections.find(item => item.id === id);
+    if (!collection) {
+      return { code: 404, data: null, message: '合集不存在' };
+    }
+
+    collection.viewCount = (collection.viewCount || 0) + 1;
+    wx.setStorageSync('interviewCollections', collections);
+
+    const interviews = wx.getStorageSync('interviews') || [];
+    const interviewList = interviews.filter(item =>
+      (collection.interviewIds || []).includes(item.id) && item.status === 1
+    ).map(item => ({
+      ...item,
+      regionName: interviewData.getRegionName(item.region),
+      craftNames: interviewData.getCraftNames(item.crafts)
+    }));
+
+    const relatedCollections = collections
+      .filter(item => item.id !== id && item.status === 1)
+      .slice(0, 4)
+      .map(item => ({
+        id: item.id,
+        title: item.title,
+        icon: item.icon,
+        coverImage: item.coverImage,
+        interviewCount: (item.interviewIds || []).length
+      }));
+
+    return {
+      code: 200,
+      data: { ...collection, interviewList, relatedCollections, interviewCount: interviewList.length },
+      message: 'success'
+    };
   }
 };
 
@@ -3225,6 +3628,118 @@ const remoteApi = {
     const authError = requireLogin();
     if (authError) return authError;
     return request({ url: '/api/quiz/wrong/review', method: 'GET' });
+  },
+
+  getInterviewFilterOptions: async () => {
+    return request({ url: '/api/interview/filters', method: 'GET' });
+  },
+
+  getInterviewList: async (params = {}) => {
+    const { region = 'all', ageGroup = 'all', craft = 'all', page = 1, pageSize = 10, keyword = '', collectionId = '' } = params;
+    return request({
+      url: '/api/interview/list',
+      method: 'GET',
+      data: { region, ageGroup, craft, page, pageSize, keyword, collectionId }
+    });
+  },
+
+  getInterviewDetail: async (id) => {
+    if (!id) return { code: 400, data: null, message: '访谈ID不能为空' };
+    return request({ url: `/api/interview/detail/${id}`, method: 'GET' });
+  },
+
+  createInterview: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/interview/create',
+      method: 'POST',
+      data: { ...data, authorId: userId }
+    });
+  },
+
+  createInterviewDraft: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/interview/draft',
+      method: 'POST',
+      data: { ...data, submitterId: userId }
+    });
+  },
+
+  getMyInterviews: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/interview/my',
+      method: 'GET',
+      data: { authorId: userId }
+    });
+  },
+
+  getMyInterviewDrafts: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/interview/drafts',
+      method: 'GET',
+      data: { submitterId: userId }
+    });
+  },
+
+  likeInterview: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '访谈ID不能为空' };
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/interview/like/${id}`,
+      method: 'POST',
+      data: { userId }
+    });
+  },
+
+  unlikeInterview: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '访谈ID不能为空' };
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/interview/unlike/${id}`,
+      method: 'POST',
+      data: { userId }
+    });
+  },
+
+  checkInterviewLike: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '访谈ID不能为空' };
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/interview/like/${id}`,
+      method: 'GET',
+      data: { userId }
+    });
+  },
+
+  getInterviewCollectionList: async (params = {}) => {
+    const { page = 1, pageSize = 10, keyword = '' } = params;
+    return request({
+      url: '/api/interview/collection/list',
+      method: 'GET',
+      data: { page, pageSize, keyword }
+    });
+  },
+
+  getInterviewCollectionDetail: async (id) => {
+    if (!id) return { code: 400, data: null, message: '合集ID不能为空' };
+    return request({ url: `/api/interview/collection/detail/${id}`, method: 'GET' });
   }
 };
 

@@ -1,0 +1,380 @@
+<!--pages/interview-create/interview-create.wxml-->
+<view class="page-container">
+  <!-- 未登录状态 -->
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">👴</text>
+      <text class="login-text">登录后即可记录老人的故事</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <!-- 已登录状态 -->
+  <block wx:else>
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="header-title">记录一位老人</text>
+      <text class="header-desc">用文字留住他们的故事，让乡村记忆永不褪色</text>
+    </view>
+
+    <!-- 表单区域 -->
+    <scroll-view class="form-container" scroll-y>
+      <!-- 受访者信息 -->
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">👤</text>
+          <text class="title-text">受访者信息</text>
+        </view>
+
+        <!-- 姓名 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">受访者姓名</text>
+            <text class="label-required">*</text>
+          </view>
+          <view class="form-input-wrap">
+            <input 
+              class="form-input"
+              placeholder="请输入受访者姓名（至少2字）"
+              placeholder-class="input-placeholder"
+              maxlength="20"
+              value="{{formData.intervieweeName}}"
+              bindinput="onNameInput"
+            />
+            <text class="input-count">{{formData.intervieweeName.length}}/20</text>
+          </view>
+        </view>
+
+        <!-- 性别 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">性别</text>
+          </view>
+          <view class="gender-options">
+            <view 
+              class="gender-option {{formData.gender === item.id ? 'active' : ''}}"
+              wx:for="{{genderOptions}}"
+              wx:key="id"
+              bindtap="onGenderSelect"
+              data-id="{{item.id}}"
+            >
+              <text wx:if="{{item.id === 'male'}}">👨</text>
+              <text wx:else>👩</text>
+              <text>{{item.name}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 年龄和出生年 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">年龄 / 出生年份</text>
+          </view>
+          <view class="age-inputs">
+            <view class="age-input-item">
+              <input 
+                class="form-input"
+                type="number"
+                placeholder="年龄"
+                placeholder-class="input-placeholder"
+                maxlength="3"
+                value="{{formData.age}}"
+                bindinput="onAgeInput"
+              />
+              <text class="age-suffix">岁</text>
+            </view>
+            <text class="age-separator">/</text>
+            <view class="age-input-item">
+              <input 
+                class="form-input"
+                type="number"
+                placeholder="出生年"
+                placeholder-class="input-placeholder"
+                maxlength="4"
+                value="{{formData.birthYear}}"
+                bindinput="onBirthYearInput"
+              />
+              <text class="age-suffix">年</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 职业 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">职业</text>
+          </view>
+          <input 
+            class="form-input"
+            placeholder="请输入受访者的职业"
+            placeholder-class="input-placeholder"
+            maxlength="30"
+            value="{{formData.occupation}}"
+            bindinput="onOccupationInput"
+          />
+        </view>
+
+        <!-- 地区 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">所属地区</text>
+          </view>
+          <view class="option-grid">
+            <view 
+              class="option-item {{formData.region === item.id ? 'active' : ''}}"
+              wx:for="{{regionList}}"
+              wx:key="id"
+              bindtap="onRegionSelect"
+              data-id="{{item.id}}"
+            >
+              {{item.name}}
+            </view>
+          </view>
+        </view>
+
+        <!-- 详细地址 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">详细地址</text>
+          </view>
+          <input 
+            class="form-input"
+            placeholder="请输入详细地址（选填）"
+            placeholder-class="input-placeholder"
+            maxlength="100"
+            value="{{formData.address}}"
+            bindinput="onAddressInput"
+          />
+        </view>
+      </view>
+
+      <!-- 采访信息 -->
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">📋</text>
+          <text class="title-text">采访信息</text>
+        </view>
+
+        <!-- 采访日期 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">采访日期</text>
+          </view>
+          <picker 
+            mode="date" 
+            value="{{formData.interviewDate}}"
+            bindchange="onInterviewDateChange"
+          >
+            <view class="picker-input">
+              <text class="picker-value">{{formData.interviewDate || '请选择日期'}}</text>
+              <text class="picker-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+
+        <!-- 采访地点 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">采访地点</text>
+          </view>
+          <input 
+            class="form-input"
+            placeholder="请输入采访地点（如：老人家中、村委会等）"
+            placeholder-class="input-placeholder"
+            maxlength="50"
+            value="{{formData.interviewLocation}}"
+            bindinput="onInterviewLocationInput"
+          />
+        </view>
+
+        <!-- 采访者 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">采访者</text>
+          </view>
+          <input 
+            class="form-input"
+            placeholder="请输入采访者姓名（选填）"
+            placeholder-class="input-placeholder"
+            maxlength="20"
+            value="{{formData.interviewer}}"
+            bindinput="onInterviewerInput"
+          />
+        </view>
+      </view>
+
+      <!-- 访谈内容 -->
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">💬</text>
+          <text class="title-text">访谈内容</text>
+        </view>
+
+        <!-- 相关技艺 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">相关技艺</text>
+            <text class="label-hint">（可多选）</text>
+          </view>
+          <view class="option-grid">
+            <view 
+              class="option-item {{formData.crafts.indexOf(item.id) > -1 ? 'active' : ''}}"
+              wx:for="{{craftList}}"
+              wx:key="id"
+              bindtap="onCraftToggle"
+              data-id="{{item.id}}"
+            >
+              {{item.name}}
+            </view>
+          </view>
+        </view>
+
+        <!-- 访谈摘要 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">访谈摘要</text>
+            <text class="label-required">*</text>
+          </view>
+          <view class="form-textarea-wrap">
+            <textarea 
+              class="form-textarea"
+              placeholder="用几句话概括这次访谈的核心内容（至少20字）"
+              placeholder-class="input-placeholder"
+              maxlength="300"
+              value="{{formData.summary}}"
+              bindinput="onSummaryInput"
+              auto-height
+            />
+            <text class="textarea-count">{{formData.summary.length}}/300</text>
+          </view>
+        </view>
+
+        <!-- 访谈正文 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">访谈正文</text>
+            <text class="label-required">*</text>
+          </view>
+          <view class="form-textarea-wrap">
+            <textarea 
+              class="form-textarea content-textarea"
+              placeholder="请记录完整的访谈内容，建议采用问答形式，如：&#10;采访者：您什么时候开始学这门手艺的？&#10;受访者：我16岁就跟着父亲学了...&#10;&#10;（至少50字）"
+              placeholder-class="input-placeholder"
+              maxlength="10000"
+              value="{{formData.content}}"
+              bindinput="onContentInput"
+              auto-height
+            />
+            <text class="textarea-count">{{formData.content.length}}/10000</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 分类与标签 -->
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">🏷️</text>
+          <text class="title-text">分类与标签</text>
+        </view>
+
+        <!-- 所属专题 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">所属专题</text>
+            <text class="label-hint">（可多选）</text>
+          </view>
+          <view class="collection-grid">
+            <view 
+              class="collection-item {{formData.collectionIds.indexOf(item.id) > -1 ? 'active' : ''}}"
+              wx:for="{{collectionList}}"
+              wx:key="id"
+              bindtap="onCollectionToggle"
+              data-id="{{item.id}}"
+            >
+              <text class="collection-icon">{{item.icon}}</text>
+              <text class="collection-name">{{item.name}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 自定义标签 -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">自定义标签</text>
+          </view>
+          <input 
+            class="form-input"
+            placeholder="多个标签用逗号或空格分隔（选填）"
+            placeholder-class="input-placeholder"
+            maxlength="100"
+            value="{{formData.tags}}"
+            bindinput="onTagsInput"
+          />
+        </view>
+
+        <!-- 关联人物ID -->
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">关联人物ID</text>
+          </view>
+          <input 
+            class="form-input"
+            placeholder="如果已在人物志中建档，请填写人物ID（选填）"
+            placeholder-class="input-placeholder"
+            maxlength="50"
+            value="{{formData.relatedFigureId}}"
+            bindinput="onRelatedFigureInput"
+          />
+        </view>
+      </view>
+
+      <!-- 提示信息 -->
+      <view class="form-tips">
+        <view class="tip-item">
+          <text class="tip-icon">💡</text>
+          <text class="tip-text">提交后需要审核，审核通过后会在访谈列表中展示</text>
+        </view>
+        <view class="tip-item">
+          <text class="tip-icon">📝</text>
+          <text class="tip-text">请确保信息真实准确，感谢你为文化传承做出的贡献</text>
+        </view>
+        <view class="tip-item">
+          <text class="tip-icon">🔒</text>
+          <text class="tip-text">如受访者介意公开部分内容，请提前沟通并做适当处理</text>
+        </view>
+      </view>
+
+      <!-- 底部留白 -->
+      <view style="height: 200rpx;"></view>
+    </scroll-view>
+
+    <!-- 底部操作栏 -->
+    <view class="form-actions">
+      <button class="btn-draft" bindtap="saveDraft">
+        保存草稿
+      </button>
+      <button 
+        class="btn-submit {{canSubmit ? '' : 'disabled'}}"
+        bindtap="onSubmit"
+      >
+        <text wx:if="{{submitting}}">提交中...</text>
+        <text wx:elif="{{!canSubmit}}">请完善信息</text>
+        <text wx:else>提交审核</text>
+      </button>
+    </view>
+  </block>
+</view>
+
+<!-- 提交成功弹窗 -->
+<view class="success-modal {{showSuccess ? 'show' : ''}}" wx:if="{{showSuccess}}">
+  <view class="success-mask"></view>
+  <view class="success-content">
+    <text class="success-icon">🎉</text>
+    <text class="success-title">提交成功</text>
+    <text class="success-desc">感谢你的贡献！访谈记录已提交审核，审核通过后将在口述史中展示</text>
+    <view class="success-actions">
+      <button class="btn-continue" bindtap="continueCreate">继续记录</button>
+      <button class="btn-view" bindtap="goToInterviewList">查看访谈</button>
+    </view>
+  </view>
+</view>

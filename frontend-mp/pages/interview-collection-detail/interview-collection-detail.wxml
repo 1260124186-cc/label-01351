@@ -1,0 +1,115 @@
+<!--pages/interview-collection-detail/interview-collection-detail.wxml-->
+<view class="page-container" wx:if="{{!loading && collection}}">
+  <!-- 合集头部封面 -->
+  <view class="collection-header">
+    <image class="header-cover" src="{{collection.coverImage}}" mode="aspectFill" />
+    <view class="header-overlay"></view>
+    <view class="header-content">
+      <view class="header-icon-wrap">
+        <text class="header-icon">{{collection.icon}}</text>
+      </view>
+      <text class="header-title">{{collection.name}}</text>
+      <view class="header-stats">
+        <view class="stat-item">
+          <text class="stat-value">{{collection.interviewCount || 0}}</text>
+          <text class="stat-label">篇访谈</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat-item">
+          <text class="stat-value">{{collection.viewCount || 0}}</text>
+          <text class="stat-label">次浏览</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 合集描述 -->
+  <view class="collection-desc">
+    <view class="desc-content">{{collection.description}}</view>
+  </view>
+
+  <!-- 访谈列表标题 -->
+  <view class="list-header">
+    <text class="list-title">访谈记录</text>
+    <view class="list-count">共 {{interviewList.length}} 篇</view>
+  </view>
+
+  <!-- 访谈列表 -->
+  <view class="interview-list" wx:if="{{interviewList.length > 0}}">
+    <view 
+      class="interview-card"
+      wx:for="{{interviewList}}"
+      wx:key="id"
+      bindtap="goToInterviewDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="card-avatar">
+        <text class="avatar-text">{{item.intervieweeName.charAt(0)}}</text>
+      </view>
+      <view class="card-content">
+        <view class="card-title-row">
+          <text class="card-name">{{item.intervieweeName}}</text>
+          <view class="age-tag">
+            <text>{{item.age}}岁</text>
+          </view>
+        </view>
+        <view class="card-meta">
+          <text class="meta-item">👤 {{item.occupation}}</text>
+          <text class="meta-separator">·</text>
+          <text class="meta-item">📍 {{item.regionName}}</text>
+        </view>
+        <view class="card-summary">{{item.summary}}</view>
+        <view class="card-tags">
+          <view class="craft-tag" wx:for="{{item.craftNames}}" wx:for-item="craft" wx:key="*this">
+            {{craft}}
+          </view>
+        </view>
+        <view class="card-stats">
+          <view class="stats-item">
+            <text class="stats-icon">👁</text>
+            <text class="stats-text">{{item.viewCount}}</text>
+          </view>
+          <view class="stats-item">
+            <text class="stats-icon">❤️</text>
+            <text class="stats-text">{{item.likeCount}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{interviewList.length === 0}}">
+    <text class="empty-icon">📝</text>
+    <text class="empty-text">该专题暂无访谈记录</text>
+    <text class="empty-hint">快来记录第一位老人的故事吧</text>
+    <button class="btn-create" bindtap="goToCreateInterview">立即记录</button>
+  </view>
+
+  <!-- 加载更多 -->
+  <view class="load-more" wx:if="{{loading && interviewList.length > 0}}">
+    <view class="loading-spinner small"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 没有更多 -->
+  <view class="no-more" wx:if="{{!hasMore && interviewList.length > 0}}">
+    <text>—— 没有更多了 ——</text>
+  </view>
+
+  <!-- 底部留白 -->
+  <view style="height: 40rpx;"></view>
+</view>
+
+<!-- 加载状态 -->
+<view class="loading-container" wx:if="{{loading}}">
+  <view class="loading-spinner"></view>
+  <text class="loading-text">加载中...</text>
+</view>
+
+<!-- 错误状态 -->
+<view class="error-container" wx:if="{{!loading && !collection}}">
+  <text class="error-icon">❌</text>
+  <text class="error-text">加载失败</text>
+  <button class="retry-btn" bindtap="refreshData">重新加载</button>
+</view>

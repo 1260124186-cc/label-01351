@@ -1,0 +1,68 @@
+<!--pages/interview-collections/interview-collections.wxml-->
+<view class="page-container">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-content">
+      <text class="header-title">专题合集</text>
+      <text class="header-desc">发现更多乡村文化故事</text>
+    </view>
+    <view class="create-btn" bindtap="goToCreateInterview">
+      <text class="create-icon">✍️</text>
+      <text class="create-text">记录故事</text>
+    </view>
+  </view>
+
+  <!-- 合集列表 -->
+  <view class="collection-list" wx:if="{{!loading && collectionList.length > 0}}">
+    <view 
+      class="collection-card"
+      wx:for="{{collectionList}}"
+      wx:key="id"
+      bindtap="goToCollectionDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="card-cover">
+        <image class="cover-image" src="{{item.coverImage}}" mode="aspectFill" />
+        <view class="cover-overlay"></view>
+        <view class="cover-content">
+          <text class="collection-icon">{{item.icon}}</text>
+          <text class="collection-name">{{item.name}}</text>
+        </view>
+      </view>
+      <view class="card-content">
+        <view class="card-desc">{{item.description}}</view>
+        <view class="card-stats">
+          <view class="stat-item">
+            <text class="stat-icon">📝</text>
+            <text class="stat-value">{{item.interviewCount || 0}}</text>
+            <text class="stat-label">篇访谈</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-icon">👁</text>
+            <text class="stat-value">{{item.viewCount || 0}}</text>
+            <text class="stat-label">次浏览</text>
+          </view>
+        </view>
+      </view>
+      <view class="card-arrow">
+        <text>›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-container" wx:if="{{!loading && collectionList.length === 0}}">
+    <text class="empty-icon">📚</text>
+    <text class="empty-text">暂无专题合集</text>
+    <text class="empty-hint">快来创建第一个合集吧</text>
+  </view>
+
+  <!-- 底部留白 -->
+  <view style="height: 40rpx;"></view>
+</view>

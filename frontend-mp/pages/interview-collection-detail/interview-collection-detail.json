@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "专题详情",
+  "navigationBarBackgroundColor": "#8B4513",
+  "navigationBarTextStyle": "white",
+  "enablePullDownRefresh": true,
+  "enableShareAppMessage": true
+}

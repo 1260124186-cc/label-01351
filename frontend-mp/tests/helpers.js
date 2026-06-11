@@ -164,6 +164,61 @@ const defaultTopics = [
   }
 ];
 
+const defaultInterviews = [
+  {
+    id: 'interview_001',
+    type: 'interview',
+    intervieweeName: '王德福',
+    gender: '男',
+    age: 86,
+    birthYear: 1938,
+    occupation: '农民',
+    region: 'north',
+    address: '河北省衡水市某村',
+    interviewLocation: '王德福老人家中',
+    interviewDate: '2024-03-15',
+    interviewer: '文化志愿者小张',
+    crafts: ['farming', 'herbal'],
+    summary: '王德福老人种了一辈子地，对二十四节气和传统农耕技艺了如指掌。',
+    content: '采访者：王大爷，您能给我们讲讲过去种地的事吗？\n\n王德福：哎呀，这说来可就话长了。我从十几岁就跟着我爹在地里摸爬滚打。',
+    tags: ['农耕文化', '二十四节气'],
+    collectionIds: ['collection_solar_terms'],
+    relatedFigureId: 'figure_001',
+    viewCount: 568,
+    likeCount: 127,
+    status: 1,
+    authorId: 'user_001',
+    authorName: '文化志愿者小张',
+    createTime: '2024-03-16'
+  },
+  {
+    id: 'interview_002',
+    type: 'interview',
+    intervieweeName: '李陈氏',
+    gender: '女',
+    age: 89,
+    birthYear: 1935,
+    occupation: '苏绣传承人',
+    region: 'east',
+    address: '江苏省苏州市某镇',
+    interviewLocation: '陈氏刺绣工作室',
+    interviewDate: '2024-02-20',
+    interviewer: '非遗保护中心小李',
+    crafts: ['weaving', 'embroidery'],
+    summary: '李陈氏从艺七十余年，作品曾被选为国礼。',
+    content: '采访者：陈奶奶，您是怎么开始学刺绣的？\n\n李陈氏：我娘就是做刺绣的，我从小就在她旁边看。',
+    tags: ['苏绣', '非遗'],
+    collectionIds: ['collection_craftsman'],
+    relatedFigureId: 'figure_002',
+    viewCount: 892,
+    likeCount: 256,
+    status: 1,
+    authorId: 'user_002',
+    authorName: '非遗保护中心小李',
+    createTime: '2024-02-22'
+  }
+];
+
 const defaultQuizzes = [
   {
     id: 'quiz_001',
@@ -541,6 +596,21 @@ function initStorage(overrides = {}) {
   } else {
     wx.setStorageSync('wrongQuizzes', {});
   }
+  if (overrides.interviews) {
+    wx.setStorageSync('interviews', overrides.interviews);
+  } else {
+    wx.setStorageSync('interviews', JSON.parse(JSON.stringify(defaultInterviews)));
+  }
+  if (overrides.interviewLikes) {
+    wx.setStorageSync('interviewLikes', overrides.interviewLikes);
+  } else {
+    wx.setStorageSync('interviewLikes', {});
+  }
+  if (overrides.interviewDrafts) {
+    wx.setStorageSync('interviewDrafts', overrides.interviewDrafts);
+  } else {
+    wx.setStorageSync('interviewDrafts', []);
+  }
 }
 
 function mergeBehaviors(pageDef) {
@@ -643,6 +713,7 @@ module.exports = {
   defaultEncyclopedias,
   defaultActivities,
   defaultQuizzes,
+  defaultInterviews,
   initStorage,
   createPageInstance
 };

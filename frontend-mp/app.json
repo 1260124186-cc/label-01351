@@ -30,7 +30,12 @@
     "pages/quiz-timed/quiz-timed",
     "pages/quiz-result/quiz-result",
     "pages/quiz-ranking/quiz-ranking",
-    "pages/quiz-wrong/quiz-wrong"
+    "pages/quiz-wrong/quiz-wrong",
+    "pages/interviews/interviews",
+    "pages/interview-detail/interview-detail",
+    "pages/interview-create/interview-create",
+    "pages/interview-collections/interview-collections",
+    "pages/interview-collection-detail/interview-collection-detail"
   ],
   "window": {
     "backgroundTextStyle": "dark",
