@@ -1,0 +1,200 @@
+<view class="page-container">
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">👤</text>
+      <text class="login-text">登录后发布活动</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <view class="permission-wrap" wx:elif="{{!hasPermission}}">
+    <view class="permission-card">
+      <text class="permission-icon">🔒</text>
+      <text class="permission-title">无权限发布</text>
+      <text class="permission-desc">仅管理员或认证用户可发布活动。\n如需申请认证，请联系系统管理员。</text>
+    </view>
+  </view>
+
+  <block wx:else>
+    <view class="form-container">
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">📝</text>
+          <text class="title-text">基本信息</text>
+        </view>
+
+        <view class="form-item">
+          <text class="form-label required">活动标题</text>
+          <input
+            class="form-input"
+            placeholder="请输入活动标题（至少2字）"
+            placeholder-class="input-placeholder"
+            value="{{formData.title}}"
+            bindinput="onTitleInput"
+            maxlength="50"
+          />
+        </view>
+
+        <view class="form-item">
+          <text class="form-label required">活动类型</text>
+          <view class="type-list">
+            <view
+              class="type-item {{formData.type === item.id ? 'active' : ''}}"
+              wx:for="{{typeList}}"
+              wx:key="id"
+              bindtap="onTypeSelect"
+              data-id="{{item.id}}"
+            >
+              <text class="type-icon">{{item.icon}}</text>
+              <text class="type-name">{{item.name}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">🕐</text>
+          <text class="title-text">活动时间</text>
+        </view>
+
+        <view class="form-item">
+          <text class="form-label required">开始时间</text>
+          <view class="time-picker-row">
+            <picker
+              mode="date"
+              value="{{formData.startDate}}"
+              start="{{minDate}}"
+              bindchange="onStartDateChange"
+              class="time-picker"
+            >
+              <view class="picker-content">
+                <text class="picker-text {{formData.startDate ? '' : 'placeholder'}}">
+                  {{formData.startDate || '选择日期'}}
+                </text>
+                <text class="picker-arrow">▼</text>
+              </view>
+            </picker>
+            <picker
+              mode="time"
+              value="{{formData.startHour}}"
+              bindchange="onStartHourChange"
+              class="time-picker hour"
+            >
+              <view class="picker-content">
+                <text class="picker-text">{{formData.startHour}}</text>
+                <text class="picker-arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+        </view>
+
+        <view class="form-item">
+          <text class="form-label required">结束时间</text>
+          <view class="time-picker-row">
+            <picker
+              mode="date"
+              value="{{formData.endDate}}"
+              start="{{formData.startDate || minDate}}"
+              bindchange="onEndDateChange"
+              class="time-picker"
+            >
+              <view class="picker-content">
+                <text class="picker-text {{formData.endDate ? '' : 'placeholder'}}">
+                  {{formData.endDate || '选择日期'}}
+                </text>
+                <text class="picker-arrow">▼</text>
+              </view>
+            </picker>
+            <picker
+              mode="time"
+              value="{{formData.endHour}}"
+              bindchange="onEndHourChange"
+              class="time-picker hour"
+            >
+              <view class="picker-content">
+                <text class="picker-text">{{formData.endHour}}</text>
+                <text class="picker-arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">📍</text>
+          <text class="title-text">活动信息</text>
+        </view>
+
+        <view class="form-item">
+          <text class="form-label required">活动地点</text>
+          <input
+            class="form-input"
+            placeholder="请输入活动地点"
+            placeholder-class="input-placeholder"
+            value="{{formData.location}}"
+            bindinput="onLocationInput"
+            maxlength="100"
+          />
+        </view>
+
+        <view class="form-item">
+          <text class="form-label required">人数上限</text>
+          <input
+            class="form-input"
+            type="number"
+            placeholder="请输入活动人数上限"
+            placeholder-class="input-placeholder"
+            value="{{formData.maxParticipants}}"
+            bindinput="onMaxParticipantsInput"
+            maxlength="5"
+          />
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">📄</text>
+          <text class="title-text">活动详情</text>
+        </view>
+
+        <view class="form-item">
+          <text class="form-label required">详情描述</text>
+          <textarea
+            class="form-textarea"
+            placeholder="请输入活动详情描述（至少10字）"
+            placeholder-class="input-placeholder"
+            value="{{formData.description}}"
+            bindinput="onDescriptionInput"
+            maxlength="2000"
+            auto-height
+          />
+          <text class="char-count">{{formData.description.length}}/2000</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="footer-bar">
+      <button
+        class="btn-submit {{canSubmit ? '' : 'disabled'}}"
+        disabled="{{!canSubmit || submitting}}"
+        bindtap="onSubmit"
+      >
+        {{submitting ? '发布中...' : '发布活动'}}
+      </button>
+    </view>
+  </block>
+
+  <view class="success-modal" wx:if="{{showSuccess}}">
+    <view class="success-content">
+      <text class="success-icon">✅</text>
+      <text class="success-title">发布成功</text>
+      <text class="success-desc">您的活动已成功发布</text>
+      <view class="success-actions">
+        <button class="btn-secondary" bindtap="goToList">返回列表</button>
+        <button class="btn-primary" bindtap="goToActivity">查看活动</button>
+      </view>
+    </view>
+  </view>
+</view>

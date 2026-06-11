@@ -153,6 +153,12 @@ Page({
     });
   },
 
+  goToMyActivities() {
+    wx.navigateTo({
+      url: '/pages/my-activities/my-activities'
+    });
+  },
+
   goToNotifications() {
     wx.navigateTo({
       url: '/pages/notifications/notifications'

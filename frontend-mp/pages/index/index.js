@@ -37,6 +37,12 @@ Page({
     });
   },
 
+  goToActivities() {
+    wx.navigateTo({
+      url: '/pages/activities/activities'
+    });
+  },
+
   goToPublish() {
     wx.navigateTo({
       url: '/pages/publish/publish'

@@ -2042,3 +2042,478 @@ describe('api notification triggers', () => {
     expect(favNotification.targetUserId).toBe('user_001');
   });
 });
+
+describe('api.getActivityTypes', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('返回活动类型列表', async () => {
+    const res = await api.getActivityTypes();
+    expect(res.code).toBe(200);
+    expect(Array.isArray(res.data)).toBe(true);
+    expect(res.data.length).toBe(3);
+    expect(res.data[0]).toHaveProperty('id');
+    expect(res.data[0]).toHaveProperty('name');
+  });
+
+  test('包含三种活动类型', async () => {
+    const res = await api.getActivityTypes();
+    const keys = res.data.map(t => t.id);
+    expect(keys).toContain('lecture');
+    expect(keys).toContain('study');
+    expect(keys).toContain('craft');
+  });
+});
+
+describe('api.getActivityList', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('返回活动列表', async () => {
+    const res = await api.getActivityList();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    expect(res.data.total).toBeGreaterThan(0);
+  });
+
+  test('按活动类型筛选', async () => {
+    const res = await api.getActivityList({ type: 'lecture' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(item => item.type === 'lecture')).toBe(true);
+  });
+
+  test('type=all 返回所有活动', async () => {
+    const res = await api.getActivityList({ type: 'all' });
+    expect(res.code).toBe(200);
+    const activities = wx.getStorageSync('activities').filter(a => a.status === 1);
+    expect(res.data.total).toBe(activities.length);
+  });
+
+  test('按状态筛选 - 报名中', async () => {
+    const res = await api.getActivityList({ status: 'open' });
+    expect(res.code).toBe(200);
+    res.data.list.forEach(item => {
+      const now = new Date();
+      const startTime = new Date(item.startTime);
+      expect(startTime.getTime()).toBeGreaterThan(now.getTime());
+      expect(item.registeredCount).toBeLessThan(item.maxParticipants);
+    });
+  });
+
+  test('按状态筛选 - 已满', async () => {
+    const res = await api.getActivityList({ status: 'full' });
+    expect(res.code).toBe(200);
+    res.data.list.forEach(item => {
+      expect(item.registeredCount).toBeGreaterThanOrEqual(item.maxParticipants);
+    });
+  });
+
+  test('按关键词搜索', async () => {
+    const res = await api.getActivityList({ keyword: '讲座' });
+    expect(res.code).toBe(200);
+    res.data.list.forEach(item => {
+      const match = item.title.includes('讲座') || item.description.includes('讲座');
+      expect(match).toBe(true);
+    });
+  });
+
+  test('分页功能正常工作', async () => {
+    const res = await api.getActivityList({ page: 1, pageSize: 2 });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeLessThanOrEqual(2);
+    expect(res.data.page).toBe(1);
+    expect(res.data.pageSize).toBe(2);
+  });
+
+  test('按时间排序（最近的在前）', async () => {
+    const res = await api.getActivityList();
+    expect(res.code).toBe(200);
+    if (res.data.list.length >= 2) {
+      for (let i = 0; i < res.data.list.length - 1; i++) {
+        const t1 = new Date(res.data.list[i].startTime).getTime();
+        const t2 = new Date(res.data.list[i + 1].startTime).getTime();
+        expect(t1).toBeLessThanOrEqual(t2);
+      }
+    }
+  });
+});
+
+describe('api.getActivityDetail', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('获取活动详情成功', async () => {
+    const res = await api.getActivityDetail('activity_001');
+    expect(res.code).toBe(200);
+    expect(res.data.id).toBe('activity_001');
+    expect(res.data).toHaveProperty('title');
+    expect(res.data).toHaveProperty('startTime');
+    expect(res.data).toHaveProperty('location');
+    expect(res.data).toHaveProperty('maxParticipants');
+    expect(res.data).toHaveProperty('type');
+    expect(res.data).toHaveProperty('description');
+  });
+
+  test('浏览量自动+1', async () => {
+    const activities = wx.getStorageSync('activities');
+    const target = activities.find(a => a.id === 'activity_001');
+    const before = target.viewCount;
+
+    await api.getActivityDetail('activity_001');
+
+    const activitiesAfter = wx.getStorageSync('activities');
+    const after = activitiesAfter.find(a => a.id === 'activity_001').viewCount;
+    expect(after).toBe(before + 1);
+  });
+
+  test('包含已报名状态', async () => {
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+
+    const res = await api.getActivityDetail('activity_001');
+    expect(res.code).toBe(200);
+    expect(res.data).toHaveProperty('isRegistered');
+    expect(typeof res.data.isRegistered).toBe('boolean');
+  });
+
+  test('空 ID 返回 400', async () => {
+    const res = await api.getActivityDetail('');
+    expect(res.code).toBe(400);
+  });
+
+  test('活动不存在返回 404', async () => {
+    const res = await api.getActivityDetail('not_exist_activity');
+    expect(res.code).toBe(404);
+  });
+});
+
+describe('api.createActivity', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('普通用户不能发布活动', async () => {
+    wx.setStorageSync('userInfo', { id: 'user_999', nickname: '普通用户', role: 'user' });
+    wx.setStorageSync('isLoggedIn', true);
+
+    const res = await api.createActivity({
+      title: '测试活动',
+      startTime: '2030-01-01 09:00:00',
+      endTime: '2030-01-01 11:00:00',
+      location: '测试地点',
+      maxParticipants: 10,
+      type: 'lecture',
+      description: '测试描述'
+    });
+    expect(res.code).toBe(403);
+  });
+
+  test('管理员可以发布活动', async () => {
+    wx.setStorageSync('userInfo', { id: 'user_001', nickname: '管理员', role: 'admin' });
+    wx.setStorageSync('isLoggedIn', true);
+
+    const res = await api.createActivity({
+      title: '管理员发布的测试活动',
+      startTime: '2030-01-01 09:00:00',
+      endTime: '2030-01-01 11:00:00',
+      location: '村委会大礼堂',
+      maxParticipants: 50,
+      type: 'lecture',
+      description: '这是管理员发布的活动'
+    });
+    expect(res.code).toBe(200);
+    expect(res.data).toHaveProperty('id');
+  });
+
+  test('认证用户可以发布活动', async () => {
+    wx.setStorageSync('userInfo', { id: 'user_001', nickname: '认证用户', role: 'verified' });
+    wx.setStorageSync('isLoggedIn', true);
+
+    const res = await api.createActivity({
+      title: '认证用户发布的测试活动',
+      startTime: '2030-01-02 09:00:00',
+      endTime: '2030-01-02 11:00:00',
+      location: '文化活动中心',
+      maxParticipants: 30,
+      type: 'craft',
+      description: '这是认证用户发布的活动'
+    });
+    expect(res.code).toBe(200);
+  });
+
+  test('未登录不能发布活动', async () => {
+    wx.setStorageSync('isLoggedIn', false);
+
+    const res = await api.createActivity({
+      title: '测试活动',
+      startTime: '2030-01-01 09:00:00',
+      endTime: '2030-01-01 11:00:00',
+      location: '测试地点',
+      maxParticipants: 10,
+      type: 'lecture',
+      description: '测试描述'
+    });
+    expect(res.code).toBe(401);
+  });
+
+  test('缺少必填字段返回 400', async () => {
+    wx.setStorageSync('userInfo', { id: 'user_001', nickname: '管理员', role: 'admin' });
+    wx.setStorageSync('isLoggedIn', true);
+
+    const res = await api.createActivity({
+      title: '',
+      startTime: '',
+      endTime: '',
+      location: '',
+      maxParticipants: 0,
+      type: '',
+      description: ''
+    });
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.registerActivity', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('报名活动成功', async () => {
+    const res = await api.registerActivity('activity_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isRegistered).toBe(true);
+    expect(res.data.registeredCount).toBeGreaterThan(0);
+  });
+
+  test('已报名不能重复报名', async () => {
+    await api.registerActivity('activity_001');
+    const res = await api.registerActivity('activity_001');
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('已报名');
+  });
+
+  test('已满活动不能报名', async () => {
+    const res = await api.registerActivity('activity_002');
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('已满');
+  });
+
+  test('未登录不能报名', async () => {
+    wx.setStorageSync('isLoggedIn', false);
+
+    const res = await api.registerActivity('activity_001');
+    expect(res.code).toBe(401);
+  });
+
+  test('空 ID 返回 400', async () => {
+    const res = await api.registerActivity('');
+    expect(res.code).toBe(400);
+  });
+
+  test('报名后已报名人数+1', async () => {
+    const before = (await api.getActivityDetail('activity_001')).data.registeredCount;
+    await api.registerActivity('activity_001');
+    const after = (await api.getActivityDetail('activity_001')).data.registeredCount;
+    expect(after).toBe(before + 1);
+  });
+});
+
+describe('api.cancelRegistration', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('活动开始前超过24小时可以取消', async () => {
+    await api.registerActivity('activity_001');
+    const res = await api.cancelRegistration('activity_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isRegistered).toBe(false);
+  });
+
+  test('未报名不能取消', async () => {
+    const res = await api.cancelRegistration('activity_001');
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('未报名');
+  });
+
+  test('取消后已报名人数-1', async () => {
+    await api.registerActivity('activity_001');
+    const before = (await api.getActivityDetail('activity_001')).data.registeredCount;
+    await api.cancelRegistration('activity_001');
+    const after = (await api.getActivityDetail('activity_001')).data.registeredCount;
+    expect(after).toBe(before - 1);
+  });
+
+  test('未登录不能取消报名', async () => {
+    wx.setStorageSync('isLoggedIn', false);
+
+    const res = await api.cancelRegistration('activity_001');
+    expect(res.code).toBe(401);
+  });
+
+  test('空 ID 返回 400', async () => {
+    const res = await api.cancelRegistration('');
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.getMyActivities', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('未登录返回 401', async () => {
+    wx.setStorageSync('isLoggedIn', false);
+
+    const res = await api.getMyActivities();
+    expect(res.code).toBe(401);
+  });
+
+  test('未报名时返回空列表', async () => {
+    const res = await api.getMyActivities();
+    expect(res.code).toBe(200);
+    expect(res.data.list).toEqual([]);
+    expect(res.data.total).toBe(0);
+  });
+
+  test('返回已报名的活动列表', async () => {
+    const registrations = wx.getStorageSync('activityRegistrations') || {};
+    registrations['user_001'] = [
+      { id: 'reg_test1', activityId: 'activity_001', activityTitle: '传统刺绣技艺体验课', registerTime: '2024-12-20 10:00:00' },
+      { id: 'reg_test2', activityId: 'activity_003', activityTitle: '二十四节气文化讲座', registerTime: '2024-12-15 10:00:00' }
+    ];
+    wx.setStorageSync('activityRegistrations', registrations);
+
+    const res = await api.getMyActivities();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBe(2);
+    expect(res.data.total).toBe(2);
+  });
+});
+
+describe('api.checkActivityRegistration', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('未报名时返回 false', async () => {
+    const res = await api.checkActivityRegistration('activity_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isRegistered).toBe(false);
+  });
+
+  test('已报名时返回 true', async () => {
+    await api.registerActivity('activity_001');
+    const res = await api.checkActivityRegistration('activity_001');
+    expect(res.code).toBe(200);
+    expect(res.data.isRegistered).toBe(true);
+  });
+
+  test('空 ID 返回 400', async () => {
+    const res = await api.checkActivityRegistration('');
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.getMyPublishedActivities', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('未登录返回 401', async () => {
+    wx.setStorageSync('isLoggedIn', false);
+
+    const res = await api.getMyPublishedActivities();
+    expect(res.code).toBe(401);
+  });
+
+  test('返回我发布的活动列表', async () => {
+    const res = await api.getMyPublishedActivities();
+    expect(res.code).toBe(200);
+    expect(Array.isArray(res.data.list)).toBe(true);
+    res.data.list.forEach(item => {
+      expect(item.authorId).toBe('user_001');
+    });
+  });
+});
+
+describe('api.linkReviewArticle', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('关联回顾文章成功', async () => {
+    const res = await api.linkReviewArticle('activity_003', 'article_002');
+    expect(res.code).toBe(200);
+    expect(res.data.reviewArticleIds).toContain('article_002');
+  });
+
+  test('非发布者不能关联文章', async () => {
+    wx.setStorageSync('userInfo', { id: 'user_999', nickname: '其他用户' });
+    wx.setStorageSync('isLoggedIn', true);
+
+    const res = await api.linkReviewArticle('activity_003', 'article_002');
+    expect(res.code).toBe(403);
+  });
+
+  test('未结束的活动不能关联文章', async () => {
+    const res = await api.linkReviewArticle('activity_001', 'article_002');
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('活动结束后');
+  });
+
+  test('重复关联同篇文章不会重复添加', async () => {
+    await api.linkReviewArticle('activity_003', 'article_002');
+    await api.linkReviewArticle('activity_003', 'article_002');
+    const detail = await api.getActivityDetail('activity_003');
+    const count = detail.data.reviewArticleIds.filter(id => id === 'article_002').length;
+    expect(count).toBe(1);
+  });
+
+  test('空参数返回 400', async () => {
+    const res = await api.linkReviewArticle('', '');
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.unlinkReviewArticle', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('取消关联回顾文章成功', async () => {
+    const res = await api.unlinkReviewArticle('activity_003', 'article_005');
+    expect(res.code).toBe(200);
+    expect(res.data.reviewArticleIds).not.toContain('article_005');
+  });
+
+  test('非发布者不能取消关联', async () => {
+    wx.setStorageSync('userInfo', { id: 'user_999', nickname: '其他用户' });
+    wx.setStorageSync('isLoggedIn', true);
+
+    const res = await api.unlinkReviewArticle('activity_003', 'article_005');
+    expect(res.code).toBe(403);
+  });
+
+  test('空参数返回 400', async () => {
+    const res = await api.unlinkReviewArticle('', '');
+    expect(res.code).toBe(400);
+  });
+});

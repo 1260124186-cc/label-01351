@@ -1,0 +1,156 @@
+<view class="page-container">
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">👤</text>
+      <text class="login-text">登录后查看活动详情</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <block wx:else>
+    <view class="loading-wrap" wx:if="{{loading}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view class="activity-wrap" wx:elif="{{activity}}">
+      <view class="activity-header type-{{activity.type}}">
+        <text class="header-icon">{{activity.typeIcon}}</text>
+        <view class="header-info">
+          <view class="header-type-tag">{{activity.typeName}}</view>
+          <view class="header-status" style="background-color: {{activity.statusInfo.id === 'open' ? 'rgba(82,196,26,0.2)' : activity.statusInfo.id === 'full' ? 'rgba(255,107,107,0.2)' : 'rgba(153,153,153,0.2)'}}; color: {{activity.statusInfo.color}};">
+            {{activity.statusInfo.name}}
+          </view>
+        </view>
+      </view>
+
+      <view class="activity-body">
+        <view class="activity-title">{{activity.title}}</view>
+
+        <view class="activity-meta">
+          <view class="meta-item">
+            <text class="meta-icon">🕐</text>
+            <view class="meta-content">
+              <text class="meta-label">活动时间</text>
+              <text class="meta-value">{{activity.timeDisplay}}</text>
+            </view>
+          </view>
+          <view class="meta-item">
+            <text class="meta-icon">📍</text>
+            <view class="meta-content">
+              <text class="meta-label">活动地点</text>
+              <text class="meta-value">{{activity.location}}</text>
+            </view>
+          </view>
+          <view class="meta-item">
+            <text class="meta-icon">👥</text>
+            <view class="meta-content">
+              <text class="meta-label">报名人数</text>
+              <text class="meta-value">{{activity.registeredCount}} / {{activity.maxParticipants}} 人</text>
+              <view class="progress-bar">
+                <view class="progress-fill" style="width: {{activity.maxParticipants > 0 ? (activity.registeredCount / activity.maxParticipants * 100) : 0}}%;"></view>
+              </view>
+            </view>
+          </view>
+          <view class="meta-item">
+            <text class="meta-icon">👤</text>
+            <view class="meta-content">
+              <text class="meta-label">发布者</text>
+              <text class="meta-value">{{activity.authorName}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="activity-section">
+          <text class="section-title">活动详情</text>
+          <view class="activity-description">{{activity.description}}</view>
+        </view>
+
+        <view class="activity-section" wx:if="{{activity.reviewArticles && activity.reviewArticles.length > 0}}">
+          <view class="section-header">
+            <text class="section-title">活动回顾</text>
+            <view class="link-btn" wx:if="{{isAuthor && activity.statusInfo.id === 'ended'}}" bindtap="openLinkModal">
+              <text class="link-icon">➕</text>
+              <text class="link-text">关联文章</text>
+            </view>
+          </view>
+          <view class="review-list">
+            <view class="review-item" wx:for="{{activity.reviewArticles}}" wx:key="id" bindtap="goToArticleDetail" data-id="{{item.id}}">
+              <view class="review-content">
+                <text class="review-title">{{item.title}}</text>
+                <text class="review-author">{{item.authorName}} · {{item.createTime}}</text>
+              </view>
+              <view class="review-actions" catchtap="onUnlinkArticle" data-id="{{item.id}}" wx:if="{{isAuthor}}">
+                <text class="unlink-icon">✕</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="activity-section" wx:if="{{isAuthor && activity.statusInfo.id === 'ended' && (!activity.reviewArticles || activity.reviewArticles.length === 0)}}">
+          <view class="section-header">
+            <text class="section-title">活动回顾</text>
+            <view class="link-btn" bindtap="openLinkModal">
+              <text class="link-icon">➕</text>
+              <text class="link-text">关联文章</text>
+            </view>
+          </view>
+          <view class="empty-review">
+            <text class="empty-icon">📝</text>
+            <text class="empty-text">暂无回顾文章</text>
+            <text class="empty-hint">可关联您发布的文章作为活动记录</text>
+          </view>
+        </view>
+
+        <view class="activity-stats">
+          <view class="stat-item">
+            <text class="stat-icon">👁</text>
+            <text class="stat-value">{{activity.viewCount}} 浏览</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="activity-footer">
+        <block wx:if="{{activity.isRegistered}}">
+          <button class="btn-cancel" wx:if="{{activity.canCancel}}" bindtap="onCancelRegistration">取消报名</button>
+          <button class="btn-registered" wx:else disabled>已报名</button>
+        </block>
+        <block wx:elif="{{activity.statusInfo.id === 'ended'}}">
+          <button class="btn-ended" disabled>活动已结束</button>
+        </block>
+        <block wx:elif="{{activity.statusInfo.id === 'full'}}">
+          <button class="btn-full" disabled>名额已满</button>
+        </block>
+        <block wx:else>
+          <button class="btn-register" bindtap="onRegister">立即报名</button>
+        </block>
+      </view>
+    </view>
+
+    <view class="error-wrap" wx:else>
+      <text class="error-icon">😕</text>
+      <text class="error-text">活动不存在或已删除</text>
+      <button class="btn-back" bindtap="goBack">返回</button>
+    </view>
+  </block>
+
+  <view class="modal-mask" wx:if="{{showLinkModal}}" bindtap="closeLinkModal">
+    <view class="modal-content" catchtap="">
+      <view class="modal-header">
+        <text class="modal-title">选择回顾文章</text>
+        <text class="modal-close" bindtap="closeLinkModal">✕</text>
+      </view>
+      <scroll-view class="modal-body" scroll-y>
+        <view class="empty-articles" wx:if="{{myArticles.length === 0}}">
+          <text class="empty-icon">📄</text>
+          <text class="empty-text">暂无已发布文章</text>
+          <text class="empty-hint">请先发布文章后再关联</text>
+        </view>
+        <view class="article-option" wx:for="{{myArticles}}" wx:key="id" bindtap="onLinkArticle" data-id="{{item.id}}">
+          <text class="article-title">{{item.title}}</text>
+          <text class="article-meta">{{item.createTime}} · {{item.category}}</text>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+</view>

@@ -106,6 +106,10 @@
   background: linear-gradient(135deg, #4A90E2 0%, #67B8F7 100%);
 }
 
+.icon-activity {
+  background: linear-gradient(135deg, #FF6B9D 0%, #C44569 100%);
+}
+
 .icon-publish {
   background: linear-gradient(135deg, #9B59B6 0%, #BB8FCE 100%);
 }

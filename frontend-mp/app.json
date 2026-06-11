@@ -2,6 +2,7 @@
   "pages": [
     "pages/index/index",
     "pages/figures/figures",
+    "pages/activities/activities",
     "pages/publish/publish",
     "pages/mine/mine",
     "pages/detail/detail",
@@ -16,7 +17,10 @@
     "pages/admin/admin",
     "pages/admin-topic/admin-topic",
     "pages/admin-encyclopedia/admin-encyclopedia",
-    "pages/notifications/notifications"
+    "pages/notifications/notifications",
+    "pages/activity-detail/activity-detail",
+    "pages/activity-publish/activity-publish",
+    "pages/my-activities/my-activities"
   ],
   "window": {
     "backgroundTextStyle": "dark",

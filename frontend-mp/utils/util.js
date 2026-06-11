@@ -158,6 +158,57 @@ const getCategoryName = (categoryId) => {
   return categoryMap[categoryId] || '未知分类';
 };
 
+const ACTIVITY_TYPES = {
+  lecture: { id: 'lecture', name: '讲座', icon: '🎤' },
+  study: { id: 'study', name: '研学', icon: '📚' },
+  craft: { id: 'craft', name: '技艺体验', icon: '🎨' }
+};
+
+const getActivityTypes = () => Object.values(ACTIVITY_TYPES);
+
+const getActivityTypeName = (typeId) => {
+  return ACTIVITY_TYPES[typeId] ? ACTIVITY_TYPES[typeId].name : '未知类型';
+};
+
+const getActivityTypeIcon = (typeId) => {
+  return ACTIVITY_TYPES[typeId] ? ACTIVITY_TYPES[typeId].icon : '📌';
+};
+
+const getActivityStatus = (activity) => {
+  const now = new Date().getTime();
+  const startTime = new Date(activity.startTime).getTime();
+  const endTime = new Date(activity.endTime).getTime();
+  const registeredCount = activity.registeredCount || 0;
+  const maxParticipants = activity.maxParticipants || 0;
+
+  if (now > endTime) {
+    return { id: 'ended', name: '已结束', color: '#999999' };
+  }
+  if (registeredCount >= maxParticipants) {
+    return { id: 'full', name: '已满', color: '#FF6B6B' };
+  }
+  return { id: 'open', name: '报名中', color: '#52C41A' };
+};
+
+const canCancelRegistration = (activity) => {
+  const now = new Date().getTime();
+  const startTime = new Date(activity.startTime).getTime();
+  const twentyFourHours = 24 * 60 * 60 * 1000;
+  return startTime - now >= twentyFourHours;
+};
+
+const formatActivityTime = (startTime, endTime) => {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  const startStr = formatDate(start, 'YYYY-MM-DD HH:mm');
+  const endStr = formatDate(end, 'HH:mm');
+  const sameDay = formatDate(start, 'YYYY-MM-DD') === formatDate(end, 'YYYY-MM-DD');
+  if (sameDay) {
+    return `${startStr}-${endStr}`;
+  }
+  return `${startStr} 至 ${formatDate(end, 'YYYY-MM-DD HH:mm')}`;
+};
+
 module.exports = {
   formatDate,
   formatRelativeTime,
@@ -166,5 +217,12 @@ module.exports = {
   throttle,
   truncateText,
   validateForm,
-  getCategoryName
+  getCategoryName,
+  ACTIVITY_TYPES,
+  getActivityTypes,
+  getActivityTypeName,
+  getActivityTypeIcon,
+  getActivityStatus,
+  canCancelRegistration,
+  formatActivityTime
 };

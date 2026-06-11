@@ -207,6 +207,74 @@ const defaultEncyclopedias = [
   }
 ];
 
+const getFutureDate = (days, hours = 9) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  d.setHours(hours, 0, 0, 0);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  return `${y}-${m}-${day} ${h}:00:00`;
+};
+
+const defaultActivities = [
+  {
+    id: 'activity_001',
+    title: '传统刺绣技艺体验课',
+    startTime: getFutureDate(7, 9),
+    endTime: getFutureDate(7, 11),
+    location: '村文化活动中心',
+    maxParticipants: 20,
+    registeredCount: 8,
+    type: 'craft',
+    description: '邀请非遗传承人李陈氏老师现场教学，体验传统苏绣的基本针法。\n\n适合所有年龄段，材料由主办方提供，欢迎大家踊跃报名参加。',
+    cover: '',
+    reviewArticleIds: [],
+    authorId: 'user_001',
+    authorName: '测试用户',
+    viewCount: 156,
+    createTime: '2024-12-15 10:00:00',
+    status: 1
+  },
+  {
+    id: 'activity_002',
+    title: '农耕文化研学活动',
+    startTime: getFutureDate(3, 8),
+    endTime: getFutureDate(3, 16),
+    location: '生态农业示范园',
+    maxParticipants: 30,
+    registeredCount: 30,
+    type: 'study',
+    description: '走进田间地头，了解传统农耕文化，体验播种、收割等农事活动。\n\n午餐提供农家特色饭菜，让大家体验真实的乡村生活。',
+    cover: '',
+    reviewArticleIds: [],
+    authorId: 'user_001',
+    authorName: '测试用户',
+    viewCount: 289,
+    createTime: '2024-12-10 14:00:00',
+    status: 1
+  },
+  {
+    id: 'activity_003',
+    title: '二十四节气文化讲座',
+    startTime: getFutureDate(-2, 14),
+    endTime: getFutureDate(-2, 16),
+    location: '村委会大礼堂',
+    maxParticipants: 50,
+    registeredCount: 35,
+    type: 'lecture',
+    description: '邀请农业大学王教授为大家讲解二十四节气的由来、习俗以及与农业生产的关系。\n\n现场有互动问答环节，精美礼品等你来拿。',
+    cover: '',
+    reviewArticleIds: ['article_005'],
+    authorId: 'user_001',
+    authorName: '测试用户',
+    viewCount: 412,
+    createTime: '2024-12-01 09:00:00',
+    status: 1
+  }
+];
+
 function initStorage(overrides = {}) {
   wx._resetStorage();
   wx.setStorageSync('articles', overrides.articles || JSON.parse(JSON.stringify(defaultArticles)));
@@ -239,6 +307,16 @@ function initStorage(overrides = {}) {
     wx.setStorageSync('encyclopedia', overrides.encyclopedias);
   } else {
     wx.setStorageSync('encyclopedia', JSON.parse(JSON.stringify(defaultEncyclopedias)));
+  }
+  if (overrides.activities) {
+    wx.setStorageSync('activities', overrides.activities);
+  } else {
+    wx.setStorageSync('activities', JSON.parse(JSON.stringify(defaultActivities)));
+  }
+  if (overrides.activityRegistrations) {
+    wx.setStorageSync('activityRegistrations', overrides.activityRegistrations);
+  } else {
+    wx.setStorageSync('activityRegistrations', {});
   }
 }
 
@@ -340,6 +418,7 @@ module.exports = {
   defaultUser,
   defaultTopics,
   defaultEncyclopedias,
+  defaultActivities,
   initStorage,
   createPageInstance
 };

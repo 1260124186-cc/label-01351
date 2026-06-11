@@ -1124,6 +1124,411 @@ const storageApi = {
     notifications[data.targetUserId].push(newNotification);
     wx.setStorageSync('notifications', notifications);
     return { code: 200, data: newNotification, message: 'success' };
+  },
+
+  getActivityTypes: async () => {
+    await delay(200);
+    return { code: 200, data: util.getActivityTypes(), message: 'success' };
+  },
+
+  getActivityList: async (params = {}) => {
+    await delay(500);
+    const { type = 'all', status = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    let activities = wx.getStorageSync('activities') || [];
+    activities = activities.filter(item => item.status === 1);
+
+    if (type && type !== 'all') {
+      activities = activities.filter(item => item.type === type);
+    }
+
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      activities = activities.filter(item =>
+        item.title.toLowerCase().includes(kw) ||
+        item.description.toLowerCase().includes(kw) ||
+        item.location.toLowerCase().includes(kw)
+      );
+    }
+
+    if (status && status !== 'all') {
+      activities = activities.filter(item => {
+        const s = util.getActivityStatus(item);
+        return s.id === status;
+      });
+    }
+
+    activities.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+
+    const total = activities.length;
+    const start = (page - 1) * pageSize;
+    const list = activities.slice(start, start + pageSize).map(item => ({
+      ...item,
+      typeName: util.getActivityTypeName(item.type),
+      typeIcon: util.getActivityTypeIcon(item.type),
+      statusInfo: util.getActivityStatus(item)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getActivityDetail: async (id) => {
+    await delay(300);
+    if (!id) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+    const activities = wx.getStorageSync('activities') || [];
+    const activity = activities.find(item => item.id === id);
+    if (!activity) {
+      return { code: 404, data: null, message: '活动不存在' };
+    }
+
+    activity.viewCount = (activity.viewCount || 0) + 1;
+    wx.setStorageSync('activities', activities);
+
+    const userId = getCurrentUserId();
+    const registrations = wx.getStorageSync('activityRegistrations') || {};
+    const userRegistrations = registrations[userId] || [];
+    const isRegistered = userRegistrations.some(item => item.activityId === id);
+
+    const articles = wx.getStorageSync('articles') || [];
+    const reviewArticles = (activity.reviewArticleIds || [])
+      .map(articleId => articles.find(a => a.id === articleId && a.status === 1))
+      .filter(Boolean);
+
+    const result = {
+      ...activity,
+      typeName: util.getActivityTypeName(activity.type),
+      typeIcon: util.getActivityTypeIcon(activity.type),
+      statusInfo: util.getActivityStatus(activity),
+      isRegistered,
+      canCancel: isRegistered && util.canCancelRegistration(activity),
+      reviewArticles,
+      reviewArticleList: reviewArticles
+    };
+
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  createActivity: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userInfo = wx.getStorageSync('userInfo');
+    if (!userInfo.role || (userInfo.role !== 'admin' && userInfo.role !== 'verified')) {
+      return { code: 403, data: null, message: '仅管理员或认证用户可发布活动' };
+    }
+
+    if (!data.title || !data.title.trim()) {
+      return { code: 400, data: null, message: '活动标题不能为空' };
+    }
+    if (!data.startTime) {
+      return { code: 400, data: null, message: '请选择活动开始时间' };
+    }
+    if (!data.endTime) {
+      return { code: 400, data: null, message: '活动结束时间不能为空' };
+    }
+    if (!data.location || !data.location.trim()) {
+      return { code: 400, data: null, message: '活动地点不能为空' };
+    }
+    if (!data.maxParticipants || data.maxParticipants <= 0) {
+      return { code: 400, data: null, message: '请输入有效的人数上限' };
+    }
+    if (!data.type) {
+      return { code: 400, data: null, message: '请选择活动类型' };
+    }
+    if (!data.description || !data.description.trim()) {
+      return { code: 400, data: null, message: '活动详情不能为空' };
+    }
+
+    const start = new Date(data.startTime);
+    const end = new Date(data.endTime);
+    if (end <= start) {
+      return { code: 400, data: null, message: '结束时间必须晚于开始时间' };
+    }
+
+    const activities = wx.getStorageSync('activities') || [];
+    const newActivity = {
+      id: util.generateId('activity'),
+      title: data.title.trim(),
+      startTime: data.startTime,
+      endTime: data.endTime,
+      location: data.location.trim(),
+      maxParticipants: parseInt(data.maxParticipants),
+      registeredCount: 0,
+      type: data.type,
+      description: data.description.trim(),
+      cover: data.cover || '',
+      reviewArticleIds: [],
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      viewCount: 0,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 1
+    };
+    activities.unshift(newActivity);
+    wx.setStorageSync('activities', activities);
+    return { code: 200, data: newActivity, message: '发布成功' };
+  },
+
+  registerActivity: async (id) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const userInfo = wx.getStorageSync('userInfo');
+    const activities = wx.getStorageSync('activities') || [];
+    const activityIndex = activities.findIndex(item => item.id === id);
+    if (activityIndex === -1) {
+      return { code: 404, data: null, message: '活动不存在' };
+    }
+
+    const activity = activities[activityIndex];
+    const statusInfo = util.getActivityStatus(activity);
+    if (statusInfo.id === 'ended') {
+      return { code: 400, data: null, message: '活动已结束，无法报名' };
+    }
+    if (statusInfo.id === 'full') {
+      return { code: 400, data: null, message: '活动已满员' };
+    }
+
+    const registrations = wx.getStorageSync('activityRegistrations') || {};
+    const userRegistrations = registrations[userId] || [];
+    if (userRegistrations.some(item => item.activityId === id)) {
+      return { code: 400, data: { isRegistered: true }, message: '您已报名该活动' };
+    }
+
+    activity.registeredCount = (activity.registeredCount || 0) + 1;
+    activities[activityIndex] = activity;
+    wx.setStorageSync('activities', activities);
+
+    const newRegistration = {
+      id: util.generateId('reg'),
+      activityId: id,
+      activityTitle: activity.title,
+      registerTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
+    };
+    userRegistrations.unshift(newRegistration);
+    registrations[userId] = userRegistrations;
+    wx.setStorageSync('activityRegistrations', registrations);
+
+    storageApi.createNotification({
+      type: 'activity',
+      fromUserId: userId,
+      fromUserName: userInfo ? userInfo.nickname : '',
+      targetUserId: activity.authorId,
+      targetId: id,
+      targetTitle: activity.title,
+      content: (userInfo ? userInfo.nickname : '有人') + ' 报名了您发布的活动',
+      jumpType: 'activity',
+      jumpId: id
+    });
+
+    return { code: 200, data: { isRegistered: true, registeredCount: activity.registeredCount }, message: '报名成功' };
+  },
+
+  cancelRegistration: async (id) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const activities = wx.getStorageSync('activities') || [];
+    const activity = activities.find(item => item.id === id);
+    if (!activity) {
+      return { code: 404, data: null, message: '活动不存在' };
+    }
+
+    const registrations = wx.getStorageSync('activityRegistrations') || {};
+    const userRegistrations = registrations[userId] || [];
+    const index = userRegistrations.findIndex(item => item.activityId === id);
+    if (index === -1) {
+      return { code: 400, data: null, message: '您未报名该活动' };
+    }
+
+    if (!util.canCancelRegistration(activity)) {
+      return { code: 400, data: null, message: '活动开始前24小时内不可取消报名' };
+    }
+
+    const activityIndex = activities.findIndex(item => item.id === id);
+    activity.registeredCount = Math.max((activity.registeredCount || 1) - 1, 0);
+    activities[activityIndex] = activity;
+    wx.setStorageSync('activities', activities);
+
+    userRegistrations.splice(index, 1);
+    registrations[userId] = userRegistrations;
+    wx.setStorageSync('activityRegistrations', registrations);
+
+    return { code: 200, data: { isRegistered: false, registeredCount: activity.registeredCount }, message: '取消报名成功' };
+  },
+
+  getMyActivities: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    const registrations = wx.getStorageSync('activityRegistrations') || {};
+    const userRegistrations = registrations[userId] || [];
+
+    const activities = wx.getStorageSync('activities') || [];
+    const registeredActivities = userRegistrations
+      .map(reg => {
+        const activity = activities.find(a => a.id === reg.activityId);
+        if (!activity) return null;
+        return {
+          ...activity,
+          ...reg,
+          typeName: util.getActivityTypeName(activity.type),
+          typeIcon: util.getActivityTypeIcon(activity.type),
+          statusInfo: util.getActivityStatus(activity),
+          canCancel: util.canCancelRegistration(activity)
+        };
+      })
+      .filter(Boolean);
+
+    registeredActivities.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+
+    return {
+      code: 200,
+      data: { list: registeredActivities, total: registeredActivities.length },
+      message: 'success'
+    };
+  },
+
+  checkActivityRegistration: async (id) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const registrations = wx.getStorageSync('activityRegistrations') || {};
+    const userRegistrations = registrations[userId] || [];
+    const isRegistered = userRegistrations.some(item => item.activityId === id);
+
+    const activities = wx.getStorageSync('activities') || [];
+    const activity = activities.find(item => item.id === id);
+    const canCancel = isRegistered && activity && util.canCancelRegistration(activity);
+
+    return { code: 200, data: { isRegistered, canCancel }, message: 'success' };
+  },
+
+  linkReviewArticle: async (activityId, articleId) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!activityId) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const activities = wx.getStorageSync('activities') || [];
+    const activityIndex = activities.findIndex(item => item.id === activityId);
+    if (activityIndex === -1) {
+      return { code: 404, data: null, message: '活动不存在' };
+    }
+
+    const activity = activities[activityIndex];
+    if (activity.authorId !== userId) {
+      return { code: 403, data: null, message: '仅活动发布者可关联回顾文章' };
+    }
+
+    const statusInfo = util.getActivityStatus(activity);
+    if (statusInfo.id !== 'ended') {
+      return { code: 400, data: null, message: '活动结束后方可关联回顾文章' };
+    }
+
+    if (!activity.reviewArticleIds) {
+      activity.reviewArticleIds = [];
+    }
+    if (!activity.reviewArticleIds.includes(articleId)) {
+      activity.reviewArticleIds.push(articleId);
+    }
+    activities[activityIndex] = activity;
+    wx.setStorageSync('activities', activities);
+
+    return { code: 200, data: activity, message: '关联成功' };
+  },
+
+  unlinkReviewArticle: async (activityId, articleId) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!activityId) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const activities = wx.getStorageSync('activities') || [];
+    const activityIndex = activities.findIndex(item => item.id === activityId);
+    if (activityIndex === -1) {
+      return { code: 404, data: null, message: '活动不存在' };
+    }
+
+    const activity = activities[activityIndex];
+    if (activity.authorId !== userId) {
+      return { code: 403, data: null, message: '仅活动发布者可取消关联回顾文章' };
+    }
+
+    if (activity.reviewArticleIds) {
+      const idx = activity.reviewArticleIds.indexOf(articleId);
+      if (idx > -1) {
+        activity.reviewArticleIds.splice(idx, 1);
+      }
+    }
+    activities[activityIndex] = activity;
+    wx.setStorageSync('activities', activities);
+
+    return { code: 200, data: activity, message: '取消关联成功' };
+  },
+
+  getMyPublishedActivities: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    let activities = wx.getStorageSync('activities') || [];
+    activities = activities.filter(item => item.authorId === userId);
+    activities.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+    const list = activities.map(item => ({
+      ...item,
+      typeName: util.getActivityTypeName(item.type),
+      typeIcon: util.getActivityTypeIcon(item.type),
+      statusInfo: util.getActivityStatus(item)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total: list.length },
+      message: 'success'
+    };
   }
 };
 
@@ -1587,6 +1992,139 @@ const remoteApi = {
       url: '/api/notification/create',
       method: 'POST',
       data
+    });
+  },
+
+  getActivityTypes: async () => {
+    return request({
+      url: '/api/activity/types',
+      method: 'GET'
+    });
+  },
+
+  getActivityList: async (params = {}) => {
+    const { type = 'all', status = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    return request({
+      url: '/api/activity/list',
+      method: 'GET',
+      data: { type, status, page, pageSize, keyword }
+    });
+  },
+
+  getActivityDetail: async (id) => {
+    if (!id) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+    return request({
+      url: `/api/activity/detail/${id}`,
+      method: 'GET'
+    });
+  },
+
+  createActivity: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/activity/create',
+      method: 'POST',
+      data: { ...data, authorId: userId }
+    });
+  },
+
+  registerActivity: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/activity/register/${id}`,
+      method: 'POST',
+      data: { userId }
+    });
+  },
+
+  cancelRegistration: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/activity/cancel/${id}`,
+      method: 'POST',
+      data: { userId }
+    });
+  },
+
+  getMyActivities: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/activity/my',
+      method: 'GET',
+      data: { userId }
+    });
+  },
+
+  checkActivityRegistration: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/activity/check/${id}`,
+      method: 'GET',
+      data: { userId }
+    });
+  },
+
+  linkReviewArticle: async (activityId, articleId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!activityId) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+    return request({
+      url: '/api/activity/link-article',
+      method: 'POST',
+      data: { activityId, articleId }
+    });
+  },
+
+  unlinkReviewArticle: async (activityId, articleId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!activityId) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+    return request({
+      url: '/api/activity/unlink-article',
+      method: 'POST',
+      data: { activityId, articleId }
+    });
+  },
+
+  getMyPublishedActivities: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/activity/published',
+      method: 'GET',
+      data: { userId }
     });
   }
 };

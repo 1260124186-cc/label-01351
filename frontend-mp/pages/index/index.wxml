@@ -47,12 +47,12 @@
       <text class="entry-name">银龄人物</text>
       <text class="entry-desc">传承故事</text>
     </view>
-    <view class="entry-item" bindtap="goToPublish">
-      <view class="entry-icon-wrap icon-publish">
-        <text class="entry-icon">✍️</text>
+    <view class="entry-item" bindtap="goToActivities">
+      <view class="entry-icon-wrap icon-activity">
+        <text class="entry-icon">🎭</text>
       </view>
-      <text class="entry-name">投稿分享</text>
-      <text class="entry-desc">记录传承</text>
+      <text class="entry-name">文化活动</text>
+      <text class="entry-desc">志愿招募</text>
     </view>
   </view>
 

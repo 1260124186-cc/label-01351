@@ -1,0 +1,142 @@
+<view class="page-container">
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">👤</text>
+      <text class="login-text">登录后查看我的活动</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <block wx:else>
+    <view class="tab-bar">
+      <view
+        class="tab-item {{currentTab === item.id ? 'active' : ''}}"
+        wx:for="{{tabList}}"
+        wx:key="id"
+        bindtap="onTabChange"
+        data-id="{{item.id}}"
+      >
+        <text class="tab-icon">{{item.icon}}</text>
+        <text class="tab-name">{{item.name}}</text>
+      </view>
+    </view>
+
+    <view class="tab-content">
+      <view wx:if="{{currentTab === 'registered'}}">
+        <view class="loading-wrap" wx:if="{{loading && registeredList.length === 0}}">
+          <view class="loading-spinner"></view>
+          <text class="loading-text">加载中...</text>
+        </view>
+
+        <view class="empty-wrap" wx:elif="{{!loading && registeredList.length === 0}}">
+          <text class="empty-icon">🎭</text>
+          <text class="empty-text">暂无报名活动</text>
+          <text class="empty-hint">快去看看有什么精彩活动吧</text>
+        </view>
+
+        <view
+          class="activity-card"
+          wx:for="{{registeredList}}"
+          wx:key="id"
+        >
+          <view class="card-content" bindtap="goToDetail" data-id="{{item.id}}">
+            <view class="card-header type-{{item.type}}">
+              <text class="header-icon">{{item.typeIcon}}</text>
+              <view class="header-info">
+                <view class="header-type">{{item.typeName}}</view>
+                <view class="header-status" style="color: {{item.statusInfo.color}};">
+                  {{item.statusInfo.name}}
+                </view>
+              </view>
+            </view>
+            <view class="card-title">{{item.title}}</view>
+            <view class="card-info">
+              <view class="info-item">
+                <text class="info-icon">🕐</text>
+                <text class="info-text">{{item.timeDisplay}}</text>
+              </view>
+              <view class="info-item">
+                <text class="info-icon">📍</text>
+                <text class="info-text">{{item.location}}</text>
+              </view>
+            </view>
+            <view class="register-time">报名时间：{{item.registerTime}}</view>
+          </view>
+          <view class="card-footer">
+            <button
+              class="btn-cancel"
+              wx:if="{{item.canCancel}}"
+              catchtap="onCancelRegistration"
+              data-id="{{item.id}}"
+            >
+              取消报名
+            </button>
+            <view class="register-tag" wx:elif="{{item.statusInfo.id === 'ended'}}">
+              活动已结束
+            </view>
+            <view class="register-tag success" wx:else>
+              已报名
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{currentTab === 'published'}}">
+        <view class="publish-header">
+          <text class="publish-hint">发布活动让更多人参与</text>
+          <view class="btn-publish" bindtap="goToPublish">
+            <text class="publish-icon">➕</text>
+            <text class="publish-text">发布活动</text>
+          </view>
+        </view>
+
+        <view class="loading-wrap" wx:if="{{loading && publishedList.length === 0}}">
+          <view class="loading-spinner"></view>
+          <text class="loading-text">加载中...</text>
+        </view>
+
+        <view class="empty-wrap" wx:elif="{{!loading && publishedList.length === 0}}">
+          <text class="empty-icon">📝</text>
+          <text class="empty-text">暂无发布活动</text>
+          <text class="empty-hint">点击右上角发布您的第一个活动</text>
+        </view>
+
+        <view
+          class="activity-card"
+          wx:for="{{publishedList}}"
+          wx:key="id"
+          bindtap="goToDetail"
+          data-id="{{item.id}}"
+        >
+          <view class="card-content">
+            <view class="card-header type-{{item.type}}">
+              <text class="header-icon">{{item.typeIcon}}</text>
+              <view class="header-info">
+                <view class="header-type">{{item.typeName}}</view>
+                <view class="header-status" style="color: {{item.statusInfo.color}};">
+                  {{item.statusInfo.name}}
+                </view>
+              </view>
+            </view>
+            <view class="card-title">{{item.title}}</view>
+            <view class="card-info">
+              <view class="info-item">
+                <text class="info-icon">🕐</text>
+                <text class="info-text">{{item.timeDisplay}}</text>
+              </view>
+              <view class="info-item">
+                <text class="info-icon">📍</text>
+                <text class="info-text">{{item.location}}</text>
+              </view>
+              <view class="info-item">
+                <text class="info-icon">👥</text>
+                <text class="info-text">{{item.registeredCount}}/{{item.maxParticipants}}人已报名</text>
+              </view>
+            </view>
+            <view class="register-time">发布时间：{{item.createTime}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>
