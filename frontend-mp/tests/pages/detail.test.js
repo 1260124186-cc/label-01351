@@ -49,14 +49,37 @@ describe('Detail 文章详情页', () => {
   });
 
   describe('onLoad', () => {
-    test('接收文章 ID 参数', () => {
-      page.onLoad({ id: 'article_001' });
+    test('接收文章 ID 参数并加载详情', async () => {
+      page.loadArticleDetail = jest.fn();
+      await page.onLoad({ id: 'article_001' });
       expect(page.data.articleId).toBe('article_001');
+      expect(page.loadArticleDetail).toHaveBeenCalledWith('article_001');
     });
 
-    test('无 ID 参数时 articleId 保持为空', () => {
-      page.onLoad({});
+    test('无 ID 参数时 articleId 保持为空且不加载', async () => {
+      page.loadArticleDetail = jest.fn();
+      await page.onLoad({});
       expect(page.data.articleId).toBe('');
+      expect(page.loadArticleDetail).not.toHaveBeenCalled();
+    });
+
+    test('未登录用户也能在 onLoad 时加载文章详情', async () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      page.onLoad({ id: 'article_001' });
+      await page.loadArticleDetail('article_001');
+      expect(page.data.article).not.toBeNull();
+      expect(page.data.article.id).toBe('article_001');
+      expect(page.data.loading).toBe(false);
+    });
+
+    test('未登录加载详情时 viewCount 仍然增加', async () => {
+      global.getApp = jest.fn(() => createMockApp(false));
+      const articlesBefore = JSON.parse(JSON.stringify(wx.getStorageSync('articles')));
+      const beforeView = articlesBefore.find(a => a.id === 'article_001').viewCount || 0;
+      await page.loadArticleDetail('article_001');
+      const articlesAfter = wx.getStorageSync('articles');
+      const afterView = articlesAfter.find(a => a.id === 'article_001').viewCount;
+      expect(afterView).toBe(beforeView + 1);
     });
   });
 
@@ -379,6 +402,22 @@ describe('Detail 文章详情页', () => {
     test('无文章时返回空对象', () => {
       page.data.article = null;
       const shareInfo = page.onShareAppMessage();
+      expect(shareInfo).toEqual({});
+    });
+  });
+
+  describe('onShareTimeline', () => {
+    test('有文章时返回朋友圈分享信息', () => {
+      const articles = wx.getStorageSync('articles');
+      page.data.article = articles.find(a => a.id === 'article_001');
+      const shareInfo = page.onShareTimeline();
+      expect(shareInfo.title).toBe(page.data.article.title);
+      expect(shareInfo.query).toContain('id=article_001');
+    });
+
+    test('无文章时返回空对象', () => {
+      page.data.article = null;
+      const shareInfo = page.onShareTimeline();
       expect(shareInfo).toEqual({});
     });
   });

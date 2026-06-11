@@ -1,86 +1,75 @@
 <!--pages/detail/detail.wxml-->
 <view class="page-container">
-  <!-- 未登录状态 -->
-  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
-    <view class="login-card">
-      <text class="login-icon">👤</text>
-      <text class="login-text">登录后查看文章详情</text>
-      <button class="btn-login" bindtap="goToLogin">立即登录</button>
-    </view>
+  <!-- 加载状态 -->
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
   </view>
 
-  <!-- 已登录状态 -->
-  <block wx:else>
-    <!-- 加载状态 -->
-    <view class="loading-wrap" wx:if="{{loading}}">
-      <view class="loading-spinner"></view>
-      <text class="loading-text">加载中...</text>
+  <!-- 文章内容 -->
+  <view class="article-wrap" wx:elif="{{article}}">
+    <!-- 分类标签 -->
+    <view class="article-category tag-{{article.category}}">
+      {{article.categoryName}}
     </view>
 
-    <!-- 文章内容 -->
-    <view class="article-wrap" wx:elif="{{article}}">
-      <!-- 分类标签 -->
-      <view class="article-category tag-{{article.category}}">
-        {{article.categoryName}}
+    <!-- 标题 -->
+    <view class="article-title">{{article.title}}</view>
+
+    <!-- 标签列表 -->
+    <view class="article-tags" wx:if="{{article.tags && article.tags.length > 0}}">
+      <view
+        class="article-tag-item"
+        wx:for="{{article.tags}}"
+        wx:key="*this"
+        wx:for-item="tag"
+        bindtap="onTagClick"
+        data-tag="{{tag}}"
+      >
+        <text>#{{tag}}</text>
       </view>
+    </view>
 
-      <!-- 标题 -->
-      <view class="article-title">{{article.title}}</view>
+    <!-- 摘要 -->
+    <view class="article-summary" wx:if="{{article.summary}}">
+      <text class="summary-label">摘要：</text>
+      <text class="summary-text">{{article.summary}}</text>
+    </view>
 
-      <!-- 标签列表 -->
-      <view class="article-tags" wx:if="{{article.tags && article.tags.length > 0}}">
-        <view
-          class="article-tag-item"
-          wx:for="{{article.tags}}"
-          wx:key="*this"
-          wx:for-item="tag"
-          bindtap="onTagClick"
-          data-tag="{{tag}}"
-        >
-          <text>#{{tag}}</text>
+    <!-- 作者信息 -->
+    <view class="article-meta">
+      <view class="meta-author clickable" bindtap="goToAuthorHome" data-authorid="{{article.authorId}}">
+        <view class="author-avatar">
+          <text class="avatar-text">{{article.authorName[0]}}</text>
         </view>
+        <text class="author-name author-link">{{article.authorName}}</text>
+        <text class="author-arrow">›</text>
       </view>
+      <text class="meta-date">{{article.createTime}}</text>
+    </view>
 
-      <!-- 摘要 -->
-      <view class="article-summary" wx:if="{{article.summary}}">
-        <text class="summary-label">摘要：</text>
-        <text class="summary-text">{{article.summary}}</text>
+    <!-- 文章正文 -->
+    <view class="article-content">{{article.content}}</view>
+
+    <!-- 文章统计 -->
+    <view class="article-stats-section">
+      <view class="stat-item">
+        <text class="stat-icon">👁</text>
+        <text class="stat-value">{{article.viewCount}} 阅读</text>
       </view>
-
-      <!-- 作者信息 -->
-      <view class="article-meta">
-        <view class="meta-author clickable" bindtap="goToAuthorHome" data-authorid="{{article.authorId}}">
-          <view class="author-avatar">
-            <text class="avatar-text">{{article.authorName[0]}}</text>
-          </view>
-          <text class="author-name author-link">{{article.authorName}}</text>
-          <text class="author-arrow">›</text>
-        </view>
-        <text class="meta-date">{{article.createTime}}</text>
+      <view class="stat-item">
+        <text class="stat-icon">👍</text>
+        <text class="stat-value">{{article.likeCount}} 点赞</text>
       </view>
-
-      <!-- 文章正文 -->
-      <view class="article-content">{{article.content}}</view>
-
-      <!-- 文章统计 -->
-      <view class="article-stats-section">
-        <view class="stat-item">
-          <text class="stat-icon">👁</text>
-          <text class="stat-value">{{article.viewCount}} 阅读</text>
-        </view>
-        <view class="stat-item">
-          <text class="stat-icon">👍</text>
-          <text class="stat-value">{{article.likeCount}} 点赞</text>
-        </view>
-        <view class="stat-item">
-          <text class="stat-icon">💬</text>
-          <text class="stat-value">{{article.commentCount || 0}} 评论</text>
-        </view>
-        <view class="stat-item report-action" bindtap="onReportTap">
-          <text class="stat-icon">🚨</text>
-          <text class="stat-value">举报</text>
-        </view>
+      <view class="stat-item">
+        <text class="stat-icon">💬</text>
+        <text class="stat-value">{{article.commentCount || 0}} 评论</text>
       </view>
+      <view class="stat-item report-action" bindtap="onReportTap">
+        <text class="stat-icon">🚨</text>
+        <text class="stat-value">举报</text>
+      </view>
+    </view>
 
       <!-- 评论区 -->
       <view class="comment-section">
@@ -173,72 +162,83 @@
         </view>
       </view>
 
-      <!-- 底部占位 -->
-      <view class="bottom-placeholder"></view>
-    </view>
+    <!-- 底部占位 -->
+    <view class="bottom-placeholder"></view>
+  </view>
 
-    <!-- 错误状态 -->
-    <view class="error-wrap" wx:else>
-      <text class="error-icon">😕</text>
-      <text class="error-text">文章不存在或已删除</text>
-      <button class="btn-back" bindtap="goBack">返回首页</button>
-    </view>
+  <!-- 错误状态 -->
+  <view class="error-wrap" wx:else>
+    <text class="error-icon">😕</text>
+    <text class="error-text">文章不存在或已删除</text>
+    <button class="btn-back" bindtap="goBack">返回首页</button>
+  </view>
 
-    <!-- 举报弹窗 -->
-    <view class="report-modal {{showReportModal ? 'show' : ''}}">
-      <view class="report-mask" bindtap="onCloseReport"></view>
-      <view class="report-content">
-        <view class="report-header">
-          <text class="report-title">举报内容</text>
-          <view class="report-close" bindtap="onCloseReport">✕</view>
-        </view>
-        <view class="report-body">
-          <view class="report-options">
-            <view class="report-option {{reportReason === 'illegal' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="illegal">
-              <view class="option-radio">
-                <view class="radio-inner"></view>
-              </view>
-              <text class="option-text">违法违规</text>
+  <!-- 举报弹窗 -->
+  <view class="report-modal {{showReportModal ? 'show' : ''}}">
+    <view class="report-mask" bindtap="onCloseReport"></view>
+    <view class="report-content">
+      <view class="report-header">
+        <text class="report-title">举报内容</text>
+        <view class="report-close" bindtap="onCloseReport">✕</view>
+      </view>
+      <view class="report-body">
+        <view class="report-options">
+          <view class="report-option {{reportReason === 'illegal' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="illegal">
+            <view class="option-radio">
+              <view class="radio-inner"></view>
             </view>
-            <view class="report-option {{reportReason === 'false' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="false">
-              <view class="option-radio">
-                <view class="radio-inner"></view>
-              </view>
-              <text class="option-text">虚假信息</text>
-            </view>
-            <view class="report-option {{reportReason === 'infringement' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="infringement">
-              <view class="option-radio">
-                <view class="radio-inner"></view>
-              </view>
-              <text class="option-text">侵权</text>
-            </view>
-            <view class="report-option {{reportReason === 'other' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="other">
-              <view class="option-radio">
-                <view class="radio-inner"></view>
-              </view>
-              <text class="option-text">其他</text>
-            </view>
+            <text class="option-text">违法违规</text>
           </view>
-          <view class="report-desc-wrap">
-            <textarea
-              class="report-desc"
-              placeholder="补充说明（选填）"
-              value="{{reportDescription}}"
-              bindinput="onReportDescInput"
-              maxlength="200"
-            />
-            <text class="report-desc-count">{{reportDescription.length}}/200</text>
+          <view class="report-option {{reportReason === 'false' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="false">
+            <view class="option-radio">
+              <view class="radio-inner"></view>
+            </view>
+            <text class="option-text">虚假信息</text>
+          </view>
+          <view class="report-option {{reportReason === 'infringement' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="infringement">
+            <view class="option-radio">
+              <view class="radio-inner"></view>
+            </view>
+            <text class="option-text">侵权</text>
+          </view>
+          <view class="report-option {{reportReason === 'other' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="other">
+            <view class="option-radio">
+              <view class="radio-inner"></view>
+            </view>
+            <text class="option-text">其他</text>
           </view>
         </view>
-        <view class="report-footer">
-          <button class="btn-report-cancel" bindtap="onCloseReport">取消</button>
-          <button class="btn-report-submit" bindtap="onSubmitReport" disabled="{{!reportReason}}">提交举报</button>
+        <view class="report-desc-wrap">
+          <textarea
+            class="report-desc"
+            placeholder="补充说明（选填）"
+            value="{{reportDescription}}"
+            bindinput="onReportDescInput"
+            maxlength="200"
+          />
+          <text class="report-desc-count">{{reportDescription.length}}/200</text>
         </view>
       </view>
+      <view class="report-footer">
+        <button class="btn-report-cancel" bindtap="onCloseReport">取消</button>
+        <button class="btn-report-submit" bindtap="onSubmitReport" disabled="{{!reportReason}}">提交举报</button>
+      </view>
     </view>
+  </view>
 
-    <!-- 底部评论输入栏 -->
-    <view class="comment-input-bar">
+  <!-- 底部操作栏（已登录：点赞+收藏+评论输入） -->
+  <view class="bottom-action-bar" wx:if="{{article && isLoggedIn}}">
+    <view class="action-icons">
+      <view class="action-icon-item {{liked ? 'active' : ''}}" bindtap="onLike">
+        <text class="icon-emoji">{{liked ? '❤️' : '🤍'}}</text>
+        <text class="icon-label">{{article.likeCount || 0}}</text>
+      </view>
+      <view class="action-icon-item {{favorited ? 'active' : ''}}" bindtap="onFavorite">
+        <text class="icon-emoji">{{favorited ? '⭐' : '☆'}}</text>
+        <text class="icon-label">{{favorited ? '已收藏' : '收藏'}}</text>
+      </view>
+    </view>
+    <view class="comment-input-area">
       <view class="reply-info" wx:if="{{showReplyInput}}">
         <text class="reply-to-text">回复 {{replyToUserName}}</text>
         <view class="cancel-reply" bindtap="onCancelReply">✕</view>
@@ -259,5 +259,14 @@
         <button class="btn-send" bindtap="onSubmitComment" disabled="{{!commentContent.trim()}}">发送</button>
       </view>
     </view>
-  </block>
+  </view>
+
+  <!-- 底部操作栏（未登录：登录引导） -->
+  <view class="bottom-action-bar login-guide-bar" wx:if="{{article && !isLoggedIn}}">
+    <view class="login-guide-content">
+      <text class="guide-icon">🔒</text>
+      <text class="guide-text">登录后点赞 / 收藏 / 评论</text>
+    </view>
+    <button class="btn-guide-login" bindtap="goToLogin">去登录</button>
+  </view>
 </view>

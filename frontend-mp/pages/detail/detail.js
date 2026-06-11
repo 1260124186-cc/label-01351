@@ -28,13 +28,14 @@ Page({
   },
 
   /**
-   * 页面加载时获取文章ID
+   * 页面加载时获取文章ID并加载详情（开放浏览，无需登录）
    * @param {Object} options - 页面参数，包含文章ID
    */
   onLoad(options) {
     const { id } = options;
     if (id) {
       this.setData({ articleId: id });
+      this.loadArticleDetail(id);
     }
   },
 
@@ -45,6 +46,11 @@ Page({
 
     if (this.data.articleId && !this.data.article) {
       this.loadArticleDetail(this.data.articleId);
+    }
+
+    if (this.data.articleId && this.data.article && isLoggedIn) {
+      this.checkFavoriteStatus(this.data.articleId);
+      this.checkLikeStatus(this.data.articleId);
     }
   },
 
@@ -516,6 +522,16 @@ Page({
     return {
       title: article.title,
       path: `/pages/detail/detail?id=${article.id}`
+    };
+  },
+
+  onShareTimeline() {
+    const { article } = this.data;
+    if (!article) return {};
+
+    return {
+      title: article.title,
+      query: `id=${article.id}`
     };
   },
 
