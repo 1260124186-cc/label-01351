@@ -1,0 +1,287 @@
+.page-container {
+  min-height: 100vh;
+  background: #FFF8DC;
+  padding-bottom: 40rpx;
+}
+
+.header {
+  position: relative;
+  padding: 60rpx 40rpx 40rpx;
+  overflow: hidden;
+}
+
+.header-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 320rpx;
+  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  border-radius: 0 0 60rpx 60rpx;
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.header-title {
+  display: block;
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 12rpx;
+}
+
+.header-sub {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.stats-card {
+  margin: -40rpx 30rpx 0;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 36rpx 20rpx;
+  box-shadow: 0 8rpx 32rpx rgba(139, 69, 19, 0.12);
+  position: relative;
+  z-index: 2;
+}
+
+.stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.stat-num {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #8B4513;
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 6rpx;
+}
+
+.stat-divider {
+  width: 2rpx;
+  height: 60rpx;
+  background: #eee;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin: 40rpx 30rpx 24rpx;
+}
+
+.section-row {
+  display: flex;
+  gap: 20rpx;
+  padding: 0 30rpx;
+  margin-top: 8rpx;
+}
+
+.mode-card {
+  margin: 0 30rpx 20rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  border-left: 8rpx solid transparent;
+}
+
+.mode-card.daily { border-left-color: #FAAD14; }
+.mode-card.challenge { border-left-color: #1890FF; }
+.mode-card.timed { border-left-color: #F5222D; }
+
+.mode-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.mode-icon {
+  font-size: 56rpx;
+  margin-right: 24rpx;
+}
+
+.mode-info {
+  flex: 1;
+}
+
+.mode-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.mode-desc {
+  font-size: 24rpx;
+  color: #888;
+  line-height: 1.4;
+}
+
+.mode-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  margin-right: 10rpx;
+}
+
+.status-dot.todo { background: #FF7875; }
+.status-dot.done { background: #52C41A; }
+
+.status-text {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.mode-arrow {
+  font-size: 40rpx;
+  color: #ccc;
+  font-weight: 300;
+}
+
+.half-card {
+  flex: 1;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 32rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.half-icon {
+  font-size: 48rpx;
+  margin-bottom: 12rpx;
+}
+
+.half-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 6rpx;
+}
+
+.half-desc {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0 20rpx;
+}
+
+.cat-item {
+  width: calc(33.33% - 20rpx);
+  margin: 0 10rpx 20rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 28rpx 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.cat-icon {
+  font-size: 44rpx;
+  margin-bottom: 10rpx;
+}
+
+.cat-name {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 6rpx;
+}
+
+.cat-count {
+  font-size: 20rpx;
+  color: #999;
+}
+
+.cat-score-list {
+  padding: 0 30rpx;
+}
+
+.cat-score-item {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.cs-left {
+  display: flex;
+  align-items: center;
+  width: 200rpx;
+}
+
+.cs-icon {
+  font-size: 32rpx;
+  margin-right: 12rpx;
+}
+
+.cs-name {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.cs-bar {
+  flex: 1;
+  height: 16rpx;
+  background: #f5f5f5;
+  border-radius: 8rpx;
+  overflow: hidden;
+  margin: 0 20rpx;
+}
+
+.cs-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8B4513, #A0522D);
+  border-radius: 8rpx;
+  transition: width 0.3s;
+}
+
+.cs-score {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #8B4513;
+  width: 100rpx;
+  text-align: right;
+}
+
+.bottom-space {
+  height: 60rpx;
+}

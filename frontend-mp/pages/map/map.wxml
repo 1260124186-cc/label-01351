@@ -3,68 +3,68 @@
     <map
       id="map"
       class="map"
-      :latitude="latitude"
-      :longitude="longitude"
-      :markers="markers"
-      :scale="14"
-      :show-location="true"
-      @markertap="onMarkerTap"
-      @regionchange="onRegionChange"
+      latitude="{{latitude}}"
+      longitude="{{longitude}}"
+      markers="{{markers}}"
+      scale="14"
+      show-location="true"
+      bindmarkertap="onMarkerTap"
+      bindregionchange="onRegionChange"
     ></map>
     
-    <view class="filter-btn" @tap="toggleFilter">
+    <view class="filter-btn" bindtap="toggleFilter">
       <text class="filter-icon">🔍</text>
       <text class="filter-text">筛选</text>
     </view>
 
-    <view class="publish-btn" @tap="goToPublish">
+    <view class="publish-btn" bindtap="goToPublish">
       <text class="publish-icon">+</text>
     </view>
   </view>
 
-  <view class="filter-panel" v-if="showFilter">
+  <view class="filter-panel" wx:if="{{showFilter}}">
     <view class="filter-header">
       <text class="filter-title">选择分类</text>
-      <text class="close-btn" @tap="toggleFilter">✕</text>
+      <text class="close-btn" bindtap="toggleFilter">✕</text>
     </view>
     <scroll-view scroll-y class="filter-list">
       <view
-        v-for="cat in categories"
-        :key="cat.id"
-        class="filter-item"
-        :class="{ active: selectedCategory === cat.id }"
-        :data-id="cat.id"
-        @tap="onCategorySelect"
+        wx:for="{{categories}}"
+        wx:key="id"
+        class="filter-item {{selectedCategory === item.id ? 'active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onCategorySelect"
       >
-        <text class="cat-icon">{{ cat.icon }}</text>
-        <text class="cat-name">{{ cat.name }}</text>
+        <text class="cat-icon">{{ item.icon }}</text>
+        <text class="cat-name">{{ item.name }}</text>
       </view>
     </scroll-view>
   </view>
 
-  <view class="landmark-list" v-if="!showFilter">
+  <view class="landmark-list" wx:if="{{!showFilter}}">
     <view class="list-header">
       <text class="list-title">文化地标</text>
       <text class="list-count">{{ landmarkList.length }}个</text>
     </view>
     <scroll-view scroll-y class="list-content">
       <view
-        v-for="landmark in landmarkList"
-        :key="landmark.id"
+        wx:for="{{landmarkList}}"
+        wx:key="id"
         class="landmark-card"
-        @tap="goToDetail(landmark.id)"
+        data-id="{{item.id}}"
+        bindtap="goToDetail"
       >
-        <image class="landmark-cover" :src="landmark.cover || '/assets/icons/home.png'" mode="aspectFill" />
+        <image class="landmark-cover" src="{{item.cover || '/assets/icons/home.png'}}" mode="aspectFill" />
         <view class="landmark-info">
-          <view class="landmark-name">{{ landmark.name }}</view>
-          <view class="landmark-category">{{ getCategoryName(landmark.category) }}</view>
-          <view class="landmark-desc">{{ landmark.description }}</view>
+          <view class="landmark-name">{{ item.name }}</view>
+          <view class="landmark-category">{{ getCategoryName(item.category) }}</view>
+          <view class="landmark-desc">{{ item.description }}</view>
           <view class="landmark-meta">
-            <text class="meta-item">📍 {{ landmark.address }}</text>
+            <text class="meta-item">📍 {{ item.address }}</text>
           </view>
         </view>
       </view>
-      <view v-if="landmarkList.length === 0" class="empty-state">
+      <view wx:if="{{landmarkList.length === 0}}" class="empty-state">
         <text class="empty-icon">🗺️</text>
         <text class="empty-text">暂无地标数据</text>
       </view>

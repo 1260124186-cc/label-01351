@@ -164,6 +164,209 @@ const defaultTopics = [
   }
 ];
 
+const defaultQuizzes = [
+  {
+    id: 'quiz_001',
+    question: '端午节是为了纪念哪位历史人物？',
+    options: ['伍子胥', '屈原', '李白', '孔子'],
+    answer: 1,
+    analysis: '端午节最广泛的传说是纪念楚国诗人屈原。屈原在五月初五投汨罗江自尽，百姓为了防止鱼虾伤害他的身体，便划船寻找、投放粽子，逐渐演变为今天的端午习俗。',
+    category: 'folklore',
+    difficulty: 'easy',
+    relatedArticleIds: ['article_004']
+  },
+  {
+    id: 'quiz_002',
+    question: '"春雨惊春清谷天"一句中，"清"指的是哪个节气？',
+    options: ['清凉', '清明', '清澈', '清秋'],
+    answer: 1,
+    analysis: '二十四节气中，"春雨惊春清谷天"指立春、雨水、惊蛰、春分、清明、谷雨。其中"清"即清明节，是祭祖扫墓和踏青的重要节日。',
+    category: 'agriculture',
+    difficulty: 'easy',
+    relatedArticleIds: ['article_005']
+  },
+  {
+    id: 'quiz_003',
+    question: '传统苏绣中，最具代表性的针法是？',
+    options: ['平针绣', '打籽绣', '乱针绣', '滚针绣'],
+    answer: 0,
+    analysis: '平针绣是苏绣最基础也是最具代表性的针法，以针脚排列整齐、色彩过渡自然著称。苏绣讲究"平、光、齐、匀、和、顺、细、密"八字特点。',
+    category: 'craft',
+    difficulty: 'medium',
+    relatedArticleIds: ['article_002']
+  },
+  {
+    id: 'quiz_004',
+    question: '"三顾茅庐"讲述的是哪位历史人物的故事？',
+    options: ['项羽请范增', '刘备请诸葛亮', '曹操请郭嘉', '孙权请周瑜'],
+    answer: 1,
+    analysis: '三顾茅庐讲的是东汉末年刘备三次前往隆中拜访诸葛亮，请其出山辅佐的故事。出自《三国志》，后成为尊重人才、诚心求贤的典故。',
+    category: 'history',
+    difficulty: 'easy',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_005',
+    question: '中国古典四大名著中，以宋代农民起义为题材的是？',
+    options: ['西游记', '红楼梦', '水浒传', '三国演义'],
+    answer: 2,
+    analysis: '《水浒传》是元末明初施耐庵所著，以北宋末年宋江领导的农民起义为题材，塑造了林冲、武松、鲁智深等108位梁山好汉的形象。',
+    category: 'literature',
+    difficulty: 'easy',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_006',
+    question: '以下哪种传统食物是北方春节必备的？',
+    options: ['月饼', '饺子', '汤圆', '粽子'],
+    answer: 1,
+    analysis: '饺子是北方春节必备的传统食物，取"更岁交子"之意，象征新旧交替、团圆美满。除夕夜吃饺子，寓意招财进宝、吉祥如意。',
+    category: 'food',
+    difficulty: 'easy',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_007',
+    question: '"爆竹声中一岁除"描写的是哪个节日的场景？',
+    options: ['元宵节', '端午节', '春节', '中秋节'],
+    answer: 2,
+    analysis: '这是北宋王安石《元日》中的名句，全诗为"爆竹声中一岁除，春风送暖入屠苏。千门万户曈曈日，总把新桃换旧符。"生动描绘了宋代春节的热闹景象。',
+    category: 'folklore',
+    difficulty: 'easy',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_008',
+    question: '"小满"节气在农业生产中主要指？',
+    options: ['小麦等夏熟作物籽粒开始饱满', '雨水充足江河满溢', '播种的最佳时节', '收获的季节'],
+    answer: 0,
+    analysis: '小满是夏季第二个节气，此时北方麦类等夏熟作物的籽粒开始灌浆饱满，但尚未成熟，所以叫小满。农谚有"小满不满，麦有一险"之说。',
+    category: 'agriculture',
+    difficulty: 'medium',
+    relatedArticleIds: ['article_005']
+  },
+  {
+    id: 'quiz_009',
+    question: '榫卯结构主要应用于传统的什么工艺？',
+    options: ['陶瓷制作', '木作建筑', '丝绸纺织', '金属锻造'],
+    answer: 1,
+    analysis: '榫卯是古代中国木结构建筑、家具和器械的主要结构方式，通过凹凸部分的咬合实现连接，不用一颗钉子却能做到极其牢固，体现了中华智慧。',
+    category: 'craft',
+    difficulty: 'medium',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_010',
+    question: '"破釜沉舟"与下列哪场战役有关？',
+    options: ['赤壁之战', '巨鹿之战', '官渡之战', '淝水之战'],
+    answer: 1,
+    analysis: '破釜沉舟出自《史记·项羽本纪》，讲的是项羽在巨鹿之战中，下令打破做饭的锅、凿沉渡河的船，以示决一死战的决心，最终大败秦军。',
+    category: 'history',
+    difficulty: 'hard',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_011',
+    question: '"春蚕到死丝方尽"的下一句是？',
+    options: ['蜡炬成灰泪始干', '何当共剪西窗烛', '身无彩凤双飞翼', '心有灵犀一点通'],
+    answer: 0,
+    analysis: '这是晚唐诗人李商隐《无题·相见时难别亦难》中的名句。全诗表达了深沉缠绵的爱情与离别之苦，"春蚕到死丝方尽，蜡炬成灰泪始干"常被用来比喻无私奉献的精神。',
+    category: 'literature',
+    difficulty: 'medium',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_012',
+    question: '中国传统饮茶方式中，功夫茶起源于？',
+    options: ['四川', '福建广东', '浙江', '云南'],
+    answer: 1,
+    analysis: '功夫茶起源于宋代，盛行于广东潮汕和福建闽南地区，讲究器具精良、泡茶程序精细，是中国茶艺的代表之一，尤以乌龙茶类的冲泡最为讲究。',
+    category: 'food',
+    difficulty: 'medium',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_013',
+    question: '舞龙舞狮主要在哪个节日表演最盛行？',
+    options: ['重阳节', '中秋节', '春节', '端午节'],
+    answer: 2,
+    analysis: '舞龙舞狮是春节期间最盛行的民间表演，象征吉祥如意、驱邪纳福。龙代表祥瑞，狮象征威武，祈求新的一年风调雨顺、国泰民安。',
+    category: 'folklore',
+    difficulty: 'easy',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_014',
+    question: '梯田耕作主要是为了解决什么问题？',
+    options: ['美化风景', '蓄水保土', '便于灌溉', '提高温度'],
+    answer: 1,
+    analysis: '梯田是在丘陵山坡地上沿等高线修筑的阶梯式农田，主要作用是蓄水保土，防止水土流失，同时扩大耕地面积，是山区农民智慧的结晶。著名的有广西龙脊梯田、云南元阳梯田等。',
+    category: 'agriculture',
+    difficulty: 'medium',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_015',
+    question: '景德镇最为著名的传统工艺是？',
+    options: ['刺绣', '瓷器', '剪纸', '木雕'],
+    answer: 1,
+    analysis: '景德镇是中国四大名镇之一，被誉为"瓷都"，有2000多年的制瓷历史。青花瓷、粉彩瓷、玲珑瓷、颜色釉瓷是景德镇四大传统名瓷。',
+    category: 'craft',
+    difficulty: 'easy',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_016',
+    question: '"卧薪尝胆"讲述的是谁的故事？',
+    options: ['吴王夫差', '越王勾践', '齐桓公', '晋文公'],
+    answer: 1,
+    analysis: '卧薪尝胆讲的是春秋时期越王勾践被吴王夫差打败后，睡在柴草上，每天尝一尝苦胆，立志发愤图强，最终复国成功的故事，体现了坚韧不拔的精神。',
+    category: 'history',
+    difficulty: 'medium',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_017',
+    question: '我国古代最早的诗歌总集是？',
+    options: ['楚辞', '诗经', '乐府诗集', '唐诗三百首'],
+    answer: 1,
+    analysis: '《诗经》是中国古代最早的诗歌总集，收录了西周初年至春秋中叶约500年间的诗歌305篇，分为风、雅、颂三大部分，奠定了中国古典诗歌的基础。',
+    category: 'literature',
+    difficulty: 'medium',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_018',
+    question: '北京烤鸭使用的传统烤炉是？',
+    options: ['挂炉', '焖炉', '铁板炉', '石炉'],
+    answer: 0,
+    analysis: '北京烤鸭最传统的是挂炉烤鸭，以果木为燃料，明火炙烤，皮脆肉嫩，油而不腻。全聚德以挂炉著称，便宜坊则以焖炉闻名，两者各具特色。',
+    category: 'food',
+    difficulty: 'hard',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_019',
+    question: '重阳节的主要习俗不包括？',
+    options: ['登高远眺', '插茱萸', '赏菊花', '赛龙舟'],
+    answer: 3,
+    analysis: '重阳节在农历九月初九，习俗包括登高远眺、插茱萸、赏菊花、饮菊花酒、吃重阳糕等。赛龙舟是端午节的主要习俗，不是重阳节的。',
+    category: 'folklore',
+    difficulty: 'medium',
+    relatedArticleIds: []
+  },
+  {
+    id: 'quiz_020',
+    question: '"稻花香里说丰年，听取蛙声一片"出自哪位词人？',
+    options: ['苏轼', '辛弃疾', '李清照', '陆游'],
+    answer: 1,
+    analysis: '这句出自南宋词人辛弃疾的《西江月·夜行黄沙道中》，描写了乡村夏夜的幽美景色和丰收的喜悦，全词洋溢着浓郁的乡土气息。',
+    category: 'literature',
+    difficulty: 'hard',
+    relatedArticleIds: []
+  }
+];
+
 const defaultEncyclopedias = [
   {
     id: 'encyclopedia_001',
@@ -318,6 +521,26 @@ function initStorage(overrides = {}) {
   } else {
     wx.setStorageSync('activityRegistrations', {});
   }
+  if (overrides.quizzes) {
+    wx.setStorageSync('quizzes', overrides.quizzes);
+  } else {
+    wx.setStorageSync('quizzes', JSON.parse(JSON.stringify(defaultQuizzes)));
+  }
+  if (overrides.quizStats) {
+    wx.setStorageSync('quizStats', overrides.quizStats);
+  } else {
+    wx.setStorageSync('quizStats', {});
+  }
+  if (overrides.quizScores) {
+    wx.setStorageSync('quizScores', overrides.quizScores);
+  } else {
+    wx.setStorageSync('quizScores', {});
+  }
+  if (overrides.wrongQuizzes) {
+    wx.setStorageSync('wrongQuizzes', overrides.wrongQuizzes);
+  } else {
+    wx.setStorageSync('wrongQuizzes', {});
+  }
 }
 
 function mergeBehaviors(pageDef) {
@@ -419,6 +642,7 @@ module.exports = {
   defaultTopics,
   defaultEncyclopedias,
   defaultActivities,
+  defaultQuizzes,
   initStorage,
   createPageInstance
 };

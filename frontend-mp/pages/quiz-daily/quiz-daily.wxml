@@ -1,0 +1,92 @@
+<view class="page-container">
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:elif="{{quiz}}">
+    <view class="quiz-header">
+      <view class="header-badge">
+        <text class="badge-icon">☀️</text>
+        <text class="badge-text">每日一题</text>
+      </view>
+      <view class="quiz-meta">
+        <view class="meta-tag cat-{{quiz.category}}">
+          <text class="meta-icon">{{quiz.categoryInfo.icon}}</text>
+          <text class="meta-name">{{quiz.categoryInfo.name}}</text>
+        </view>
+        <view class="meta-tag diff-{{quiz.difficulty}}">
+          <text class="diff-level">{{quiz.difficultyInfo.name}}</text>
+          <text class="diff-score">+{{quiz.difficultyInfo.score}}分</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="question-card">
+      <text class="question-text">{{quiz.question}}</text>
+    </view>
+
+    <view class="options-list">
+      <view
+        class="option-item {{selectedAnswer === index ? 'selected' : ''}} {{showResult && index === correctAnswer ? 'correct' : ''}} {{showResult && selectedAnswer === index && index !== correctAnswer ? 'wrong' : ''}}"
+        wx:for="{{quiz.options}}"
+        wx:key="index"
+        bindtap="onSelectAnswer"
+        data-index="{{index}}"
+      >
+        <view class="option-radio">
+          <view class="radio-inner">{{index === 0 ? 'A' : index === 1 ? 'B' : index === 2 ? 'C' : 'D'}}</view>
+        </view>
+        <text class="option-text">{{item}}</text>
+        <text class="option-icon" wx:if="{{showResult && index === correctAnswer}}">✓</text>
+        <text class="option-icon wrong" wx:if="{{showResult && selectedAnswer === index && index !== correctAnswer}}">✕</text>
+      </view>
+    </view>
+
+    <view class="result-card" wx:if="{{showResult}}">
+      <view class="result-header {{isCorrect ? 'correct' : 'wrong'}}">
+        <text class="result-icon">{{isCorrect ? '🎉' : '😢'}}</text>
+        <view class="result-info">
+          <text class="result-title">{{isCorrect ? '回答正确！' : '回答错误'}}</text>
+          <text class="result-sub" wx:if="{{isCorrect}}">获得 {{score}} 积分</text>
+        </view>
+      </view>
+      <view class="analysis-box">
+        <text class="analysis-title">📖 题目解析</text>
+        <text class="analysis-text">{{analysis}}</text>
+      </view>
+      <view class="related-box" wx:if="{{relatedArticles && relatedArticles.length > 0}}">
+        <text class="related-title">🔗 相关文章</text>
+        <view
+          class="related-item"
+          wx:for="{{relatedArticles}}"
+          wx:key="id"
+          bindtap="goArticle"
+          data-id="{{item.id}}"
+        >
+          <text class="related-icon">📄</text>
+          <view class="related-info">
+            <text class="related-name">{{item.title}}</text>
+            <text class="related-cat">{{item.categoryName}}</text>
+          </view>
+          <text class="related-arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="submit-bar" wx:if="{{!showResult}}">
+      <button
+        class="submit-btn {{selectedAnswer === null ? 'disabled' : ''}}"
+        bindtap="onSubmit"
+        disabled="{{selectedAnswer === null || submitting}}"
+      >
+        {{submitting ? '提交中...' : '提交答案'}}
+      </button>
+    </view>
+  </block>
+
+  <view class="empty-wrap" wx:else>
+    <text class="empty-icon">📭</text>
+    <text class="empty-text">暂无题目</text>
+  </view>
+</view>

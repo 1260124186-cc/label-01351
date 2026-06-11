@@ -1,0 +1,97 @@
+<view class="page-container">
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">准备中...</text>
+  </view>
+
+  <block wx:elif="{{!showResult}}">
+    <view class="timed-header">
+      <view class="time-display {{remaining <= 10 ? 'urgent' : ''}}">
+        <text class="time-icon">⏱️</text>
+        <text class="time-num">{{formatTime(remaining)}}</text>
+      </view>
+      <view class="progress-info">
+        <text class="progress-text">{{currentIndex + 1}} / {{totalCount}}</text>
+        <view class="progress-bar">
+          <view class="progress-fill" style="width: {{((currentIndex + 1) / totalCount) * 100}}%"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="question-card">
+      <view class="q-meta">
+        <view class="q-tag cat-{{questions[currentIndex].category}}">{{questions[currentIndex].categoryInfo.name}}</view>
+        <view class="q-tag diff">{{questions[currentIndex].difficultyInfo.name}}</view>
+      </view>
+      <text class="q-text">{{questions[currentIndex].question}}</text>
+    </view>
+
+    <view class="options-list">
+      <view
+        class="option-item {{answers[currentIndex] === index ? 'selected' : ''}}"
+        wx:for="{{questions[currentIndex].options}}"
+        wx:key="index"
+        bindtap="onSelectAnswer"
+        data-index="{{index}}"
+      >
+        <view class="option-radio">
+          <view class="radio-inner">{{index === 0 ? 'A' : index === 1 ? 'B' : index === 2 ? 'C' : 'D'}}</view>
+        </view>
+        <text class="option-text">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="action-bar">
+      <button class="nav-btn {{currentIndex === 0 ? 'disabled' : ''}}" bindtap="onPrev" disabled="{{currentIndex === 0}}">上一题</button>
+      <block wx:if="{{currentIndex < totalCount - 1}}">
+        <button class="nav-btn primary" bindtap="onNext">下一题</button>
+      </block>
+      <block wx:else>
+        <button class="nav-btn submit {{submitting ? 'disabled' : ''}}" bindtap="onSubmit" disabled="{{submitting}}">
+          {{submitting ? '提交中...' : '立即提交'}}
+        </button>
+      </block>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="result-wrap">
+      <view class="result-hero timed-hero">
+        <text class="hero-emoji">{{resultData.accuracy >= 80 ? '⚡' : resultData.accuracy >= 60 ? '🔥' : '💨'}}</text>
+        <text class="hero-title">答题完成！</text>
+        <view class="hero-stats">
+          <view class="hero-stat"><text class="stat-val">{{resultData.totalScore}}</text><text class="stat-lbl">总积分</text></view>
+          <view class="hero-stat"><text class="stat-val">{{resultData.accuracy}}%</text><text class="stat-lbl">正确率</text></view>
+          <view class="hero-stat"><text class="stat-val">{{resultData.timeUsed}}s</text><text class="stat-lbl">用时</text></view>
+          <view class="hero-stat"><text class="stat-val">+{{resultData.timeBonus}}</text><text class="stat-lbl">时间加分</text></view>
+        </view>
+      </view>
+
+      <view class="result-section">
+        <view class="section-title">📋 答题详情</view>
+        <view class="detail-item" wx:for="{{resultData.results}}" wx:key="quizId" wx:for-index="rIdx">
+          <view class="detail-head">
+            <view class="detail-num {{item.isCorrect ? 'correct' : 'wrong'}}">{{rIdx + 1}}</view>
+            <view class="detail-status">+{{item.score}}分</view>
+          </view>
+          <view class="detail-q">{{questions[rIdx].question}}</view>
+          <view class="detail-analysis">
+            <text class="a-label">您的答案：</text>
+            <text class="a-user">{{item.userAnswer === 0 ? 'A' : item.userAnswer === 1 ? 'B' : item.userAnswer === 2 ? 'C' : item.userAnswer === 3 ? 'D' : '未作答'}}</text>
+            <text class="a-correct" wx:if="{{!item.isCorrect}}">，正确答案：{{item.correctAnswer === 0 ? 'A' : item.correctAnswer === 1 ? 'B' : item.correctAnswer === 2 ? 'C' : 'D'}}</text>
+          </view>
+          <view class="detail-related" wx:if="{{questions[rIdx].relatedArticleIds && questions[rIdx].relatedArticleIds.length > 0}}">
+            <view class="rel-link" wx:for="{{questions[rIdx].relatedArticleIds}}" wx:for-item="aid" wx:key="*this" bindtap="goArticle" data-id="{{aid}}">
+              <text class="rel-icon">📄</text><text class="rel-text">查看相关文章</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="result-actions">
+        <button class="r-btn secondary" bindtap="goQuizHome">返回首页</button>
+        <button class="r-btn primary" bindtap="onBack">再来一局</button>
+      </view>
+    </view>
+  </block>
+</view>

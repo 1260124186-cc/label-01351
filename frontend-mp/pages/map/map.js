@@ -115,6 +115,23 @@ Page({
     wx.navigateTo({ url: '/pages/login/login' });
   },
 
+  goToDetail(e) {
+    const landmarkId = e.currentTarget.dataset.id;
+    wx.navigateTo({
+      url: `/pages/landmark-detail/landmark-detail?id=${landmarkId}`
+    });
+  },
+
+  getCategoryName(category) {
+    const categoryMap = {
+      'folklore': '民俗遗址',
+      'nature': '自然景观',
+      'craft': '传统技艺传习地',
+      'history': '历史古迹'
+    };
+    return categoryMap[category] || '其他';
+  },
+
   onRegionChange(e) {
     if (e.type === 'end') {
       const { detail } = e;

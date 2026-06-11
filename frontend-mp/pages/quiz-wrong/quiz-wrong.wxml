@@ -1,0 +1,108 @@
+<view class="page-container">
+  <view class="top-bar">
+    <view class="back-btn" bindtap="onBack">‹</view>
+    <text class="page-title">📝 错题本</text>
+    <view class="dummy"></view>
+  </view>
+
+  <view class="smart-banner" bindtap="startSmartReview" wx:if="{{smartReviewData && smartReviewData.quizzes.length > 0}}">
+    <view class="smart-left">
+      <text class="smart-icon">🎯</text>
+      <view class="smart-texts">
+        <text class="smart-title">智能复习</text>
+        <text class="smart-desc">推荐复习 {{smartReviewData.quizzes.length}} 道高频错题</text>
+      </view>
+    </view>
+    <text class="smart-arrow">›</text>
+  </view>
+
+  <view class="stats-row">
+    <view class="stat-card {{activeTab === 'all' ? 'active' : ''}}" data-tab="all" bindtap="switchTab">
+      <text class="stat-num">{{totalCount}}</text>
+      <text class="stat-label">全部错题</text>
+    </view>
+    <view class="stat-card {{activeTab === 'unreviewed' ? 'active' : ''}}" data-tab="unreviewed" bindtap="switchTab">
+      <text class="stat-num warning">{{unreviewedCount}}</text>
+      <text class="stat-label">未复习</text>
+    </view>
+    <view class="stat-card {{activeTab === 'reviewed' ? 'active' : ''}}" data-tab="reviewed" bindtap="switchTab">
+      <text class="stat-num success">{{reviewedCount}}</text>
+      <text class="stat-label">已复习</text>
+    </view>
+  </view>
+
+  <view class="list-wrap">
+    <view class="loading" wx:if="{{loading}}">加载中...</view>
+    <view class="empty-state" wx:elif="{{displayList.length === 0}}">
+      <text class="empty-emoji">📚</text>
+      <text class="empty-title">
+        {{activeTab === 'all' ? '还没有错题哦' : activeTab === 'unreviewed' ? '没有未复习的错题' : '没有已复习的错题'}}
+      </text>
+      <text class="empty-desc">继续努力，这里会帮你收集答错的题目</text>
+    </view>
+    <view wx:else>
+      <view
+        class="wrong-item {{expandedId === item.id ? 'expanded' : ''}}"
+        wx:for="{{displayList}}"
+        wx:key="id"
+      >
+        <view class="item-head" bindtap="toggleExpand" data-id="{{item.id}}">
+          <view class="item-tags">
+            <view class="tag cat-{{item.quiz.category}}" wx:if="{{item.quiz.categoryInfo}}">{{item.quiz.categoryInfo.name}}</view>
+            <view class="tag diff">{{item.quiz.difficultyInfo.name || '基础'}}</view>
+            <view class="tag times">错 {{item.wrongCount}} 次</view>
+            <view class="tag status {{item.isReviewed ? 'ok' : 'warn'}}">
+              {{item.isReviewed ? '已复习' : '未复习'}}
+            </view>
+          </view>
+          <text class="expand-icon">{{expandedId === item.id ? '▾' : '▸'}}</text>
+        </view>
+
+        <view class="item-body" bindtap="toggleExpand" data-id="{{item.id}}">
+          <text class="item-q">{{item.quiz.question}}</text>
+        </view>
+
+        <view class="item-detail" wx:if="{{expandedId === item.id}}">
+          <view class="detail-section">
+            <text class="sec-label">我的错误答案：</text>
+            <text class="sec-val wrong">{{item.userAnswer === 0 ? 'A' : item.userAnswer === 1 ? 'B' : item.userAnswer === 2 ? 'C' : item.userAnswer === 3 ? 'D' : '未作答'}} · {{item.quiz.options[item.userAnswer] || '未作答'}}</text>
+          </view>
+          <view class="detail-section">
+            <text class="sec-label">✅ 正确答案：</text>
+            <text class="sec-val correct">{{item.quiz.answer === 0 ? 'A' : item.quiz.answer === 1 ? 'B' : item.quiz.answer === 2 ? 'C' : 'D'}} · {{item.quiz.options[item.quiz.answer]}}</text>
+          </view>
+          <view class="detail-section">
+            <text class="sec-label">📖 解析：</text>
+            <text class="sec-val">{{item.quiz.analysis}}</text>
+          </view>
+
+          <view class="detail-section links" wx:if="{{item.quiz.relatedArticleIds && item.quiz.relatedArticleIds.length > 0}}">
+            <text class="sec-label">🔗 相关文章：</text>
+            <view
+              class="link-item"
+              wx:for="{{item.quiz.relatedArticleIds}}"
+              wx:for-item="aid"
+              wx:key="*this"
+              catchtap="goArticle"
+              data-id="{{aid}}"
+            >
+              <text class="link-icon">📄</text>
+              <text class="link-text">文章详情 - {{aid}}</text>
+            </view>
+          </view>
+
+          <view class="item-actions">
+            <view class="act-btn secondary" bindtap="markReviewed" data-id="{{item.id}}" wx:if="{{!item.isReviewed}}">
+              <text class="act-icon">✓</text>
+              <text class="act-text">标记已复习</text>
+            </view>
+            <view class="act-btn danger" bindtap="removeWrong" data-id="{{item.id}}">
+              <text class="act-icon">🗑️</text>
+              <text class="act-text">移除</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

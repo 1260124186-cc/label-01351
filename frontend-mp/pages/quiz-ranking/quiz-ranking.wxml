@@ -1,0 +1,111 @@
+<view class="page-container">
+  <view class="top-bar">
+    <view class="back-btn" bindtap="onBack">‹</view>
+    <text class="page-title">🏆 知识排行榜</text>
+    <view class="dummy"></view>
+  </view>
+
+  <view class="tabs-wrap">
+    <view class="tabs">
+      <view class="tab {{activeTab === 'weekly' ? 'active' : ''}}" data-type="weekly" bindtap="switchTab">
+        <text class="tab-icon">📅</text>
+        <text class="tab-text">周榜</text>
+      </view>
+      <view class="tab {{activeTab === 'total' ? 'active' : ''}}" data-type="total" bindtap="switchTab">
+        <text class="tab-icon">👑</text>
+        <text class="tab-text">总榜</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="podium" wx:if="{{!loading}}">
+    <block wx:if="{{activeTab === 'weekly' && weeklyList.length >= 1 || activeTab === 'total' && totalList.length >= 1}}">
+      <view class="podium-row">
+        <view class="podium-item second" wx:if="{{(activeTab === 'weekly' ? weeklyList[1] : totalList[1])}}">
+          <view class="p-avatar silver" style="background: {{getAvatarBgColor((activeTab === 'weekly' ? weeklyList[1] : totalList[1]).nickname)}}">
+            {{getInitial((activeTab === 'weekly' ? weeklyList[1] : totalList[1]).nickname)}}
+          </view>
+          <text class="p-name">{{(activeTab === 'weekly' ? weeklyList[1] : totalList[1]).nickname}}</text>
+          <view class="p-score">{{(activeTab === 'weekly' ? weeklyList[1] : totalList[1]).score}}</view>
+          <text class="p-medal">🥈</text>
+        </view>
+        <view class="podium-item first" wx:if="{{(activeTab === 'weekly' ? weeklyList[0] : totalList[0])}}">
+          <text class="p-crown">👑</text>
+          <view class="p-avatar gold" style="background: {{getAvatarBgColor((activeTab === 'weekly' ? weeklyList[0] : totalList[0]).nickname)}}">
+            {{getInitial((activeTab === 'weekly' ? weeklyList[0] : totalList[0]).nickname)}}
+          </view>
+          <text class="p-name">{{(activeTab === 'weekly' ? weeklyList[0] : totalList[0]).nickname}}</text>
+          <view class="p-score">{{(activeTab === 'weekly' ? weeklyList[0] : totalList[0]).score}}</view>
+          <text class="p-medal">🥇</text>
+        </view>
+        <view class="podium-item third" wx:if="{{(activeTab === 'weekly' ? weeklyList[2] : totalList[2])}}">
+          <view class="p-avatar bronze" style="background: {{getAvatarBgColor((activeTab === 'weekly' ? weeklyList[2] : totalList[2]).nickname)}}">
+            {{getInitial((activeTab === 'weekly' ? weeklyList[2] : totalList[2]).nickname)}}
+          </view>
+          <text class="p-name">{{(activeTab === 'weekly' ? weeklyList[2] : totalList[2]).nickname}}</text>
+          <view class="p-score">{{(activeTab === 'weekly' ? weeklyList[2] : totalList[2]).score}}</view>
+          <text class="p-medal">🥉</text>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view class="rank-list-wrap">
+    <view class="loading" wx:if="{{loading}}">加载中...</view>
+    <block wx:elif="{{activeTab === 'weekly'}}">
+      <view class="rank-item" wx:for="{{weeklyList}}" wx:key="id" wx:for-index="ri">
+        <view class="rank-left">
+          <view class="rank-num {{ri < 3 ? 'top' : ''}}">
+            <text wx:if="{{ri < 3}}">{{ri === 0 ? '🥇' : ri === 1 ? '🥈' : '🥉'}}</text>
+            <text wx:else>{{ri + 1}}</text>
+          </view>
+          <view class="rank-avatar" style="background: {{getAvatarBgColor(item.nickname)}}">
+            {{getInitial(item.nickname)}}
+          </view>
+          <view class="rank-info">
+            <text class="rank-name">{{item.nickname}}</text>
+            <text class="rank-meta">答题 {{item.answerCount}} 题 · 正确率 {{item.accuracy}}%</text>
+          </view>
+        </view>
+        <view class="rank-right">
+          <text class="rank-score">{{item.score}}</text>
+          <text class="rank-unit">分</text>
+        </view>
+      </view>
+      <view class="empty" wx:if="{{weeklyList.length === 0}}">暂无数据，快去答题吧！</view>
+    </block>
+    <block wx:elif="{{activeTab === 'total'}}">
+      <view class="rank-item" wx:for="{{totalList}}" wx:key="id" wx:for-index="ri">
+        <view class="rank-left">
+          <view class="rank-num {{ri < 3 ? 'top' : ''}}">
+            <text wx:if="{{ri < 3}}">{{ri === 0 ? '🥇' : ri === 1 ? '🥈' : '🥉'}}</text>
+            <text wx:else>{{ri + 1}}</text>
+          </view>
+          <view class="rank-avatar" style="background: {{getAvatarBgColor(item.nickname)}}">
+            {{getInitial(item.nickname)}}
+          </view>
+          <view class="rank-info">
+            <text class="rank-name">{{item.nickname}}</text>
+            <text class="rank-meta">答题 {{item.answerCount}} 题 · 正确率 {{item.accuracy}}%</text>
+          </view>
+        </view>
+        <view class="rank-right">
+          <text class="rank-score">{{item.score}}</text>
+          <text class="rank-unit">分</text>
+        </view>
+      </view>
+      <view class="empty" wx:if="{{totalList.length === 0}}">暂无数据，快去答题吧！</view>
+    </block>
+  </view>
+
+  <view class="my-rank-bar" wx:if="{{!loading && (activeTab === 'weekly' ? myRank.weekly : myRank.total)}}">
+    <view class="my-rank-left">
+      <text class="mr-label">我的排名</text>
+      <text class="mr-num">#{{(activeTab === 'weekly' ? myRank.weekly : myRank.total).rank}}</text>
+    </view>
+    <view class="my-rank-right">
+      <text class="mr-score">{{(activeTab === 'weekly' ? myRank.weekly : myRank.total).score}}</text>
+      <text class="mr-unit">分</text>
+    </view>
+  </view>
+</view>

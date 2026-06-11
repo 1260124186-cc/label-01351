@@ -4,6 +4,7 @@
 
 const util = require('./util');
 const figureData = require('./figure-data');
+const quizData = require('./quiz-data');
 
 const config = {
   useRemote: false,
@@ -1717,6 +1718,831 @@ const storageApi = {
     wx.setStorageSync('landmarks', landmarks);
 
     return { code: 200, data: landmarks[index], message: '已拒绝' };
+  },
+
+  getQuizCategories: async () => {
+    await delay(200);
+    const categories = quizData.QUIZ_CATEGORIES.map(c => ({
+      ...c,
+      questionCount: (wx.getStorageSync('quizzes') || quizData.DEFAULT_QUIZZES)
+        .filter(q => q.category === c.id).length
+    }));
+    return { code: 200, data: categories, message: 'success' };
+  },
+
+  getQuizDifficulties: async () => {
+    await delay(100);
+    return { code: 200, data: quizData.DIFFICULTY_LEVELS, message: 'success' };
+  },
+
+  initQuizData: async () => {
+    const existing = wx.getStorageSync('quizzes');
+    if (!existing || existing.length === 0) {
+      wx.setStorageSync('quizzes', JSON.parse(JSON.stringify(quizData.DEFAULT_QUIZZES)));
+    }
+    return { code: 200, data: null, message: 'success' };
+  },
+
+  getQuizList: async (params = {}) => {
+    await delay(300);
+    await storageApi.initQuizData();
+    const { category = 'all', difficulty = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    let quizzes = wx.getStorageSync('quizzes') || [];
+    if (category && category !== 'all') {
+      quizzes = quizzes.filter(item => item.category === category);
+    }
+    if (difficulty && difficulty !== 'all') {
+      quizzes = quizzes.filter(item => item.difficulty === difficulty);
+    }
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      quizzes = quizzes.filter(item =>
+        item.question.toLowerCase().includes(kw) ||
+        item.analysis.toLowerCase().includes(kw)
+      );
+    }
+    const total = quizzes.length;
+    const start = (page - 1) * pageSize;
+    const list = quizzes.slice(start, start + pageSize).map(item => ({
+      ...item,
+      categoryInfo: quizData.getCategoryInfo(item.category),
+      difficultyInfo: quizData.getDifficultyInfo(item.difficulty)
+    }));
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getQuizDetail: async (id) => {
+    await delay(200);
+    await storageApi.initQuizData();
+    if (!id) {
+      return { code: 400, data: null, message: '题目ID不能为空' };
+    }
+    const quizzes = wx.getStorageSync('quizzes') || [];
+    const quiz = quizzes.find(item => item.id === id);
+    if (!quiz) {
+      return { code: 404, data: null, message: '题目不存在' };
+    }
+    const articles = wx.getStorageSync('articles') || [];
+    const relatedArticles = (quiz.relatedArticleIds || [])
+      .map(aid => articles.find(a => a.id === aid && a.status === 1))
+      .filter(Boolean)
+      .map(a => ({
+        id: a.id,
+        title: a.title,
+        categoryName: util.getCategoryName(a.category)
+      }));
+    return {
+      code: 200,
+      data: {
+        ...quiz,
+        categoryInfo: quizData.getCategoryInfo(quiz.category),
+        difficultyInfo: quizData.getDifficultyInfo(quiz.difficulty),
+        relatedArticles
+      },
+      message: 'success'
+    };
+  },
+
+  getDailyQuiz: async () => {
+    await delay(300);
+    await storageApi.initQuizData();
+    const today = util.formatDate(new Date(), 'YYYY-MM-DD');
+    const userId = getCurrentUserId() || 'guest';
+    const storageKey = 'dailyQuiz_' + today;
+    let dailyQuiz = wx.getStorageSync(storageKey);
+    const quizzes = wx.getStorageSync('quizzes') || [];
+    if (!dailyQuiz) {
+      const seed = (today + userId).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+      const idx = seed % quizzes.length;
+      dailyQuiz = {
+        quizId: quizzes[idx].id,
+        date: today,
+        answered: false,
+        isCorrect: null,
+        userAnswer: null,
+        submitTime: null
+      };
+      wx.setStorageSync(storageKey, dailyQuiz);
+    }
+    const quiz = quizzes.find(q => q.id === dailyQuiz.quizId) || quizzes[0];
+    if (quiz) {
+      return {
+        code: 200,
+        data: {
+          dailyInfo: dailyQuiz,
+          quiz: {
+            ...quiz,
+            categoryInfo: quizData.getCategoryInfo(quiz.category),
+            difficultyInfo: quizData.getDifficultyInfo(quiz.difficulty)
+          }
+        },
+        message: 'success'
+      };
+    }
+    return { code: 404, data: null, message: '题库为空' };
+  },
+
+  submitDailyQuiz: async (answer) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (typeof answer !== 'number') {
+      return { code: 400, data: null, message: '答案格式不正确' };
+    }
+    const today = util.formatDate(new Date(), 'YYYY-MM-DD');
+    const storageKey = 'dailyQuiz_' + today;
+    let dailyQuiz = wx.getStorageSync(storageKey);
+    if (!dailyQuiz) {
+      return { code: 400, data: null, message: '今日题目未加载' };
+    }
+    if (dailyQuiz.answered) {
+      return { code: 400, data: null, message: '今日题目已作答' };
+    }
+    await storageApi.initQuizData();
+    const quizzes = wx.getStorageSync('quizzes') || [];
+    const quiz = quizzes.find(q => q.id === dailyQuiz.quizId);
+    if (!quiz) {
+      return { code: 404, data: null, message: '题目不存在' };
+    }
+    const isCorrect = answer === quiz.answer;
+    dailyQuiz = {
+      ...dailyQuiz,
+      answered: true,
+      isCorrect,
+      userAnswer: answer,
+      submitTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
+    };
+    wx.setStorageSync(storageKey, dailyQuiz);
+
+    const userId = getCurrentUserId();
+    const userInfo = wx.getStorageSync('userInfo');
+    await storageApi.updateQuizStats({
+      userId,
+      nickname: userInfo ? userInfo.nickname : '匿名用户',
+      category: quiz.category,
+      difficulty: quiz.difficulty,
+      isCorrect,
+      totalQuestions: 1,
+      correctCount: isCorrect ? 1 : 0,
+      mode: 'daily'
+    });
+    if (!isCorrect) {
+      await storageApi.addWrongQuiz({
+        quizId: quiz.id,
+        userAnswer: answer,
+        mode: 'daily'
+      });
+    }
+    const articles = wx.getStorageSync('articles') || [];
+    const relatedArticles = (quiz.relatedArticleIds || [])
+      .map(aid => articles.find(a => a.id === aid && a.status === 1))
+      .filter(Boolean)
+      .map(a => ({ id: a.id, title: a.title }));
+    return {
+      code: 200,
+      data: {
+        isCorrect,
+        correctAnswer: quiz.answer,
+        analysis: quiz.analysis,
+        relatedArticles,
+        score: isCorrect ? quizData.getDifficultyInfo(quiz.difficulty).score : 0
+      },
+      message: isCorrect ? '回答正确！' : '回答错误'
+    };
+  },
+
+  getChallengeQuiz: async (categoryId) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    await storageApi.initQuizData();
+    let quizzes = wx.getStorageSync('quizzes') || [];
+    if (categoryId && categoryId !== 'all') {
+      quizzes = quizzes.filter(q => q.category === categoryId);
+    }
+    if (quizzes.length === 0) {
+      return { code: 404, data: null, message: '该分类暂无题目' };
+    }
+    const shuffled = quizzes.sort(() => Math.random() - 0.5);
+    const count = Math.min(10, shuffled.length);
+    const list = shuffled.slice(0, count).map(q => ({
+      id: q.id,
+      question: q.question,
+      options: q.options,
+      answer: q.answer,
+      analysis: q.analysis,
+      category: q.category,
+      difficulty: q.difficulty,
+      relatedArticleIds: q.relatedArticleIds || [],
+      categoryInfo: quizData.getCategoryInfo(q.category),
+      difficultyInfo: quizData.getDifficultyInfo(q.difficulty)
+    }));
+    const sessionId = util.generateId('challenge');
+    const sessions = wx.getStorageSync('challengeSessions') || {};
+    sessions[sessionId] = {
+      id: sessionId,
+      quizIds: list.map(q => q.id),
+      category: categoryId || 'all',
+      startTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      userAnswers: [],
+      completed: false
+    };
+    wx.setStorageSync('challengeSessions', sessions);
+    return {
+      code: 200,
+      data: {
+        sessionId,
+        category: categoryId || 'all',
+        categoryInfo: categoryId && categoryId !== 'all' ? quizData.getCategoryInfo(categoryId) : null,
+        totalCount: count,
+        questions: list
+      },
+      message: 'success'
+    };
+  },
+
+  submitChallengeQuiz: async (sessionId, answers) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!sessionId) {
+      return { code: 400, data: null, message: '答题会话ID不能为空' };
+    }
+    if (!Array.isArray(answers)) {
+      return { code: 400, data: null, message: '答案格式不正确' };
+    }
+    const sessions = wx.getStorageSync('challengeSessions') || {};
+    const session = sessions[sessionId];
+    if (!session) {
+      return { code: 404, data: null, message: '答题会话不存在' };
+    }
+    if (session.completed) {
+      return { code: 400, data: null, message: '本次答题已提交' };
+    }
+    await storageApi.initQuizData();
+    const quizzes = wx.getStorageSync('quizzes') || [];
+    let correctCount = 0;
+    let totalScore = 0;
+    const results = session.quizIds.map(async (qid, idx) => {
+      const quiz = quizzes.find(q => q.id === qid);
+      const userAnswer = answers[idx];
+      const isCorrect = quiz && userAnswer === quiz.answer;
+      if (isCorrect) {
+        correctCount++;
+        totalScore += quizData.getDifficultyInfo(quiz.difficulty).score;
+      } else {
+        await storageApi.addWrongQuiz({
+          quizId: qid,
+          userAnswer,
+          mode: 'challenge'
+        });
+      }
+      return {
+        quizId: qid,
+        userAnswer,
+        isCorrect,
+        correctAnswer: quiz ? quiz.answer : null,
+        analysis: quiz ? quiz.analysis : '',
+        score: isCorrect ? quizData.getDifficultyInfo(quiz ? quiz.difficulty : 'easy').score : 0
+      };
+    });
+    const resolvedResults = await Promise.all(results);
+    const userId = getCurrentUserId();
+    const userInfo = wx.getStorageSync('userInfo');
+    const categoryScores = {};
+    session.quizIds.forEach((qid, idx) => {
+      const quiz = quizzes.find(q => q.id === qid);
+      if (quiz && resolvedResults[idx].isCorrect) {
+        if (!categoryScores[quiz.category]) categoryScores[quiz.category] = 0;
+        categoryScores[quiz.category] += quizData.getDifficultyInfo(quiz.difficulty).score;
+      }
+    });
+    for (const cat of Object.keys(categoryScores)) {
+      await storageApi.updateQuizStats({
+        userId,
+        nickname: userInfo ? userInfo.nickname : '匿名用户',
+        category: cat,
+        categoryScore: categoryScores[cat],
+        isCorrect: false,
+        totalQuestions: 0,
+        correctCount: 0,
+        mode: 'challenge'
+      });
+    }
+    await storageApi.updateQuizStats({
+      userId,
+      nickname: userInfo ? userInfo.nickname : '匿名用户',
+      category: session.category === 'all' ? null : session.category,
+      difficulty: null,
+      isCorrect: false,
+      totalQuestions: session.quizIds.length,
+      correctCount,
+      mode: 'challenge',
+      totalScore
+    });
+    session.completed = true;
+    session.endTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+    session.userAnswers = answers;
+    session.results = resolvedResults;
+    session.score = totalScore;
+    session.correctCount = correctCount;
+    sessions[sessionId] = session;
+    wx.setStorageSync('challengeSessions', sessions);
+    return {
+      code: 200,
+      data: {
+        sessionId,
+        categoryId: session.category,
+        totalQuestions: session.quizIds.length,
+        correctCount,
+        wrongCount: session.quizIds.length - correctCount,
+        accuracy: Math.round((correctCount / session.quizIds.length) * 100),
+        totalScore,
+        results: resolvedResults
+      },
+      message: '提交成功'
+    };
+  },
+
+  getTimedQuiz: async (duration = 60) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    await storageApi.initQuizData();
+    let quizzes = wx.getStorageSync('quizzes') || [];
+    const shuffled = quizzes.sort(() => Math.random() - 0.5);
+    const count = Math.min(20, shuffled.length);
+    const list = shuffled.slice(0, count).map(q => ({
+      id: q.id,
+      question: q.question,
+      options: q.options,
+      answer: q.answer,
+      analysis: q.analysis,
+      category: q.category,
+      difficulty: q.difficulty,
+      relatedArticleIds: q.relatedArticleIds || [],
+      categoryInfo: quizData.getCategoryInfo(q.category),
+      difficultyInfo: quizData.getDifficultyInfo(q.difficulty)
+    }));
+    const sessionId = util.generateId('timed');
+    const sessions = wx.getStorageSync('timedSessions') || {};
+    sessions[sessionId] = {
+      id: sessionId,
+      quizIds: list.map(q => q.id),
+      duration,
+      startTime: Date.now(),
+      endTime: Date.now() + duration * 1000,
+      userAnswers: [],
+      completed: false
+    };
+    wx.setStorageSync('timedSessions', sessions);
+    return {
+      code: 200,
+      data: {
+        sessionId,
+        duration,
+        endTime: sessions[sessionId].endTime,
+        totalCount: count,
+        questions: list
+      },
+      message: 'success'
+    };
+  },
+
+  submitTimedQuiz: async (sessionId, answers) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!sessionId) {
+      return { code: 400, data: null, message: '答题会话ID不能为空' };
+    }
+    if (!Array.isArray(answers)) {
+      return { code: 400, data: null, message: '答案格式不正确' };
+    }
+    const sessions = wx.getStorageSync('timedSessions') || {};
+    const session = sessions[sessionId];
+    if (!session) {
+      return { code: 404, data: null, message: '答题会话不存在' };
+    }
+    if (session.completed) {
+      return { code: 400, data: null, message: '本次答题已提交' };
+    }
+    if (Date.now() > session.endTime) {
+      return { code: 400, data: null, message: '答题已超时' };
+    }
+    await storageApi.initQuizData();
+    const quizzes = wx.getStorageSync('quizzes') || [];
+    const timeUsed = Math.max(0, Math.round((Date.now() - session.startTime) / 1000));
+    let correctCount = 0;
+    let totalScore = 0;
+    const results = session.quizIds.map(async (qid, idx) => {
+      const quiz = quizzes.find(q => q.id === qid);
+      const userAnswer = answers[idx];
+      const isCorrect = quiz && userAnswer === quiz.answer;
+      if (isCorrect) {
+        correctCount++;
+        totalScore += quizData.getDifficultyInfo(quiz.difficulty).score;
+      } else {
+        await storageApi.addWrongQuiz({
+          quizId: qid,
+          userAnswer,
+          mode: 'timed'
+        });
+      }
+      return {
+        quizId: qid,
+        userAnswer,
+        isCorrect,
+        correctAnswer: quiz ? quiz.answer : null,
+        analysis: quiz ? quiz.analysis : '',
+        score: isCorrect ? quizData.getDifficultyInfo(quiz ? quiz.difficulty : 'easy').score : 0
+      };
+    });
+    const resolvedResults = await Promise.all(results);
+    const timeBonus = Math.max(0, session.duration - timeUsed);
+    totalScore += Math.floor(timeBonus / 5);
+    const userId = getCurrentUserId();
+    const userInfo = wx.getStorageSync('userInfo');
+    await storageApi.updateQuizStats({
+      userId,
+      nickname: userInfo ? userInfo.nickname : '匿名用户',
+      category: null,
+      difficulty: null,
+      isCorrect: false,
+      totalQuestions: session.quizIds.length,
+      correctCount,
+      mode: 'timed',
+      totalScore
+    });
+    session.completed = true;
+    session.submitTime = Date.now();
+    session.timeUsed = timeUsed;
+    session.userAnswers = answers;
+    session.results = resolvedResults;
+    session.score = totalScore;
+    session.correctCount = correctCount;
+    sessions[sessionId] = session;
+    wx.setStorageSync('timedSessions', sessions);
+    return {
+      code: 200,
+      data: {
+        sessionId,
+        totalQuestions: session.quizIds.length,
+        answeredCount: answers.filter(a => typeof a === 'number').length,
+        correctCount,
+        wrongCount: session.quizIds.length - correctCount,
+        accuracy: session.quizIds.length > 0
+          ? Math.round((correctCount / session.quizIds.length) * 100)
+          : 0,
+        timeUsed,
+        timeBonus: Math.floor(timeBonus / 5),
+        totalScore,
+        results: resolvedResults
+      },
+      message: '提交成功'
+    };
+  },
+
+  updateQuizStats: async (options) => {
+    const { userId, nickname, category, difficulty, isCorrect, totalQuestions = 0, correctCount = 0, mode, totalScore = 0, categoryScore = 0 } = options;
+    if (!userId) return;
+    const statsAll = wx.getStorageSync('quizStats') || {};
+    let userStats = statsAll[userId] || {
+      userId,
+      nickname: nickname || '匿名用户',
+      totalQuestions: 0,
+      correctCount: 0,
+      totalScore: 0,
+      streakDays: 0,
+      lastActiveDate: null,
+      categoryScores: {},
+      dailyHistory: []
+    };
+    userStats.nickname = nickname || userStats.nickname;
+    userStats.totalQuestions += totalQuestions;
+    userStats.correctCount += correctCount;
+    userStats.totalScore += totalScore;
+    const today = util.formatDate(new Date(), 'YYYY-MM-DD');
+    if (userStats.lastActiveDate !== today) {
+      if (userStats.lastActiveDate) {
+        const last = new Date(userStats.lastActiveDate);
+        const cur = new Date(today);
+        const diffDays = Math.floor((cur - last) / (24 * 60 * 60 * 1000));
+        if (diffDays === 1) {
+          userStats.streakDays = (userStats.streakDays || 0) + 1;
+        } else if (diffDays > 1) {
+          userStats.streakDays = 1;
+        }
+      } else {
+        userStats.streakDays = 1;
+      }
+      userStats.lastActiveDate = today;
+      userStats.dailyHistory = userStats.dailyHistory || [];
+      userStats.dailyHistory.push({
+        date: today,
+        mode,
+        totalQuestions,
+        correctCount,
+        score: totalScore
+      });
+      if (userStats.dailyHistory.length > 365) {
+        userStats.dailyHistory = userStats.dailyHistory.slice(-365);
+      }
+    }
+    if (category && categoryScore > 0) {
+      if (!userStats.categoryScores[category]) userStats.categoryScores[category] = 0;
+      userStats.categoryScores[category] += categoryScore;
+    }
+    if (isCorrect && category) {
+      if (!userStats.categoryScores[category]) userStats.categoryScores[category] = 0;
+      const difScore = difficulty ? quizData.getDifficultyInfo(difficulty).score : 1;
+      userStats.categoryScores[category] += difScore;
+    }
+    statsAll[userId] = userStats;
+    wx.setStorageSync('quizStats', statsAll);
+    const scores = wx.getStorageSync('quizScores') || {};
+    if (!scores[userId]) {
+      scores[userId] = {
+        userId,
+        nickname: userStats.nickname,
+        totalScore: 0,
+        weeklyScore: 0,
+        history: []
+      };
+    }
+    scores[userId].nickname = userStats.nickname;
+    scores[userId].totalScore += totalScore;
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    scores[userId].history = (scores[userId].history || []).filter(h => new Date(h.date) >= weekStart);
+    if (totalScore > 0 || correctCount > 0) {
+      scores[userId].history.push({
+        date: util.formatDate(now, 'YYYY-MM-DD'),
+        score: totalScore
+      });
+    }
+    scores[userId].weeklyScore = scores[userId].history.reduce((sum, h) => sum + h.score, 0);
+    wx.setStorageSync('quizScores', scores);
+    return { code: 200, data: userStats, message: 'success' };
+  },
+
+  getQuizStats: async () => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const statsAll = wx.getStorageSync('quizStats') || {};
+    const userStats = statsAll[userId] || {
+      totalQuestions: 0,
+      correctCount: 0,
+      totalScore: 0,
+      streakDays: 0,
+      lastActiveDate: null,
+      categoryScores: {},
+      dailyHistory: []
+    };
+    const accuracy = userStats.totalQuestions > 0
+      ? Math.round((userStats.correctCount / userStats.totalQuestions) * 100)
+      : 0;
+    const categoryDetails = Object.keys(userStats.categoryScores || {}).map(cid => ({
+      categoryId: cid,
+      ...quizData.getCategoryInfo(cid),
+      score: userStats.categoryScores[cid]
+    })).sort((a, b) => b.score - a.score);
+    return {
+      code: 200,
+      data: {
+        ...userStats,
+        totalAnswers: userStats.totalQuestions || 0,
+        accuracy,
+        categoryDetails
+      },
+      message: 'success'
+    };
+  },
+
+  getQuizRankings: async (type = 'weekly') => {
+    await delay(300);
+    const scores = wx.getStorageSync('quizScores') || {};
+    const statsAll = wx.getStorageSync('quizStats') || {};
+    const userId = getCurrentUserId();
+    const list = Object.values(scores).map(s => {
+      const userStat = statsAll[s.userId] || {};
+      const answerCount = userStat.totalQuestions || 0;
+      const correctCount = userStat.correctCount || 0;
+      const accuracy = answerCount > 0 ? Math.round((correctCount / answerCount) * 100) : 0;
+      return {
+        id: s.userId,
+        userId: s.userId,
+        nickname: s.nickname,
+        score: type === 'weekly' ? (s.weeklyScore || 0) : (s.totalScore || 0),
+        totalScore: s.totalScore || 0,
+        weeklyScore: s.weeklyScore || 0,
+        answerCount,
+        correctCount,
+        accuracy
+      };
+    });
+    if (type === 'weekly') {
+      list.sort((a, b) => b.weeklyScore - a.weeklyScore || b.totalScore - a.totalScore);
+    } else {
+      list.sort((a, b) => b.totalScore - a.totalScore);
+    }
+    const rankedList = list.map((item, idx) => ({ ...item, rank: idx + 1 }));
+    let myRank = null;
+    if (userId) {
+      const found = rankedList.find(x => x.userId === userId);
+      myRank = found || null;
+    }
+    return {
+      code: 200,
+      data: {
+        type,
+        list: rankedList,
+        myRank
+      },
+      message: 'success'
+    };
+  },
+
+  addWrongQuiz: async (options) => {
+    const { quizId, userAnswer, mode } = options;
+    const userId = getCurrentUserId();
+    if (!userId || !quizId) return;
+    const wrongAll = wx.getStorageSync('wrongQuizzes') || {};
+    const userWrong = wrongAll[userId] || {};
+    const today = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+    const existing = userWrong[quizId];
+    if (existing) {
+      existing.wrongCount = (existing.wrongCount || 1) + 1;
+      existing.lastWrongTime = today;
+      existing.userAnswer = userAnswer;
+      existing.mode = mode || existing.mode;
+    } else {
+      userWrong[quizId] = {
+        quizId,
+        userAnswer,
+        wrongCount: 1,
+        firstWrongTime: today,
+        lastWrongTime: today,
+        mode: mode || 'unknown',
+        reviewed: false
+      };
+    }
+    wrongAll[userId] = userWrong;
+    wx.setStorageSync('wrongQuizzes', wrongAll);
+    return { code: 200, data: null, message: 'success' };
+  },
+
+  getWrongQuizList: async (params = {}) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { page = 1, pageSize = 10, reviewed = 'all', category = 'all' } = params;
+    const userId = getCurrentUserId();
+    await storageApi.initQuizData();
+    const quizzes = wx.getStorageSync('quizzes') || [];
+    const wrongAll = wx.getStorageSync('wrongQuizzes') || {};
+    const userWrong = wrongAll[userId] || {};
+    let list = Object.values(userWrong);
+    if (reviewed === 'yes') {
+      list = list.filter(w => w.reviewed);
+    } else if (reviewed === 'no') {
+      list = list.filter(w => !w.reviewed);
+    }
+    if (category && category !== 'all') {
+      list = list.filter(w => {
+        const q = quizzes.find(qq => qq.id === w.quizId);
+        return q && q.category === category;
+      });
+    }
+    list.sort((a, b) => new Date(b.lastWrongTime) - new Date(a.lastWrongTime));
+    const total = list.length;
+    const start = (page - 1) * pageSize;
+    const pageList = list.slice(start, start + pageSize).map(w => {
+      const quiz = quizzes.find(q => q.id === w.quizId);
+      if (!quiz) return null;
+      return {
+        id: w.quizId,
+        quizId: w.quizId,
+        ...w,
+        isReviewed: !!w.reviewed,
+        quiz: {
+          ...quiz,
+          categoryInfo: quizData.getCategoryInfo(quiz.category),
+          difficultyInfo: quizData.getDifficultyInfo(quiz.difficulty)
+        },
+        question: quiz.question,
+        options: quiz.options,
+        correctAnswer: quiz.answer,
+        analysis: quiz.analysis,
+        category: quiz.category,
+        difficulty: quiz.difficulty,
+        relatedArticleIds: quiz.relatedArticleIds || [],
+        categoryInfo: quizData.getCategoryInfo(quiz.category),
+        difficultyInfo: quizData.getDifficultyInfo(quiz.difficulty)
+      };
+    }).filter(Boolean);
+    return {
+      code: 200,
+      data: {
+        list: pageList,
+        total,
+        page,
+        pageSize,
+        hasMore: start + pageSize < total
+      },
+      message: 'success'
+    };
+  },
+
+  markWrongQuizReviewed: async (quizId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!quizId) {
+      return { code: 400, data: null, message: '题目ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const wrongAll = wx.getStorageSync('wrongQuizzes') || {};
+    const userWrong = wrongAll[userId] || {};
+    if (!userWrong[quizId]) {
+      return { code: 404, data: null, message: '错题记录不存在' };
+    }
+    userWrong[quizId].reviewed = true;
+    userWrong[quizId].reviewTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+    wrongAll[userId] = userWrong;
+    wx.setStorageSync('wrongQuizzes', wrongAll);
+    return { code: 200, data: { isReviewed: true, reviewTime: userWrong[quizId].reviewTime }, message: '已标记为已复习' };
+  },
+
+  removeWrongQuiz: async (quizId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!quizId) {
+      return { code: 400, data: null, message: '题目ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const wrongAll = wx.getStorageSync('wrongQuizzes') || {};
+    const userWrong = wrongAll[userId] || {};
+    if (!userWrong[quizId]) {
+      return { code: 404, data: null, message: '错题记录不存在' };
+    }
+    delete userWrong[quizId];
+    wrongAll[userId] = userWrong;
+    wx.setStorageSync('wrongQuizzes', wrongAll);
+    return { code: 200, data: null, message: '已从错题本移除' };
+  },
+
+  getWrongQuizForReview: async () => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    await storageApi.initQuizData();
+    const quizzes = wx.getStorageSync('quizzes') || [];
+    const wrongAll = wx.getStorageSync('wrongQuizzes') || {};
+    const userWrong = wrongAll[userId] || {};
+    const list = Object.values(userWrong)
+      .filter(w => !w.reviewed)
+      .sort((a, b) => (b.wrongCount || 1) - (a.wrongCount || 1));
+    if (list.length === 0) {
+      return { code: 200, data: { list: [], totalCount: 0 }, message: '暂无待复习错题' };
+    }
+    const count = Math.min(10, list.length);
+    const reviewList = list.slice(0, count).map(w => {
+      const quiz = quizzes.find(q => q.id === w.quizId);
+      if (!quiz) return null;
+      return {
+        ...w,
+        question: quiz.question,
+        options: quiz.options,
+        correctAnswer: quiz.answer,
+        analysis: quiz.analysis,
+        category: quiz.category,
+        difficulty: quiz.difficulty,
+        relatedArticleIds: quiz.relatedArticleIds || [],
+        categoryInfo: quizData.getCategoryInfo(quiz.category),
+        difficultyInfo: quizData.getDifficultyInfo(quiz.difficulty)
+      };
+    }).filter(Boolean);
+    return {
+      code: 200,
+      data: {
+        list: reviewList,
+        quizzes: reviewList,
+        totalCount: reviewList.length,
+        remainingCount: list.length
+      },
+      message: 'success'
+    };
   }
 };
 
@@ -2314,6 +3140,91 @@ const remoteApi = {
       method: 'GET',
       data: { userId }
     });
+  },
+
+  getQuizCategories: async () => {
+    return request({ url: '/api/quiz/categories', method: 'GET' });
+  },
+
+  getQuizDifficulties: async () => {
+    return request({ url: '/api/quiz/difficulties', method: 'GET' });
+  },
+
+  getQuizList: async (params = {}) => {
+    return request({ url: '/api/quiz/list', method: 'GET', data: params });
+  },
+
+  getQuizDetail: async (id) => {
+    if (!id) return { code: 400, data: null, message: '题目ID不能为空' };
+    return request({ url: `/api/quiz/detail/${id}`, method: 'GET' });
+  },
+
+  getDailyQuiz: async () => {
+    return request({ url: '/api/quiz/daily', method: 'GET' });
+  },
+
+  submitDailyQuiz: async (answer) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/quiz/daily/submit', method: 'POST', data: { answer } });
+  },
+
+  getChallengeQuiz: async (categoryId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/quiz/challenge', method: 'GET', data: { category: categoryId || 'all' } });
+  },
+
+  submitChallengeQuiz: async (sessionId, answers) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/quiz/challenge/submit', method: 'POST', data: { sessionId, answers } });
+  },
+
+  getTimedQuiz: async (duration) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/quiz/timed', method: 'GET', data: { duration } });
+  },
+
+  submitTimedQuiz: async (sessionId, answers) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/quiz/timed/submit', method: 'POST', data: { sessionId, answers } });
+  },
+
+  getQuizStats: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/quiz/stats', method: 'GET' });
+  },
+
+  getQuizRankings: async (type) => {
+    return request({ url: '/api/quiz/rankings', method: 'GET', data: { type: type || 'weekly' } });
+  },
+
+  getWrongQuizList: async (params = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/quiz/wrong/list', method: 'GET', data: params });
+  },
+
+  markWrongQuizReviewed: async (quizId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/quiz/wrong/reviewed', method: 'POST', data: { quizId } });
+  },
+
+  removeWrongQuiz: async (quizId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/quiz/wrong/remove', method: 'POST', data: { quizId } });
+  },
+
+  getWrongQuizForReview: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/quiz/wrong/review', method: 'GET' });
   }
 };
 

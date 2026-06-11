@@ -8,16 +8,16 @@
  */
 const formatDate = (date, format = 'YYYY-MM-DD') => {
   if (!date) return '';
-  
+
   const d = typeof date === 'string' ? new Date(date) : date;
-  
+
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   const hours = String(d.getHours()).padStart(2, '0');
   const minutes = String(d.getMinutes()).padStart(2, '0');
   const seconds = String(d.getSeconds()).padStart(2, '0');
-  
+
   return format
     .replace('YYYY', year)
     .replace('MM', month)
@@ -34,16 +34,16 @@ const formatDate = (date, format = 'YYYY-MM-DD') => {
  */
 const formatRelativeTime = (date) => {
   if (!date) return '';
-  
+
   const d = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
   const diff = now.getTime() - d.getTime();
-  
+
   const minute = 60 * 1000;
   const hour = 60 * minute;
   const day = 24 * hour;
   const month = 30 * day;
-  
+
   if (diff < minute) {
     return '刚刚';
   } else if (diff < hour) {
@@ -122,23 +122,23 @@ const truncateText = (text, length = 100) => {
 const validateForm = (data, rules) => {
   for (const rule of rules) {
     const value = data[rule.field];
-    
+
     // 必填校验
     if (rule.required && (!value || (typeof value === 'string' && !value.trim()))) {
       return { valid: false, message: rule.message || `${rule.field}不能为空` };
     }
-    
+
     // 最小长度校验
     if (rule.minLength && value && value.length < rule.minLength) {
       return { valid: false, message: rule.message || `${rule.field}长度不能少于${rule.minLength}个字符` };
     }
-    
+
     // 最大长度校验
     if (rule.maxLength && value && value.length > rule.maxLength) {
       return { valid: false, message: rule.message || `${rule.field}长度不能超过${rule.maxLength}个字符` };
     }
   }
-  
+
   return { valid: true, message: '' };
 };
 

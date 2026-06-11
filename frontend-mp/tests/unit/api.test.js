@@ -2517,3 +2517,423 @@ describe('api.unlinkReviewArticle', () => {
     expect(res.code).toBe(400);
   });
 });
+
+describe('api.getQuizCategories / getQuizDifficulties', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('获取分类列表', async () => {
+    const res = await api.getQuizCategories();
+    expect(res.code).toBe(200);
+    expect(Array.isArray(res.data)).toBe(true);
+    expect(res.data.length).toBeGreaterThan(0);
+    expect(res.data[0]).toHaveProperty('id');
+    expect(res.data[0]).toHaveProperty('name');
+    expect(res.data[0]).toHaveProperty('icon');
+  });
+
+  test('获取难度列表', async () => {
+    const res = await api.getQuizDifficulties();
+    expect(res.code).toBe(200);
+    expect(Array.isArray(res.data)).toBe(true);
+    expect(res.data.length).toBeGreaterThan(0);
+    expect(res.data[0]).toHaveProperty('id');
+    expect(res.data[0]).toHaveProperty('name');
+    expect(res.data[0]).toHaveProperty('score');
+  });
+});
+
+describe('api.getQuizList / getQuizDetail', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('获取全部题库列表', async () => {
+    const res = await api.getQuizList({});
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    expect(res.data.total).toBeGreaterThan(0);
+  });
+
+  test('按分类筛选题库', async () => {
+    const res = await api.getQuizList({ category: 'folklore' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(q => q.category === 'folklore')).toBe(true);
+  });
+
+  test('按难度筛选题库', async () => {
+    const res = await api.getQuizList({ difficulty: 'easy' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(q => q.difficulty === 'easy')).toBe(true);
+  });
+
+  test('分页功能正常', async () => {
+    const res = await api.getQuizList({ page: 1, pageSize: 5 });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBe(5);
+    expect(res.data.hasMore).toBe(true);
+  });
+
+  test('获取题目详情包含分类和难度信息', async () => {
+    const res = await api.getQuizDetail('quiz_001');
+    expect(res.code).toBe(200);
+    expect(res.data.id).toBe('quiz_001');
+    expect(res.data).toHaveProperty('categoryInfo');
+    expect(res.data).toHaveProperty('difficultyInfo');
+  });
+
+  test('获取题目详情包含相关文章', async () => {
+    const res = await api.getQuizDetail('quiz_001');
+    expect(res.code).toBe(200);
+    expect(res.data).toHaveProperty('relatedArticles');
+  });
+
+  test('不存在的题目ID返回404', async () => {
+    const res = await api.getQuizDetail('quiz_notexist');
+    expect(res.code).toBe(404);
+  });
+});
+
+describe('api.getDailyQuiz / submitDailyQuiz', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+    const today = new Date().toISOString().split('T')[0];
+    wx.removeStorageSync('dailyQuiz_' + today);
+  });
+
+  test('获取每日一题', async () => {
+    const res = await api.getDailyQuiz();
+    expect(res.code).toBe(200);
+    expect(res.data.quiz).toHaveProperty('id');
+    expect(res.data.quiz).toHaveProperty('question');
+    expect(res.data.quiz).toHaveProperty('categoryInfo');
+    expect(res.data.dailyInfo).toBeDefined();
+  });
+
+  test('每日一题同日内相同', async () => {
+    const r1 = await api.getDailyQuiz();
+    const r2 = await api.getDailyQuiz();
+    expect(r1.data.quiz.id).toBe(r2.data.quiz.id);
+  });
+
+  test('提交每日一题-答对', async () => {
+    const daily = await api.getDailyQuiz();
+    const quiz = daily.data.quiz;
+    const res = await api.submitDailyQuiz(quiz.answer);
+    expect(res.code).toBe(200);
+    expect(res.data.isCorrect).toBe(true);
+  });
+
+  test('提交每日一题-答错', async () => {
+    const daily = await api.getDailyQuiz();
+    const wrongAnswer = (daily.data.quiz.answer + 1) % 4;
+    const res = await api.submitDailyQuiz(wrongAnswer);
+    expect(res.code).toBe(200);
+    expect(res.data.isCorrect).toBe(false);
+  });
+
+  test('重复提交每日一题返回400', async () => {
+    const daily = await api.getDailyQuiz();
+    await api.submitDailyQuiz(daily.data.quiz.answer);
+    const res = await api.submitDailyQuiz(daily.data.quiz.answer);
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('已作答');
+  });
+
+  test('答错后自动加入错题本', async () => {
+    const daily = await api.getDailyQuiz();
+    const wrongAnswer = (daily.data.quiz.answer + 1) % 4;
+    await api.submitDailyQuiz(wrongAnswer);
+    const wrong = wx.getStorageSync('wrongQuizzes') || {};
+    const userWrong = wrong[defaultUser.id] || {};
+    expect(userWrong[daily.data.quiz.id]).toBeDefined();
+    expect(userWrong[daily.data.quiz.id].wrongCount).toBeGreaterThanOrEqual(1);
+  });
+
+  test('提交后成绩统计更新', async () => {
+    const daily = await api.getDailyQuiz();
+    await api.submitDailyQuiz(daily.data.quiz.answer);
+    const stats = wx.getStorageSync('quizStats') || {};
+    const userStats = stats[defaultUser.id];
+    expect(userStats).toBeDefined();
+    expect(userStats.totalQuestions).toBeGreaterThanOrEqual(1);
+  });
+
+  test('提交后连续打卡天数计算', async () => {
+    const daily = await api.getDailyQuiz();
+    await api.submitDailyQuiz(daily.data.quiz.answer);
+    const stats = wx.getStorageSync('quizStats') || {};
+    const userStats = stats[defaultUser.id];
+    expect(userStats.streakDays).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('api.getChallengeQuiz / submitChallengeQuiz', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('获取分类挑战题目-综合', async () => {
+    const res = await api.getChallengeQuiz('all');
+    expect(res.code).toBe(200);
+    expect(res.data.sessionId).toBeDefined();
+    expect(res.data.questions.length).toBe(10);
+    expect(res.data.totalCount).toBe(10);
+  });
+
+  test('获取分类挑战题目-指定分类', async () => {
+    const res = await api.getChallengeQuiz('folklore');
+    expect(res.code).toBe(200);
+    expect(res.data.questions.length).toBeGreaterThan(0);
+    expect(res.data.questions.every(q => q.category === 'folklore')).toBe(true);
+  });
+
+  test('提交挑战答卷', async () => {
+    const start = await api.getChallengeQuiz('all');
+    const sessionId = start.data.sessionId;
+    const answers = start.data.questions.map(q => q.answer);
+    const res = await api.submitChallengeQuiz(sessionId, answers);
+    expect(res.code).toBe(200);
+    expect(res.data.totalQuestions).toBe(10);
+    expect(res.data.correctCount).toBe(10);
+    expect(res.data.accuracy).toBe(100);
+  });
+
+  test('提交无效sessionId返回404', async () => {
+    const res = await api.submitChallengeQuiz('invalid_session', [0, 1, 2]);
+    expect(res.code).toBe(404);
+  });
+
+  test('提交后生成详细results', async () => {
+    const start = await api.getChallengeQuiz('all');
+    const answers = start.data.questions.map(q => q.answer);
+    const res = await api.submitChallengeQuiz(start.data.sessionId, answers);
+    expect(res.data.results.length).toBe(10);
+    res.data.results.forEach(r => {
+      expect(r).toHaveProperty('quizId');
+      expect(r).toHaveProperty('isCorrect');
+      expect(r).toHaveProperty('score');
+      expect(r).toHaveProperty('analysis');
+    });
+  });
+
+  test('提交后排行榜积分更新', async () => {
+    const start = await api.getChallengeQuiz('all');
+    const answers = start.data.questions.map(q => q.answer);
+    await api.submitChallengeQuiz(start.data.sessionId, answers);
+    const scores = wx.getStorageSync('quizScores') || {};
+    expect(scores[defaultUser.id]).toBeDefined();
+    expect(scores[defaultUser.id].totalScore).toBeGreaterThan(0);
+  });
+});
+
+describe('api.getTimedQuiz / submitTimedQuiz', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('获取限时答题', async () => {
+    const res = await api.getTimedQuiz(60);
+    expect(res.code).toBe(200);
+    expect(res.data.sessionId).toBeDefined();
+    expect(res.data.duration).toBe(60);
+    expect(res.data.questions.length).toBeGreaterThan(0);
+    expect(res.data.endTime).toBeDefined();
+  });
+
+  test('提交限时答题', async () => {
+    const start = await api.getTimedQuiz(60);
+    const answers = start.data.questions.map(q => q.answer);
+    const res = await api.submitTimedQuiz(start.data.sessionId, answers);
+    expect(res.code).toBe(200);
+    expect(res.data).toHaveProperty('timeUsed');
+    expect(res.data).toHaveProperty('timeBonus');
+  });
+
+  test('提交过期session返回400', async () => {
+    const start = await api.getTimedQuiz(60);
+    const session = wx.getStorageSync('timedSessions') || {};
+    if (session[start.data.sessionId]) {
+      session[start.data.sessionId].endTime = Date.now() - 100000;
+      wx.setStorageSync('timedSessions', session);
+    }
+    const answers = start.data.questions.map(q => q.answer);
+    const res = await api.submitTimedQuiz(start.data.sessionId, answers);
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.getQuizStats', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('未答题时返回默认统计', async () => {
+    const res = await api.getQuizStats();
+    expect(res.code).toBe(200);
+    expect(res.data.totalAnswers).toBe(0);
+    expect(res.data.accuracy).toBe(0);
+    expect(res.data.streakDays).toBe(0);
+  });
+
+  test('答题后统计正确', async () => {
+    const start = await api.getChallengeQuiz('all');
+    const answers = start.data.questions.map((q, i) => i % 2 === 0 ? q.answer : (q.answer + 1) % 4);
+    await api.submitChallengeQuiz(start.data.sessionId, answers);
+    const res = await api.getQuizStats();
+    expect(res.code).toBe(200);
+    expect(res.data.totalAnswers).toBe(10);
+    expect(res.data.correctCount).toBe(5);
+    expect(res.data.accuracy).toBe(50);
+    expect(res.data.totalScore).toBeGreaterThan(0);
+  });
+
+  test('统计包含各分类得分', async () => {
+    const start = await api.getChallengeQuiz('all');
+    const answers = start.data.questions.map(q => q.answer);
+    await api.submitChallengeQuiz(start.data.sessionId, answers);
+    const res = await api.getQuizStats();
+    expect(res.data.categoryDetails).toBeDefined();
+    expect(Array.isArray(res.data.categoryDetails)).toBe(true);
+  });
+});
+
+describe('api.getQuizRankings', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('获取周榜', async () => {
+    const res = await api.getQuizRankings('weekly');
+    expect(res.code).toBe(200);
+    expect(Array.isArray(res.data.list)).toBe(true);
+    expect(res.data.myRank).toBeDefined();
+  });
+
+  test('获取总榜', async () => {
+    const res = await api.getQuizRankings('total');
+    expect(res.code).toBe(200);
+    expect(Array.isArray(res.data.list)).toBe(true);
+  });
+
+  test('多用户排序正确', async () => {
+    const users = [
+      { id: 'u1', name: '用户1' },
+      { id: 'u2', name: '用户2' },
+      { id: 'u3', name: '用户3' }
+    ];
+    const expectedOrder = [200, 150, 100];
+    const scores = {};
+    users.forEach((u, i) => {
+      scores[u.id] = {
+        userId: u.id,
+        nickname: u.name,
+        totalScore: expectedOrder[i],
+        weeklyScore: expectedOrder[i],
+        history: [{ date: new Date().toISOString().split('T')[0], score: expectedOrder[i] }]
+      };
+    });
+    wx.setStorageSync('quizScores', scores);
+    const res = await api.getQuizRankings('total');
+    expect(res.data.list[0].score).toBe(200);
+    expect(res.data.list[1].score).toBe(150);
+    expect(res.data.list[2].score).toBe(100);
+  });
+});
+
+describe('api错题本功能', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('userInfo', defaultUser);
+    wx.setStorageSync('isLoggedIn', true);
+  });
+
+  test('答错题目自动加入错题本', async () => {
+    const daily = await api.getDailyQuiz();
+    const wrong = (daily.data.answer + 1) % 4;
+    await api.submitDailyQuiz(wrong);
+    const list = await api.getWrongQuizList({});
+    expect(list.data.total).toBeGreaterThan(0);
+    expect(list.data.list.length).toBeGreaterThan(0);
+  });
+
+  test('标记错题已复习', async () => {
+    const daily = await api.getDailyQuiz();
+    const wrong = (daily.data.answer + 1) % 4;
+    await api.submitDailyQuiz(wrong);
+    const listRes = await api.getWrongQuizList({});
+    const firstId = listRes.data.list[0].id;
+    const res = await api.markWrongQuizReviewed(firstId);
+    expect(res.code).toBe(200);
+    expect(res.data.isReviewed).toBe(true);
+  });
+
+  test('移除错题', async () => {
+    const daily = await api.getDailyQuiz();
+    const wrong = (daily.data.answer + 1) % 4;
+    await api.submitDailyQuiz(wrong);
+    const listRes = await api.getWrongQuizList({});
+    const firstId = listRes.data.list[0].id;
+    const beforeTotal = listRes.data.total;
+    const res = await api.removeWrongQuiz(firstId);
+    expect(res.code).toBe(200);
+    const after = await api.getWrongQuizList({});
+    expect(after.data.total).toBe(beforeTotal - 1);
+  });
+
+  test('错题本筛选全部/未复习/已复习', async () => {
+    const quizzes = wx.getStorageSync('quizzes');
+    const wrong1 = { ...quizzes[0] };
+    const wrong2 = { ...quizzes[1] };
+    wx.setStorageSync('wrongQuizzes', {
+      [defaultUser.id]: {
+        [wrong1.id]: { quizId: wrong1.id, quiz: wrong1, userAnswer: 0, wrongCount: 2, reviewed: false, firstWrongTime: '2024-01-01', lastWrongTime: '2024-01-02' },
+        [wrong2.id]: { quizId: wrong2.id, quiz: wrong2, userAnswer: 0, wrongCount: 1, reviewed: true, firstWrongTime: '2024-01-01', lastWrongTime: '2024-01-01' }
+      }
+    });
+
+    const all = await api.getWrongQuizList({});
+    expect(all.data.total).toBe(2);
+
+    const unreviewed = await api.getWrongQuizList({ reviewed: 'no' });
+    expect(unreviewed.data.total).toBe(1);
+
+    const reviewed = await api.getWrongQuizList({ reviewed: 'yes' });
+    expect(reviewed.data.total).toBe(1);
+  });
+
+  test('获取智能复习推荐', async () => {
+    const quizzes = wx.getStorageSync('quizzes');
+    const records = {};
+    quizzes.slice(0, 5).forEach((q, i) => {
+      records[q.id] = {
+        quizId: q.id,
+        quiz: q,
+        userAnswer: (q.answer + 1) % 4,
+        wrongCount: 5 - i,
+        isReviewed: false,
+        firstWrongTime: '2024-01-01',
+        lastWrongTime: '2024-01-02'
+      };
+    });
+    wx.setStorageSync('wrongQuizzes', { [defaultUser.id]: records });
+    const res = await api.getWrongQuizForReview();
+    expect(res.code).toBe(200);
+    expect(res.data.quizzes.length).toBeLessThanOrEqual(10);
+  });
+});

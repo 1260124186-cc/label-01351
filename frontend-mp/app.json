@@ -23,7 +23,14 @@
     "pages/activity-publish/activity-publish",
     "pages/my-activities/my-activities",
     "pages/landmark-detail/landmark-detail",
-    "pages/landmark-publish/landmark-publish"
+    "pages/landmark-publish/landmark-publish",
+    "pages/quiz/quiz",
+    "pages/quiz-daily/quiz-daily",
+    "pages/quiz-challenge/quiz-challenge",
+    "pages/quiz-timed/quiz-timed",
+    "pages/quiz-result/quiz-result",
+    "pages/quiz-ranking/quiz-ranking",
+    "pages/quiz-wrong/quiz-wrong"
   ],
   "window": {
     "backgroundTextStyle": "dark",

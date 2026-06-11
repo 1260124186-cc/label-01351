@@ -1,6 +1,7 @@
 // app.js
 const api = require('./utils/api');
 const figureData = require('./utils/figure-data');
+const quizData = require('./utils/quiz-data');
 
 App({
   globalData: {
@@ -503,6 +504,12 @@ App({
         }
       ];
       wx.setStorageSync('encyclopedia', defaultEncyclopedia);
+    }
+
+    const quizzes = wx.getStorageSync('quizzes');
+    if (!quizzes || quizzes.length === 0) {
+      wx.setStorageSync('quizzes', JSON.parse(JSON.stringify(quizData.DEFAULT_QUIZZES)));
+      console.log('[App] 题库数据已初始化，共 ' + quizData.DEFAULT_QUIZZES.length + ' 道题');
     }
   }
 });

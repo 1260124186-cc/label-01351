@@ -1,0 +1,99 @@
+<view class="page-container" wx:if="{{resultData}}">
+  <view class="hero">
+    <text class="hero-emoji">{{resultData.accuracy >= 80 ? '🏆' : resultData.accuracy >= 60 ? '🎯' : '📚'}}</text>
+    <text class="hero-title">
+      {{mode === 'daily' ? '每日一题完成' : mode === 'challenge' ? '分类挑战完成' : '限时挑战完成'}}
+    </text>
+    <view class="hero-stats">
+      <view class="h-stat">
+        <text class="h-val">{{resultData.accuracy}}%</text>
+        <text class="h-lbl">正确率</text>
+      </view>
+      <view class="h-stat">
+        <text class="h-val">{{resultData.totalScore}}</text>
+        <text class="h-lbl">获得积分</text>
+      </view>
+      <view class="h-stat">
+        <text class="h-val">{{resultData.correctCount}}/{{resultData.totalQuestions}}</text>
+        <text class="h-lbl">答对题数</text>
+      </view>
+      <view class="h-stat" wx:if="{{resultData.timeUsed}}">
+        <text class="h-val">{{resultData.timeUsed}}s</text>
+        <text class="h-lbl">用时</text>
+      </view>
+      <view class="h-stat" wx:if="{{resultData.timeBonus}}">
+        <text class="h-val highlight">+{{resultData.timeBonus}}</text>
+        <text class="h-lbl">时间奖励</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section" wx:if="{{showStats && resultData.categoryBreakdown && resultData.categoryBreakdown.length > 0}}">
+    <view class="sec-title">📊 各分类表现</view>
+    <view class="breakdown-list">
+      <view class="bd-item" wx:for="{{resultData.categoryBreakdown}}" wx:key="categoryId">
+        <view class="bd-head">
+          <text class="bd-name">{{item.categoryName}}</text>
+          <text class="bd-score">{{item.correct}}/{{item.total}} · {{item.score}}分</text>
+        </view>
+        <view class="bd-bar">
+          <view class="bd-fill" style="width: {{item.total > 0 ? (item.correct / item.total * 100) : 0}}%"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section" wx:if="{{showDetail && resultData.results && resultData.results.length > 0}}">
+    <view class="sec-title">📋 答题详情</view>
+    <view
+      class="detail-card"
+      wx:for="{{resultData.results}}"
+      wx:key="quizId"
+      wx:for-index="ri"
+    >
+      <view class="dc-head" bindtap="toggleExpand" data-idx="{{ri}}">
+        <view class="dc-num {{item.isCorrect ? 'ok' : 'err'}}">{{ri + 1}}</view>
+        <view class="dc-summary">
+          <text class="dc-q">{{questions[ri].question}}</text>
+          <view class="dc-tags">
+            <text class="dc-status {{item.isCorrect ? 'ok' : 'err'}}">{{item.isCorrect ? '✓ 正确' : '✕ 错误'}}</text>
+            <text class="dc-points">+{{item.score}}分</text>
+            <text class="dc-diff">{{questions[ri].difficultyInfo.name}}</text>
+          </view>
+        </view>
+        <text class="dc-arrow">{{expandedIdx === ri ? '▾' : '▸'}}</text>
+      </view>
+      <view class="dc-body" wx:if="{{expandedIdx === ri}}">
+        <view class="dc-options">
+          <view
+            class="dco {{oi === item.correctAnswer ? 'correct' : ''}} {{oi === item.userAnswer && oi !== item.correctAnswer ? 'wrong' : ''}}"
+            wx:for="{{questions[ri].options}}"
+            wx:for-item="op"
+            wx:for-index="oi"
+            wx:key="oi"
+          >
+            <text class="dco-label">{{oi === 0 ? 'A' : oi === 1 ? 'B' : oi === 2 ? 'C' : 'D'}}</text>
+            <text class="dco-text">{{op}}</text>
+            <text class="dco-mark" wx:if="{{oi === item.correctAnswer}}">✓</text>
+            <text class="dco-mark err" wx:elif="{{oi === item.userAnswer && oi !== item.correctAnswer}}">✕</text>
+          </view>
+        </view>
+        <view class="dc-analysis">
+          <text class="dca-label">解析：</text>{{item.analysis}}
+        </view>
+        <view class="dc-articles" wx:if="{{questions[ri].relatedArticleIds && questions[ri].relatedArticleIds.length > 0}}">
+          <view class="dcr" wx:for="{{questions[ri].relatedArticleIds}}" wx:for-item="aid" wx:key="*this" bindtap="goArticle" data-id="{{aid}}">
+            <text class="dcr-icon">📄</text>
+            <text class="dcr-text">查看相关文章：{{aid}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-actions">
+    <button class="b-btn secondary" bindtap="goQuizHome">返回首页</button>
+    <button class="b-btn secondary" bindtap="goRanking">查看榜单</button>
+    <button class="b-btn primary" bindtap="retry">再来一局</button>
+  </view>
+</view>

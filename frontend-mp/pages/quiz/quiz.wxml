@@ -1,0 +1,117 @@
+<view class="page-container">
+  <view class="header">
+    <view class="header-bg"></view>
+    <view class="header-content">
+      <text class="header-title">📚 文化知识问答</text>
+      <text class="header-sub">学传统文化 · 涨知识积分</text>
+    </view>
+  </view>
+
+  <view class="stats-card">
+    <view class="stats-row">
+      <view class="stat-item">
+        <text class="stat-num">{{stats.accuracy}}%</text>
+        <text class="stat-label">正确率</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-num">{{stats.totalScore}}</text>
+        <text class="stat-label">总积分</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-num">{{stats.streakDays}}</text>
+        <text class="stat-label">连续打卡</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-num">{{stats.totalQuestions}}</text>
+        <text class="stat-label">答题数</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-title">🎮 答题模式</view>
+
+  <view class="mode-card daily" bindtap="goDaily">
+    <view class="mode-left">
+      <text class="mode-icon">☀️</text>
+      <view class="mode-info">
+        <text class="mode-title">每日一题</text>
+        <text class="mode-desc">每天一道精选题目，积跬步以至千里</text>
+      </view>
+    </view>
+    <view class="mode-status">
+      <view class="status-dot {{todayAnswered ? 'done' : 'todo'}}"></view>
+      <text class="status-text">{{todayAnswered ? (todayCorrect ? '✓ 已完成' : '已作答') : '待完成'}}</text>
+    </view>
+  </view>
+
+  <view class="mode-card challenge" bindtap="goChallenge" data-category="all">
+    <view class="mode-left">
+      <text class="mode-icon">🏆</text>
+      <view class="mode-info">
+        <text class="mode-title">分类挑战</text>
+        <text class="mode-desc">每次10题，挑战你的知识储备</text>
+      </view>
+    </view>
+    <text class="mode-arrow">›</text>
+  </view>
+
+  <view class="mode-card timed" bindtap="goTimed">
+    <view class="mode-left">
+      <text class="mode-icon">⏱️</text>
+      <view class="mode-info">
+        <text class="mode-title">限时答题</text>
+        <text class="mode-desc">60秒快速答题，速度越快分越高</text>
+      </view>
+    </view>
+    <text class="mode-arrow">›</text>
+  </view>
+
+  <view class="section-row">
+    <view class="half-card ranking" bindtap="goRanking">
+      <text class="half-icon">🏅</text>
+      <text class="half-title">排行榜</text>
+      <text class="half-desc">周榜 · 总榜</text>
+    </view>
+    <view class="half-card wrong" bindtap="goWrong">
+      <text class="half-icon">📝</text>
+      <text class="half-title">错题本</text>
+      <text class="half-desc">复习 · 巩固</text>
+    </view>
+  </view>
+
+  <view class="section-title" wx:if="{{categories.length > 0}}">📂 分类挑战入口</view>
+
+  <view class="category-grid">
+    <view 
+      class="cat-item" 
+      wx:for="{{categories}}" 
+      wx:key="id"
+      bindtap="goChallenge"
+      data-category="{{item.id}}"
+    >
+      <text class="cat-icon">{{item.icon}}</text>
+      <text class="cat-name">{{item.name}}</text>
+      <text class="cat-count">{{item.questionCount}}题</text>
+    </view>
+  </view>
+
+  <view class="section-title" wx:if="{{stats.categoryDetails && stats.categoryDetails.length > 0}}">📊 各分类得分</view>
+
+  <view class="cat-score-list" wx:if="{{stats.categoryDetails && stats.categoryDetails.length > 0}}">
+    <view class="cat-score-item" wx:for="{{stats.categoryDetails}}" wx:key="categoryId">
+      <view class="cs-left">
+        <text class="cs-icon">{{item.icon}}</text>
+        <text class="cs-name">{{item.name}}</text>
+      </view>
+      <view class="cs-bar">
+        <view class="cs-bar-fill" style="width: {{item.score > 0 ? (item.score / stats.categoryDetails[0].score * 100) : 0}}%"></view>
+      </view>
+      <text class="cs-score">{{item.score}}分</text>
+    </view>
+  </view>
+
+  <view class="bottom-space"></view>
+</view>
