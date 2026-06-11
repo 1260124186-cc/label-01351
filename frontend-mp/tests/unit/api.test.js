@@ -3041,3 +3041,338 @@ describe('api 日历功能', () => {
     });
   });
 });
+
+describe('api 评论功能', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  describe('createComment 发布评论', () => {
+    test('成功发布一级评论', async () => {
+      const res = await api.createComment({
+        articleId: 'article_001',
+        content: '这是一条测试评论内容'
+      });
+      expect(res.code).toBe(200);
+      expect(res.data.articleId).toBe('article_001');
+      expect(res.data.content).toBe('这是一条测试评论内容');
+      expect(res.data.authorId).toBe('user_001');
+      expect(res.data.likeCount).toBe(0);
+      expect(res.data.replyToId).toBeNull();
+
+      const articles = wx.getStorageSync('articles');
+      const article = articles.find(a => a.id === 'article_001');
+      expect(article.commentCount).toBe(4);
+    });
+
+    test('成功回复评论（二级）', async () => {
+      const res = await api.createComment({
+        articleId: 'article_001',
+        content: '这是一条回复内容',
+        replyToId: 'comment_001',
+        replyToUserId: 'user_002',
+        replyToUserName: '李阿姨'
+      });
+      expect(res.code).toBe(200);
+      expect(res.data.replyToId).toBe('comment_001');
+      expect(res.data.replyToUserId).toBe('user_002');
+      expect(res.data.replyToUserName).toBe('李阿姨');
+    });
+
+    test('未登录时返回401', async () => {
+      wx.setStorageSync('isLoggedIn', false);
+      const res = await api.createComment({
+        articleId: 'article_001',
+        content: '测试'
+      });
+      expect(res.code).toBe(401);
+    });
+
+    test('缺少文章ID返回400', async () => {
+      const res = await api.createComment({ content: '测试' });
+      expect(res.code).toBe(400);
+    });
+
+    test('评论内容为空返回400', async () => {
+      const res = await api.createComment({
+        articleId: 'article_001',
+        content: ''
+      });
+      expect(res.code).toBe(400);
+    });
+
+    test('评论内容少于2个字符返回400', async () => {
+      const res = await api.createComment({
+        articleId: 'article_001',
+        content: 'a'
+      });
+      expect(res.code).toBe(400);
+      expect(res.message).toContain('至少需要2个字符');
+    });
+
+    test('评论内容超过500字符返回400', async () => {
+      const longContent = 'a'.repeat(501);
+      const res = await api.createComment({
+        articleId: 'article_001',
+        content: longContent
+      });
+      expect(res.code).toBe(400);
+      expect(res.message).toContain('不能超过500');
+    });
+
+    test('文章不存在返回404', async () => {
+      const res = await api.createComment({
+        articleId: 'article_not_exist',
+        content: '测试评论'
+      });
+      expect(res.code).toBe(404);
+    });
+
+    test('回复不存在的评论返回404', async () => {
+      const res = await api.createComment({
+        articleId: 'article_001',
+        content: '回复测试',
+        replyToId: 'comment_not_exist'
+      });
+      expect(res.code).toBe(404);
+    });
+
+    test('回复非本文章评论返回400', async () => {
+      const res = await api.createComment({
+        articleId: 'article_002',
+        content: '回复测试',
+        replyToId: 'comment_001'
+      });
+      expect(res.code).toBe(400);
+    });
+
+    test('不能对回复进行回复（三级嵌套返回400）', async () => {
+      const res = await api.createComment({
+        articleId: 'article_001',
+        content: '三级回复',
+        replyToId: 'comment_003'
+      });
+      expect(res.code).toBe(400);
+      expect(res.message).toContain('仅支持二级评论');
+    });
+  });
+
+  describe('getCommentList 获取评论列表', () => {
+    test('成功获取评论列表', async () => {
+      const res = await api.getCommentList({ articleId: 'article_001' });
+      expect(res.code).toBe(200);
+      expect(res.data.list.length).toBe(2);
+      expect(res.data.total).toBe(2);
+      expect(res.data.page).toBe(1);
+      expect(res.data.hasMore).toBe(false);
+    });
+
+    test('评论包含回复列表（二级嵌套）', async () => {
+      const res = await api.getCommentList({ articleId: 'article_001' });
+      const parentComment = res.data.list.find(c => c.id === 'comment_001');
+      expect(parentComment).toBeTruthy();
+      expect(parentComment.replies.length).toBe(1);
+      expect(parentComment.replies[0].id).toBe('comment_003');
+      expect(parentComment.replyCount).toBe(1);
+    });
+
+    test('评论按时间倒序排列', async () => {
+      const res = await api.getCommentList({ articleId: 'article_001' });
+      const list = res.data.list;
+      for (let i = 0; i < list.length - 1; i++) {
+        expect(new Date(list[i].createTime) >= new Date(list[i + 1].createTime)).toBe(true);
+      }
+    });
+
+    test('包含作者标识', async () => {
+      const res = await api.getCommentList({ articleId: 'article_001' });
+      const comment1 = res.data.list.find(c => c.id === 'comment_001');
+      const comment2 = res.data.list.find(c => c.id === 'comment_002');
+      const reply1 = comment1.replies.find(r => r.id === 'comment_003');
+      expect(comment1.isAuthor).toBe(false);
+      expect(comment2.isAuthor).toBe(false);
+      expect(reply1.isAuthor).toBe(true);
+    });
+
+    test('包含相对时间', async () => {
+      const res = await api.getCommentList({ articleId: 'article_001' });
+      expect(res.data.list[0].relativeTime).toBeTruthy();
+      const parentWithReplies = res.data.list.find(c => c.replies && c.replies.length > 0);
+      if (parentWithReplies) {
+        expect(parentWithReplies.replies[0].relativeTime).toBeTruthy();
+      }
+    });
+
+    test('缺少文章ID返回400', async () => {
+      const res = await api.getCommentList({});
+      expect(res.code).toBe(400);
+    });
+
+    test('分页功能正常', async () => {
+      const res1 = await api.getCommentList({ articleId: 'article_001', page: 1, pageSize: 1 });
+      expect(res1.code).toBe(200);
+      expect(res1.data.list.length).toBe(1);
+      expect(res1.data.hasMore).toBe(true);
+
+      const res2 = await api.getCommentList({ articleId: 'article_001', page: 2, pageSize: 1 });
+      expect(res2.code).toBe(200);
+      expect(res2.data.list.length).toBe(1);
+      expect(res2.data.hasMore).toBe(false);
+    });
+
+    test('无评论文章返回空列表', async () => {
+      const res = await api.getCommentList({ articleId: 'article_003' });
+      expect(res.code).toBe(200);
+      expect(res.data.list).toEqual([]);
+      expect(res.data.total).toBe(0);
+    });
+  });
+
+  describe('likeComment / unlikeComment 评论点赞', () => {
+    test('点赞评论成功', async () => {
+      const res = await api.likeComment('comment_001');
+      expect(res.code).toBe(200);
+      expect(res.data.isLike).toBe(true);
+      expect(res.data.likeCount).toBe(13);
+    });
+
+    test('取消点赞评论成功', async () => {
+      await api.likeComment('comment_001');
+      const res = await api.unlikeComment('comment_001');
+      expect(res.code).toBe(200);
+      expect(res.data.isLike).toBe(false);
+      expect(res.data.likeCount).toBe(12);
+    });
+
+    test('重复点赞不增加计数', async () => {
+      await api.likeComment('comment_001');
+      const res = await api.likeComment('comment_001');
+      expect(res.code).toBe(200);
+      expect(res.data.likeCount).toBe(13);
+    });
+
+    test('未登录返回401', async () => {
+      wx.setStorageSync('isLoggedIn', false);
+      const res = await api.likeComment('comment_001');
+      expect(res.code).toBe(401);
+    });
+
+    test('评论不存在返回404', async () => {
+      const res = await api.likeComment('comment_not_exist');
+      expect(res.code).toBe(404);
+    });
+
+    test('缺少评论ID返回400', async () => {
+      const res = await api.likeComment('');
+      expect(res.code).toBe(400);
+    });
+  });
+
+  describe('deleteComment 删除评论', () => {
+    test('评论作者可以删除自己的评论', async () => {
+      wx.setStorageSync('userInfo', { id: 'user_002', nickname: '李阿姨' });
+      const res = await api.deleteComment('comment_001');
+      expect(res.code).toBe(200);
+
+      const comments = wx.getStorageSync('comments');
+      const deleted = comments.find(c => c.id === 'comment_001');
+      expect(deleted).toBeUndefined();
+    });
+
+    test('文章作者可以删除自己文章下的评论', async () => {
+      wx.setStorageSync('userInfo', { ...defaultUser, id: 'user_001', nickname: '张大爷' });
+      const res = await api.deleteComment('comment_001');
+      expect(res.code).toBe(200);
+
+      const comments = wx.getStorageSync('comments');
+      const deleted = comments.find(c => c.id === 'comment_001');
+      expect(deleted).toBeUndefined();
+
+      const articles = wx.getStorageSync('articles');
+      const article = articles.find(a => a.id === 'article_001');
+      expect(article.commentCount).toBe(1);
+    });
+
+    test('删除父评论同时删除子评论', async () => {
+      wx.setStorageSync('userInfo', { ...defaultUser, id: 'user_001', nickname: '张大爷' });
+      const res = await api.deleteComment('comment_001');
+      expect(res.code).toBe(200);
+
+      const comments = wx.getStorageSync('comments');
+      const parentExists = comments.some(c => c.id === 'comment_001');
+      const childExists = comments.some(c => c.id === 'comment_003');
+      expect(parentExists).toBe(false);
+      expect(childExists).toBe(false);
+    });
+
+    test('普通用户不能删除别人的评论', async () => {
+      wx.setStorageSync('userInfo', { ...defaultUser, id: 'user_999', nickname: '路人甲' });
+      const res = await api.deleteComment('comment_001');
+      expect(res.code).toBe(403);
+    });
+
+    test('未登录返回401', async () => {
+      wx.setStorageSync('isLoggedIn', false);
+      const res = await api.deleteComment('comment_001');
+      expect(res.code).toBe(401);
+    });
+
+    test('评论不存在返回404', async () => {
+      const res = await api.deleteComment('comment_not_exist');
+      expect(res.code).toBe(404);
+    });
+
+    test('缺少评论ID返回400', async () => {
+      const res = await api.deleteComment('');
+      expect(res.code).toBe(400);
+    });
+  });
+
+  describe('getCommentCount 获取评论数', () => {
+    test('成功获取评论数', async () => {
+      const res = await api.getCommentCount('article_001');
+      expect(res.code).toBe(200);
+      expect(res.data.count).toBe(3);
+    });
+
+    test('无评论文章返回0', async () => {
+      const res = await api.getCommentCount('article_003');
+      expect(res.code).toBe(200);
+      expect(res.data.count).toBe(0);
+    });
+
+    test('缺少文章ID返回400', async () => {
+      const res = await api.getCommentCount('');
+      expect(res.code).toBe(400);
+    });
+  });
+
+  describe('文章模型 commentCount 字段', () => {
+    test('新发布的文章 commentCount 为 0', async () => {
+      const res = await api.publishArticle({
+        title: '测试文章',
+        content: '测试内容测试内容测试内容',
+        category: 'folklore'
+      });
+      expect(res.code).toBe(200);
+      expect(res.data.commentCount).toBe(0);
+    });
+
+    test('发布评论后 article.commentCount 增加', async () => {
+      const articlesBefore = wx.getStorageSync('articles');
+      const beforeCount = articlesBefore.find(a => a.id === 'article_003').commentCount;
+
+      await api.createComment({
+        articleId: 'article_003',
+        content: '新的评论'
+      });
+
+      const articlesAfter = wx.getStorageSync('articles');
+      const afterCount = articlesAfter.find(a => a.id === 'article_003').commentCount;
+      expect(afterCount).toBe(beforeCount + 1);
+    });
+  });
+});

@@ -169,6 +169,7 @@ const storageApi = {
       authorName: userInfo.nickname,
       viewCount: 0,
       likeCount: 0,
+      commentCount: 0,
       createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
       status: 1
     };
@@ -3019,6 +3020,297 @@ const storageApi = {
       subscribeTime: subs[k].subscribeTime
     }));
     return { code: 200, data: { list, total: list.length }, message: 'success' };
+  },
+
+  createComment: async (data) => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const { articleId, content, replyToId = null, replyToUserId = null, replyToUserName = '' } = data;
+
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+    if (!content || !content.trim()) {
+      return { code: 400, data: null, message: '评论内容不能为空' };
+    }
+    const trimmedContent = content.trim();
+    if (trimmedContent.length < 2) {
+      return { code: 400, data: null, message: '评论内容至少需要2个字符' };
+    }
+    if (trimmedContent.length > 500) {
+      return { code: 400, data: null, message: '评论内容不能超过500个字符' };
+    }
+
+    const articles = wx.getStorageSync('articles') || [];
+    const articleIndex = articles.findIndex(item => item.id === articleId);
+    if (articleIndex === -1) {
+      return { code: 404, data: null, message: '文章不存在' };
+    }
+
+    if (replyToId) {
+      const comments = wx.getStorageSync('comments') || [];
+      const parentComment = comments.find(c => c.id === replyToId);
+      if (!parentComment) {
+        return { code: 404, data: null, message: '被回复的评论不存在' };
+      }
+      if (parentComment.articleId !== articleId) {
+        return { code: 400, data: null, message: '被回复的评论不属于该文章' };
+      }
+      if (parentComment.replyToId) {
+        return { code: 400, data: null, message: '仅支持二级评论，不能对回复进行回复' };
+      }
+    }
+
+    const userInfo = wx.getStorageSync('userInfo');
+    const comments = wx.getStorageSync('comments') || [];
+
+    const newComment = {
+      id: util.generateId('comment'),
+      articleId,
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      content: trimmedContent,
+      likeCount: 0,
+      replyToId: replyToId || null,
+      replyToUserId: replyToUserId || null,
+      replyToUserName: replyToUserName || '',
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 1
+    };
+
+    comments.unshift(newComment);
+    wx.setStorageSync('comments', comments);
+
+    articles[articleIndex].commentCount = (articles[articleIndex].commentCount || 0) + 1;
+    wx.setStorageSync('articles', articles);
+
+    const article = articles[articleIndex];
+    if (article.authorId && article.authorId !== userInfo.id) {
+      storageApi.createNotification({
+        type: 'comment',
+        fromUserId: userInfo.id,
+        fromUserName: userInfo.nickname,
+        targetUserId: article.authorId,
+        targetId: articleId,
+        targetTitle: article.title,
+        content: `${userInfo.nickname} 评论了你的文章`,
+        jumpType: 'article',
+        jumpId: articleId
+      });
+    }
+
+    if (replyToUserId && replyToUserId !== userInfo.id && replyToUserId !== article.authorId) {
+      storageApi.createNotification({
+        type: 'reply',
+        fromUserId: userInfo.id,
+        fromUserName: userInfo.nickname,
+        targetUserId: replyToUserId,
+        targetId: articleId,
+        targetTitle: article.title,
+        content: `${userInfo.nickname} 回复了你的评论`,
+        jumpType: 'article',
+        jumpId: articleId
+      });
+    }
+
+    return { code: 200, data: newComment, message: '评论发布成功' };
+  },
+
+  getCommentList: async (params = {}) => {
+    await delay(300);
+    const { articleId, page = 1, pageSize = 10 } = params;
+
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const allComments = wx.getStorageSync('comments') || [];
+    const commentLikes = wx.getStorageSync('commentLikes') || {};
+    const userLikedIds = (commentLikes[userId] || []) || [];
+
+    const articles = wx.getStorageSync('articles') || [];
+    const article = articles.find(a => a.id === articleId);
+    const articleAuthorId = article ? article.authorId : null;
+
+    const articleComments = allComments.filter(c => c.articleId === articleId && c.status === 1);
+
+    const parentComments = articleComments
+      .filter(c => !c.replyToId)
+      .sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+    const total = parentComments.length;
+    const start = (page - 1) * pageSize;
+    const pagedParents = parentComments.slice(start, start + pageSize);
+
+    const list = pagedParents.map(parent => {
+      const replies = articleComments
+        .filter(c => c.replyToId === parent.id)
+        .sort((a, b) => new Date(a.createTime) - new Date(b.createTime))
+        .map(reply => ({
+          ...reply,
+          isLiked: userLikedIds.includes(reply.id),
+          isAuthor: reply.authorId === articleAuthorId,
+          canDelete: reply.authorId === userId || articleAuthorId === userId,
+          relativeTime: util.formatRelativeTime(reply.createTime)
+        }));
+
+      return {
+        ...parent,
+        isLiked: userLikedIds.includes(parent.id),
+        isAuthor: parent.authorId === articleAuthorId,
+        canDelete: parent.authorId === userId || articleAuthorId === userId,
+        relativeTime: util.formatRelativeTime(parent.createTime),
+        replyCount: replies.length,
+        replies
+      };
+    });
+
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  likeComment: async (commentId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!commentId) {
+      return { code: 400, data: null, message: '评论ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const comments = wx.getStorageSync('comments') || [];
+    const commentIndex = comments.findIndex(c => c.id === commentId);
+    if (commentIndex === -1) {
+      return { code: 404, data: null, message: '评论不存在' };
+    }
+
+    const commentLikes = wx.getStorageSync('commentLikes') || {};
+    const userLikes = commentLikes[userId] || [];
+
+    if (userLikes.includes(commentId)) {
+      return { code: 200, data: { isLike: true, likeCount: comments[commentIndex].likeCount }, message: '已点赞' };
+    }
+
+    comments[commentIndex].likeCount = (comments[commentIndex].likeCount || 0) + 1;
+    wx.setStorageSync('comments', comments);
+
+    userLikes.push(commentId);
+    commentLikes[userId] = userLikes;
+    wx.setStorageSync('commentLikes', commentLikes);
+
+    const comment = comments[commentIndex];
+    if (comment.authorId && comment.authorId !== userId) {
+      const userInfo = wx.getStorageSync('userInfo');
+      const articles = wx.getStorageSync('articles') || [];
+      const article = articles.find(a => a.id === comment.articleId);
+      storageApi.createNotification({
+        type: 'like',
+        fromUserId: userId,
+        fromUserName: userInfo ? userInfo.nickname : '',
+        targetUserId: comment.authorId,
+        targetId: comment.articleId,
+        targetTitle: article ? article.title : '',
+        content: `${userInfo ? userInfo.nickname : '有人'} 赞了你的评论`,
+        jumpType: 'article',
+        jumpId: comment.articleId
+      });
+    }
+
+    return { code: 200, data: { isLike: true, likeCount: comments[commentIndex].likeCount }, message: '点赞成功' };
+  },
+
+  unlikeComment: async (commentId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!commentId) {
+      return { code: 400, data: null, message: '评论ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const comments = wx.getStorageSync('comments') || [];
+    const commentIndex = comments.findIndex(c => c.id === commentId);
+    if (commentIndex === -1) {
+      return { code: 404, data: null, message: '评论不存在' };
+    }
+
+    comments[commentIndex].likeCount = Math.max((comments[commentIndex].likeCount || 0) - 1, 0);
+    wx.setStorageSync('comments', comments);
+
+    const commentLikes = wx.getStorageSync('commentLikes') || {};
+    const userLikes = commentLikes[userId] || [];
+    const idx = userLikes.indexOf(commentId);
+    if (idx > -1) {
+      userLikes.splice(idx, 1);
+      commentLikes[userId] = userLikes;
+      wx.setStorageSync('commentLikes', commentLikes);
+    }
+
+    return { code: 200, data: { isLike: false, likeCount: comments[commentIndex].likeCount }, message: '已取消点赞' };
+  },
+
+  deleteComment: async (commentId) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!commentId) {
+      return { code: 400, data: null, message: '评论ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const comments = wx.getStorageSync('comments') || [];
+    const commentIndex = comments.findIndex(c => c.id === commentId);
+    if (commentIndex === -1) {
+      return { code: 404, data: null, message: '评论不存在' };
+    }
+
+    const comment = comments[commentIndex];
+    const articles = wx.getStorageSync('articles') || [];
+    const article = articles.find(a => a.id === comment.articleId);
+    const isArticleAuthor = article && article.authorId === userId;
+    const isCommentAuthor = comment.authorId === userId;
+
+    if (!isArticleAuthor && !isCommentAuthor) {
+      return { code: 403, data: null, message: '无权限删除该评论' };
+    }
+
+    let deletedCount = 1;
+    const idsToDelete = [commentId];
+    if (!comment.replyToId) {
+      const replies = comments.filter(c => c.replyToId === commentId);
+      replies.forEach(r => idsToDelete.push(r.id));
+      deletedCount += replies.length;
+    }
+
+    const filteredComments = comments.filter(c => !idsToDelete.includes(c.id));
+    wx.setStorageSync('comments', filteredComments);
+
+    if (article) {
+      const articleIndex = articles.findIndex(a => a.id === comment.articleId);
+      articles[articleIndex].commentCount = Math.max((article.commentCount || 0) - deletedCount, 0);
+      wx.setStorageSync('articles', articles);
+    }
+
+    return { code: 200, data: null, message: '删除成功' };
+  },
+
+  getCommentCount: async (articleId) => {
+    await delay(100);
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+    const comments = wx.getStorageSync('comments') || [];
+    const count = comments.filter(c => c.articleId === articleId && c.status === 1).length;
+    return { code: 200, data: { count }, message: 'success' };
   }
 };
 
@@ -3845,6 +4137,66 @@ const remoteApi = {
     const authError = requireLogin();
     if (authError) return authError;
     return request({ url: '/api/calendar/my-subscriptions', method: 'GET' });
+  },
+
+  createComment: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/comment/create',
+      method: 'POST',
+      data: { ...data, userId }
+    });
+  },
+
+  getCommentList: async (params = {}) => {
+    const { articleId, page = 1, pageSize = 10 } = params;
+    return request({
+      url: '/api/comment/list',
+      method: 'GET',
+      data: { articleId, page, pageSize }
+    });
+  },
+
+  likeComment: async (commentId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/comment/like/${commentId}`,
+      method: 'POST',
+      data: { userId }
+    });
+  },
+
+  unlikeComment: async (commentId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/comment/unlike/${commentId}`,
+      method: 'POST',
+      data: { userId }
+    });
+  },
+
+  deleteComment: async (commentId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: `/api/comment/delete/${commentId}`,
+      method: 'POST',
+      data: { userId }
+    });
+  },
+
+  getCommentCount: async (articleId) => {
+    return request({
+      url: `/api/comment/count/${articleId}`,
+      method: 'GET'
+    });
   }
 };
 

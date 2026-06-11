@@ -60,6 +60,7 @@ const defaultArticles = [
     authorName: '张大爷',
     viewCount: 328,
     likeCount: 56,
+    commentCount: 3,
     createTime: '2024-12-15',
     status: 1
   },
@@ -72,6 +73,7 @@ const defaultArticles = [
     authorName: '李阿姨',
     viewCount: 256,
     likeCount: 89,
+    commentCount: 2,
     createTime: '2024-12-10',
     status: 1
   },
@@ -84,6 +86,7 @@ const defaultArticles = [
     authorName: '王老师',
     viewCount: 412,
     likeCount: 127,
+    commentCount: 0,
     createTime: '2024-12-08',
     status: 1
   },
@@ -96,6 +99,7 @@ const defaultArticles = [
     authorName: '陈奶奶',
     viewCount: 567,
     likeCount: 203,
+    commentCount: 1,
     createTime: '2024-12-05',
     status: 1
   },
@@ -108,6 +112,7 @@ const defaultArticles = [
     authorName: '刘大伯',
     viewCount: 389,
     likeCount: 145,
+    commentCount: 0,
     createTime: '2024-12-01',
     status: 1
   }
@@ -216,6 +221,87 @@ const defaultInterviews = [
     authorId: 'user_002',
     authorName: '非遗保护中心小李',
     createTime: '2024-02-22'
+  }
+];
+
+const defaultComments = [
+  {
+    id: 'comment_001',
+    articleId: 'article_001',
+    authorId: 'user_002',
+    authorName: '李阿姨',
+    content: '写得真好，让我想起了小时候跟着父亲在地里干活的日子，那时候虽然辛苦但很充实。',
+    likeCount: 12,
+    replyToId: null,
+    replyToUserId: null,
+    replyToUserName: '',
+    createTime: '2024-12-16 09:30:00',
+    status: 1
+  },
+  {
+    id: 'comment_002',
+    articleId: 'article_001',
+    authorId: 'user_003',
+    authorName: '王老师',
+    content: '现在的年轻人都不太了解这些了，应该多写点这样的文章让大家知道过去的农耕文化。',
+    likeCount: 8,
+    replyToId: null,
+    replyToUserId: null,
+    replyToUserName: '',
+    createTime: '2024-12-16 10:15:00',
+    status: 1
+  },
+  {
+    id: 'comment_003',
+    articleId: 'article_001',
+    authorId: 'user_001',
+    authorName: '张大爷',
+    content: '谢谢李阿姨的支持，都是亲身经历的事情，写出来和大家分享一下。',
+    likeCount: 5,
+    replyToId: 'comment_001',
+    replyToUserId: 'user_002',
+    replyToUserName: '李阿姨',
+    createTime: '2024-12-16 11:00:00',
+    status: 1
+  },
+  {
+    id: 'comment_004',
+    articleId: 'article_002',
+    authorId: 'user_001',
+    authorName: '张大爷',
+    content: '外婆的手艺真棒，现在很少能看到这样的传统织布了，希望能一直传承下去。',
+    likeCount: 15,
+    replyToId: null,
+    replyToUserId: null,
+    replyToUserName: '',
+    createTime: '2024-12-11 14:20:00',
+    status: 1
+  },
+  {
+    id: 'comment_005',
+    articleId: 'article_002',
+    authorId: 'user_004',
+    authorName: '陈奶奶',
+    content: '我年轻的时候也学过织布，真的很辛苦，每天坐在织布机前腰酸背痛的。',
+    likeCount: 10,
+    replyToId: null,
+    replyToUserId: null,
+    replyToUserName: '',
+    createTime: '2024-12-11 16:45:00',
+    status: 1
+  },
+  {
+    id: 'comment_006',
+    articleId: 'article_004',
+    authorId: 'user_005',
+    authorName: '刘大伯',
+    content: '我们家也是每年端午节都包粽子，奶奶包的粽子最好吃了，现在想起来还流口水。',
+    likeCount: 20,
+    replyToId: null,
+    replyToUserId: null,
+    replyToUserName: '',
+    createTime: '2024-12-06 08:00:00',
+    status: 1
   }
 ];
 
@@ -611,6 +697,16 @@ function initStorage(overrides = {}) {
   } else {
     wx.setStorageSync('interviewDrafts', []);
   }
+  if (overrides.comments) {
+    wx.setStorageSync('comments', overrides.comments);
+  } else {
+    wx.setStorageSync('comments', JSON.parse(JSON.stringify(defaultComments)));
+  }
+  if (overrides.commentLikes) {
+    wx.setStorageSync('commentLikes', overrides.commentLikes);
+  } else {
+    wx.setStorageSync('commentLikes', {});
+  }
 }
 
 function mergeBehaviors(pageDef) {
@@ -714,6 +810,7 @@ module.exports = {
   defaultActivities,
   defaultQuizzes,
   defaultInterviews,
+  defaultComments,
   initStorage,
   createPageInstance
 };
