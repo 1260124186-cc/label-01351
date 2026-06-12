@@ -1,0 +1,170 @@
+<view class="container">
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading-text">加载中...</view>
+  </view>
+
+  <block wx:else>
+    <view wx:if="{{showWelcome}}" class="welcome-page">
+      <view class="welcome-header">
+        <view class="welcome-icon">🏡</view>
+        <view class="welcome-title">欢迎来到乡村文化库</view>
+        <view class="welcome-subtitle">记录乡土记忆，传承文化根脉</view>
+      </view>
+
+      <view class="welcome-cards">
+        <view class="welcome-card">
+          <view class="card-icon">📖</view>
+          <view class="card-title">精彩文章</view>
+          <view class="card-desc">阅读民俗故事、农耕智慧、传统技艺</view>
+        </view>
+        <view class="welcome-card">
+          <view class="card-icon">👤</view>
+          <view class="card-title">人物志</view>
+          <view class="card-desc">认识乡村中的文化传承人与乡贤</view>
+        </view>
+        <view class="welcome-card">
+          <view class="card-icon">❓</view>
+          <view class="card-title">趣味问答</view>
+          <view class="card-desc">通过答题学习传统文化知识</view>
+        </view>
+        <view class="welcome-card">
+          <view class="card-icon">✍️</view>
+          <view class="card-title">参与投稿</view>
+          <view class="card-desc">分享您的乡村记忆与文化故事</view>
+        </view>
+      </view>
+
+      <view class="welcome-buttons">
+        <button class="btn-primary" bindtap="startGuide">开始探索 ({{totalSteps}}步引导)</button>
+        <view class="skip-link" bindtap="skipOnboarding">跳过引导</view>
+      </view>
+    </view>
+
+    <view wx:else class="guide-page">
+      <view class="progress-header">
+        <view class="progress-bar-container">
+          <view class="progress-bar" style="width: {{progress}}%"></view>
+        </view>
+        <view class="progress-text">{{steps[currentStep].step}} / {{totalSteps}}</view>
+      </view>
+
+      <view class="steps-indicator">
+        <view
+          wx:for="{{steps}}"
+          wx:key="id"
+          class="step-dot {{item.isCompleted ? 'completed' : ''}} {{index === currentStep ? 'active' : ''}}"
+          bindtap="goToStep"
+          data-index="{{index}}"
+        >
+          <view class="dot-number">{{item.isCompleted ? '✓' : item.step}}</view>
+        </view>
+      </view>
+
+      <view class="guide-content">
+        <view class="step-icon">{{steps[currentStep].icon}}</view>
+        <view class="step-title">{{steps[currentStep].title}}</view>
+        <view class="step-description">{{steps[currentStep].description}}</view>
+
+        <view class="step-status" wx:if="{{steps[currentStep].isCompleted}}">
+          <view class="status-badge completed">已完成</view>
+        </view>
+        <view wx:else class="step-status">
+          <view class="status-badge pending">待完成</view>
+        </view>
+      </view>
+
+      <view class="guide-reward">
+        <view class="reward-label">完成奖励</view>
+        <view class="reward-items">
+          <view class="reward-item" wx:if="{{steps[currentStep].reward.points}}">
+            <text class="reward-icon">💎</text>
+            <text class="reward-text">{{steps[currentStep].reward.points}} 积分</text>
+          </view>
+          <view class="reward-item" wx:if="{{steps[currentStep].reward.badge}}">
+            <text class="reward-icon">🏅</text>
+            <text class="reward-text">专属勋章</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="guide-actions">
+        <view
+          wx:if="{{steps[currentStep].isCompleted}}"
+          class="action-btn btn-secondary"
+          bindtap="goPrevStep"
+          wx:if="{{currentStep > 0}}"
+        >
+          上一步
+        </view>
+
+        <button
+          wx:if="{{!steps[currentStep].isCompleted}}"
+          class="action-btn btn-primary flex-1"
+          bindtap="goToStepAction"
+        >
+          去完成
+        </button>
+
+        <button
+          wx:if="{{!steps[currentStep].isCompleted}}"
+          class="action-btn btn-outline"
+          bindtap="checkAndCompleteStep"
+        >
+          我已完成
+        </button>
+
+        <button
+          wx:if="{{steps[currentStep].isCompleted && currentStep < totalSteps - 1}}"
+          class="action-btn btn-primary flex-1"
+          bindtap="goNextStep"
+        >
+          下一步
+        </button>
+
+        <button
+          wx:if="{{steps[currentStep].isCompleted && currentStep === totalSteps - 1}}"
+          class="action-btn btn-success flex-1"
+          bindtap="checkAndCompleteStep"
+        >
+          完成全部引导
+        </button>
+      </view>
+
+      <view class="bottom-skip" bindtap="skipOnboarding">
+        跳过引导
+      </view>
+    </view>
+  </block>
+
+  <view wx:if="{{showRewardModal}}" class="modal-overlay" bindtap="closeRewardModal">
+    <view class="modal-content reward-modal" catchtap="">
+      <view class="modal-title">🎉 恭喜获得奖励</view>
+      <view class="reward-list">
+        <view class="reward-row" wx:if="{{lastReward.points > 0}}">
+          <text class="reward-emoji">💎</text>
+          <text class="reward-name">积分 +{{lastReward.points}}</text>
+        </view>
+        <view class="reward-row" wx:if="{{lastReward.badge}}">
+          <text class="reward-emoji">{{lastReward.badge.icon}}</text>
+          <text class="reward-name">{{lastReward.badge.name}}</text>
+        </view>
+      </view>
+      <button class="btn-primary modal-btn" bindtap="closeRewardModal">太棒了</button>
+    </view>
+  </view>
+
+  <view wx:if="{{showCompleteModal}}" class="modal-overlay" bindtap="closeCompleteModal">
+    <view class="modal-content complete-modal" catchtap="">
+      <view class="complete-icon">🏆</view>
+      <view class="modal-title">新手引导完成！</view>
+      <view class="complete-desc">
+        您已熟悉乡村文化库的核心功能。
+        继续完成每日文化任务，获取更多积分和勋章吧！
+      </view>
+      <view class="complete-actions">
+        <button class="btn-outline modal-btn flex-1" bindtap="navigateToIndex">返回首页</button>
+        <button class="btn-primary modal-btn flex-1" bindtap="goToTasks">查看任务中心</button>
+      </view>
+    </view>
+  </view>
+</view>

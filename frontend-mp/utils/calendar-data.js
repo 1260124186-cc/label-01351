@@ -682,6 +682,16 @@ const isSubscribed = (eventId) => {
   return !!(subs[eventId] && subs[eventId].subscribed);
 };
 
+const getAllEventIds = () => {
+  const allEvents = [...SOLAR_TERMS, ...FESTIVALS];
+  return allEvents.map(e => e.id);
+};
+
+const getSubscribedEventIds = () => {
+  const subs = getSubscriptions();
+  return Object.keys(subs).filter(id => subs[id] && subs[id].subscribed);
+};
+
 module.exports = {
   SOLAR_TERMS,
   FESTIVALS,
@@ -694,5 +704,7 @@ module.exports = {
   getSubscriptions,
   subscribeEvent,
   unsubscribeEvent,
-  isSubscribed
+  isSubscribed,
+  getAllEventIds,
+  getSubscribedEventIds
 };

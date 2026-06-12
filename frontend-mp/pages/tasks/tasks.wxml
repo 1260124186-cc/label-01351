@@ -1,0 +1,309 @@
+<view class="container">
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading-text">加载中...</view>
+  </view>
+
+  <block wx:else>
+    <view class="header-card">
+      <view class="header-bg"></view>
+      <view class="header-content">
+        <view class="user-stats">
+          <view class="stat-item" bindtap="goToAchievements">
+            <view class="stat-icon">💎</view>
+            <view class="stat-value">{{points}}</view>
+            <view class="stat-label">积分</view>
+          </view>
+          <view class="stat-divider"></view>
+          <view class="stat-item" bindtap="goToAchievements">
+            <view class="stat-icon">🏅</view>
+            <view class="stat-value">{{badgeCount}}</view>
+            <view class="stat-label">勋章</view>
+          </view>
+          <view class="stat-divider"></view>
+          <view class="stat-item" bindtap="resetTestData">
+            <view class="stat-icon">📆</view>
+            <view class="stat-date">{{today}}</view>
+            <view class="stat-label">今日</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="tabs-bar">
+      <view
+        wx:for="{{tabs}}"
+        wx:key="id"
+        class="tab-item {{activeTab === item.id ? 'active' : ''}}"
+        bindtap="switchTab"
+        data-id="{{item.id}}"
+      >
+        <text class="tab-icon">{{item.icon}}</text>
+        <text class="tab-name">{{item.name}}</text>
+      </view>
+    </view>
+
+    <view class="tab-content">
+      <block wx:if="{{activeTab === 'sevenDay'}}">
+        <view class="section-header">
+          <view class="section-title">
+            <text class="title-icon">🌟</text>
+            <text>七日文化任务</text>
+          </view>
+          <view class="section-subtitle" wx:if="{{sevenDay}}">
+            第 {{sevenDay.currentDay}} 天 · 已完成 {{sevenDay.completedCount}}/{{sevenDay.totalTasks}}
+          </view>
+        </view>
+
+        <view class="seven-day-progress" wx:if="{{sevenDay}}">
+          <view class="progress-track">
+            <view
+              class="progress-fill"
+              style="width: {{sevenDay.totalTasks > 0 ? (sevenDay.completedCount / sevenDay.totalTasks * 100) : 0}}%"
+            ></view>
+          </view>
+          <view class="progress-dots">
+            <view
+              wx:for="{{sevenDay.tasks}}"
+              wx:key="id"
+              class="day-dot {{item.isCurrentDay ? 'current' : ''}} {{item.isCompleted ? 'done' : ''}} {{!item.isUnlocked ? 'locked' : ''}}"
+            >
+              <text class="day-num">{{item.day}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="task-list" wx:if="{{sevenDay}}">
+          <view
+            wx:for="{{sevenDay.tasks}}"
+            wx:key="id"
+            class="task-card {{!item.isUnlocked ? 'locked' : ''}} {{item.isCurrentDay ? 'current-day' : ''}}"
+          >
+            <view class="task-head">
+              <view class="task-day-tag" wx:if="{{item.day === 7}}">终极任务</view>
+              <view class="task-day-tag" wx:elif="{{item.isCurrentDay}}">今日</view>
+              <view class="task-day-tag locked-tag" wx:if="{{!item.isUnlocked}}">第{{item.day}}天解锁</view>
+
+              <view class="task-status">
+                <view class="status-tag done" wx:if="{{item.isCompleted}}">✓ 已完成</view>
+                <view class="status-tag claimable" wx:elif="{{item.canClaim}}">可领取</view>
+                <view class="status-tag pending" wx:else>进行中</view>
+              </view>
+            </view>
+
+            <view class="task-body">
+              <view class="task-icon">{{item.icon}}</view>
+              <view class="task-info">
+                <view class="task-title">{{item.title}}</view>
+                <view class="task-desc">{{item.description}}</view>
+                <view class="task-progress">
+                  <view class="task-progress-bar">
+                    <view
+                      class="task-progress-fill"
+                      style="width: {{item.targetCount > 0 ? (item.currentCount / item.targetCount * 100) : 0}}%"
+                    ></view>
+                  </view>
+                  <view class="task-progress-text">{{item.currentCount}}/{{item.targetCount}}</view>
+                </view>
+              </view>
+            </view>
+
+            <view class="task-footer">
+              <view class="task-reward">
+                <text class="reward-text">奖励：</text>
+                <text class="reward-chip" wx:if="{{item.reward.points}}">💎 {{item.reward.points}}</text>
+                <text class="reward-chip badge-chip" wx:if="{{item.reward.badge}}">🏅 勋章</text>
+              </view>
+
+              <view class="task-actions">
+                <button
+                  wx:if="{{item.canClaim}}"
+                  class="claim-btn"
+                  bindtap="claimSevenDayReward"
+                  data-id="{{item.id}}"
+                >
+                  领取奖励
+                </button>
+                <button
+                  wx:elif="{{!item.isCompleted && item.isUnlocked}}"
+                  class="go-btn"
+                  bindtap="goTaskAction"
+                  data-task="{{item}}"
+                >
+                  去完成
+                </button>
+              </view>
+            </view>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'festival'}}">
+        <view class="section-header">
+          <view class="section-title">
+            <text class="title-icon">🎉</text>
+            <text>节日特别任务</text>
+          </view>
+          <view class="section-subtitle" wx:if="{{activeFestival}}">{{activeFestival.festivalName}}限定</view>
+        </view>
+
+        <view wx:if="{{!activeFestival}}" class="empty-state">
+          <view class="empty-icon">🕐</view>
+          <view class="empty-title">暂无进行中的节日任务</view>
+          <view class="empty-desc">节日来临时，这里会出现特别任务线哦</view>
+        </view>
+
+        <view wx:else class="festival-card" style="background: linear-gradient(135deg, #FFE4E1 0%, #FFDAB9 100%);">
+          <view class="festival-header">
+            <view class="festival-icon">{{activeFestival.icon}}</view>
+            <view class="festival-info">
+              <view class="festival-name">{{activeFestival.name}}</view>
+              <view class="festival-desc">{{activeFestival.description}}</view>
+            </view>
+          </view>
+
+          <view class="festival-tasks">
+            <view
+              wx:for="{{festivalProgress.tasks}}"
+              wx:key="id"
+              class="festival-task {{item.claimed ? 'claimed' : ''}}"
+            >
+              <view class="ft-body">
+                <view class="ft-info">
+                  <view class="ft-title">{{item.title}}</view>
+                  <view class="ft-desc">{{item.description}}</view>
+                  <view class="ft-progress">
+                    <view class="ft-progress-bar">
+                      <view
+                        class="ft-progress-fill"
+                        style="width: {{item.targetCount > 0 ? (item.currentCount / item.targetCount * 100) : 0}}%"
+                      ></view>
+                    </view>
+                    <text class="ft-progress-text">{{item.currentCount}}/{{item.targetCount}}</text>
+                  </view>
+                </view>
+              </view>
+              <view class="ft-footer">
+                <view class="ft-reward">
+                  <text class="reward-chip" wx:if="{{item.reward.points}}">💎 {{item.reward.points}}</text>
+                  <text class="reward-chip badge-chip" wx:if="{{item.reward.badge}}">🏅 限定勋章</text>
+                </view>
+                <view class="ft-action">
+                  <button
+                    wx:if="{{item.claimed}}"
+                    class="claimed-btn"
+                    disabled
+                  >已领取</button>
+                  <button
+                    wx:elif="{{item.canClaim}}"
+                    class="claim-btn"
+                    bindtap="claimFestivalReward"
+                    data-festival-id="{{activeFestival.id}}"
+                    data-task-id="{{item.id}}"
+                  >领取</button>
+                  <button
+                    wx:else
+                    class="go-btn small"
+                    bindtap="goTaskAction"
+                    data-task="{{item}}"
+                  >去完成</button>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'onboarding'}}">
+        <view class="section-header">
+          <view class="section-title">
+            <text class="title-icon">🌱</text>
+            <text>新手引导</text>
+          </view>
+          <view class="section-subtitle" wx:if="{{onboarding}}">
+            已完成 {{onboarding.completed}}/{{onboarding.total}}
+            <text wx:if="{{onboarding.skipped}}"> (已跳过)</text>
+          </view>
+        </view>
+
+        <view class="onboarding-card" wx:if="{{onboarding}}">
+          <view class="onboarding-progress">
+            <view class="ob-progress-track">
+              <view class="ob-progress-fill" style="width: {{onboarding.progress}}%"></view>
+            </view>
+            <view class="ob-progress-text">{{onboarding.progress}}%</view>
+          </view>
+
+          <view class="ob-steps">
+            <view
+              wx:for="{{onboarding.steps}}"
+              wx:key="id"
+              class="ob-step {{item.isCompleted ? 'done' : ''}}"
+            >
+              <view class="ob-step-dot">
+                <text wx:if="{{item.isCompleted}}">✓</text>
+                <text wx:else>{{item.step}}</text>
+              </view>
+              <view class="ob-step-info">
+                <view class="ob-step-title">{{item.title}}</view>
+                <view class="ob-step-desc">{{item.description}}</view>
+              </view>
+              <view class="ob-step-status">
+                <view class="reward-chip" wx:if="{{item.reward.points}}">💎{{item.reward.points}}</view>
+                <view class="status-dot {{item.isCompleted ? 'green' : 'gray'}}"></view>
+              </view>
+            </view>
+          </view>
+
+          <button
+            class="btn-primary go-ob-btn"
+            bindtap="goToOnboarding"
+          >
+            {{onboarding.isCompleted ? '重新查看引导' : '继续新手引导'}}
+          </button>
+        </view>
+      </block>
+    </view>
+  </block>
+
+  <view wx:if="{{showRewardModal}}" class="modal-overlay" bindtap="closeRewardModal">
+    <view class="modal-content" catchtap="">
+      <view class="modal-emoji">🎊</view>
+      <view class="modal-title">七日任务奖励</view>
+      <view class="reward-display">
+        <view class="rd-row" wx:if="{{lastReward.points > 0}}">
+          <text class="rd-icon">💎</text>
+          <text class="rd-text">积分 +{{lastReward.points}}</text>
+        </view>
+        <view class="rd-row" wx:if="{{lastReward.badge}}">
+          <text class="rd-icon">{{lastReward.badge.icon}}</text>
+          <view class="rd-badge-info">
+            <text class="rd-badge-name">{{lastReward.badge.name}}</text>
+            <text class="rd-badge-desc">{{lastReward.badge.description}}</text>
+          </view>
+        </view>
+      </view>
+      <button class="btn-primary modal-btn" bindtap="closeRewardModal">收下奖励</button>
+    </view>
+  </view>
+
+  <view wx:if="{{showFestivalRewardModal}}" class="modal-overlay" bindtap="closeFestivalRewardModal">
+    <view class="modal-content festival-reward" catchtap="">
+      <view class="modal-emoji">🎆</view>
+      <view class="modal-title">节日限定奖励</view>
+      <view class="reward-display">
+        <view class="rd-row" wx:if="{{lastFestivalReward.points > 0}}">
+          <text class="rd-icon">💎</text>
+          <text class="rd-text">积分 +{{lastFestivalReward.points}}</text>
+        </view>
+        <view class="rd-row" wx:if="{{lastFestivalReward.badge}}">
+          <text class="rd-icon">{{lastFestivalReward.badge.icon}}</text>
+          <view class="rd-badge-info">
+            <text class="rd-badge-name">{{lastFestivalReward.badge.name}}</text>
+            <text class="rd-badge-desc">{{lastFestivalReward.badge.description}}</text>
+          </view>
+        </view>
+      </view>
+      <button class="btn-primary modal-btn" bindtap="closeFestivalRewardModal">太棒了</button>
+    </view>
+  </view>
+</view>

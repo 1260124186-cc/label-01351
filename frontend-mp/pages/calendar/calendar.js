@@ -179,6 +179,11 @@ Page({
       this.setData({ isSubscribed: true });
       wx.showToast({ title: '订阅成功，将在节日前提醒您', icon: 'none' });
       this.scheduleReminder(event);
+      api.recordTaskAction('subscribe_event', {
+        eventId: event.id,
+        festivalId: event.festivalId,
+        eventName: event.name
+      });
     }
   },
 

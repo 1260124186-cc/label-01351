@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "文化任务中心",
+  "navigationBarBackgroundColor": "#8B4513",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#FFF8DC",
+  "enablePullDownRefresh": true
+}

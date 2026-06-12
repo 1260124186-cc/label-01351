@@ -216,6 +216,154 @@
   background: linear-gradient(180deg, transparent, #e0d5c8, transparent);
 }
 
+/* 积分与成就卡片 */
+.achievement-card {
+  display: flex;
+  align-items: center;
+  margin: 16rpx 24rpx;
+  padding: 28rpx 28rpx;
+  background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+  border-radius: 20rpx;
+  border: 2rpx solid rgba(255, 152, 0, 0.15);
+}
+
+.achievement-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.achievement-stat {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+}
+
+.achievement-icon {
+  font-size: 40rpx;
+}
+
+.achievement-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.achievement-value {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #E65100;
+  line-height: 1.2;
+}
+
+.achievement-label {
+  font-size: 22rpx;
+  color: #8B7355;
+  margin-top: 4rpx;
+}
+
+.achievement-divider {
+  width: 2rpx;
+  height: 72rpx;
+  background: rgba(255, 152, 0, 0.2);
+  margin: 0 10rpx;
+}
+
+.achievement-arrow {
+  font-size: 36rpx;
+  color: #FF8F00;
+  font-weight: bold;
+  margin-left: 10rpx;
+}
+
+/* 任务中心快捷卡片 */
+.task-quick-card {
+  display: flex;
+  align-items: center;
+  margin: 0 24rpx 16rpx;
+  padding: 24rpx 28rpx;
+  background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
+  border-radius: 20rpx;
+  border: 2rpx solid rgba(156, 39, 176, 0.15);
+}
+
+.task-quick-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.task-quick-icon-wrap {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 12rpx rgba(156, 39, 176, 0.25);
+}
+
+.task-quick-icon {
+  font-size: 36rpx;
+}
+
+.task-quick-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.task-quick-title {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 6rpx;
+}
+
+.task-quick-title text {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #6A1B9A;
+}
+
+.task-quick-badge {
+  min-width: 36rpx;
+  height: 36rpx;
+  padding: 0 10rpx;
+  border-radius: 18rpx;
+  background: #E91E63;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-quick-badge text {
+  font-size: 20rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.task-quick-desc {
+  font-size: 22rpx;
+  color: #8B7355;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-quick-arrow {
+  font-size: 36rpx;
+  color: #9C27B0;
+  font-weight: bold;
+}
+
 /* 快捷入口 */
 .quick-actions {
   display: flex;
@@ -244,6 +392,20 @@
 .action-icon {
   font-size: 48rpx;
   margin-bottom: 12rpx;
+}
+
+.icon-task {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #FFB74D 0%, #FF9800 100%);
+}
+
+.icon-achievement {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #FFD54F 0%, #FFC107 100%);
 }
 
 .unread-badge {

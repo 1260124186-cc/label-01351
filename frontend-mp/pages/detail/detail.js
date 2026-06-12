@@ -89,6 +89,12 @@ Page({
           await this.checkFavoriteStatus(id);
           await this.checkLikeStatus(id);
           await api.addHistory(id);
+          await api.recordTaskAction('view_article', {
+            articleId: id,
+            category: article.category,
+            categoryName: article.categoryName,
+            tags: article.tags
+          });
         }
         this.loadComments(true);
       } else {
@@ -370,6 +376,10 @@ Page({
             'article.likeCount': res.data.likeCount
           });
 
+          await api.recordTaskAction('like_article', {
+            articleId
+          });
+
           wx.showToast({
             title: '点赞成功',
             icon: 'success'
@@ -420,6 +430,11 @@ Page({
 
         if (res.code === 200) {
           this.setData({ favorited: true });
+
+          await api.recordTaskAction('favorite_article', {
+            articleId
+          });
+
           wx.showToast({
             title: '收藏成功',
             icon: 'success'

@@ -34,6 +34,13 @@ Page({
           likeCount: res.data.likeCount || 0
         });
         wx.setNavigationBarTitle({ title: res.data.name });
+
+        const app = getApp();
+        if (app.getLoginStatus()) {
+          await api.recordTaskAction('view_figure', {
+            figureId: this.data.figureId
+          });
+        }
       } else {
         wx.showToast({ title: res.message || '加载失败', icon: 'none' });
       }

@@ -75,6 +75,13 @@ Page({
           score: res.data.score,
           relatedArticles: res.data.relatedArticles || []
         });
+
+        await api.recordTaskAction('answer_quiz', {
+          quizId: this.data.quiz && this.data.quiz.id,
+          isCorrect: res.data.isCorrect,
+          type: 'daily'
+        });
+
         wx.showToast({
           title: res.data.isCorrect ? '回答正确！' : '回答错误',
           icon: res.data.isCorrect ? 'success' : 'none'

@@ -46,7 +46,13 @@ Page({
 
     showFeedbackModal: false,
     feedbackContent: '',
-    feedbackContact: ''
+    feedbackContact: '',
+
+    userPoints: 0,
+    badgeCount: 0,
+    totalBadgeCount: 0,
+    claimableCount: 0,
+    sevenDayCurrentDay: 1
   },
 
   onLoad() {
@@ -61,6 +67,34 @@ Page({
       this.loadMyArticles();
       this.loadUnreadCount();
       this.loadDraftCount();
+      this.loadTaskData();
+    }
+  },
+
+  async loadTaskData() {
+    try {
+      const [pointsRes, badgesRes, allBadgesRes, sevenDayRes] = await Promise.all([
+        api.getUserPoints(),
+        api.getUserBadges(),
+        api.getAllBadges(),
+        api.getSevenDayProgress()
+      ]);
+
+      const userPoints = pointsRes.code === 200 ? (pointsRes.data.points || 0) : 0;
+      const badgeCount = badgesRes.code === 200 ? (badgesRes.data.badges || []).length : 0;
+      const totalBadgeCount = allBadgesRes.code === 200 ? (allBadgesRes.data.badges || []).length : 0;
+      const claimableCount = sevenDayRes.code === 200 ? (sevenDayRes.data.claimableCount || 0) : 0;
+      const sevenDayCurrentDay = sevenDayRes.code === 200 ? (sevenDayRes.data.currentDay || 1) : 1;
+
+      this.setData({
+        userPoints,
+        badgeCount,
+        totalBadgeCount,
+        claimableCount,
+        sevenDayCurrentDay
+      });
+    } catch (e) {
+      console.error('[Mine] 任务数据加载失败:', e);
     }
   },
 
@@ -171,6 +205,24 @@ Page({
   goToMyActivities() {
     wx.navigateTo({
       url: '/pages/my-activities/my-activities'
+    });
+  },
+
+  goToTasks() {
+    wx.navigateTo({
+      url: '/pages/tasks/tasks'
+    });
+  },
+
+  goToAchievements() {
+    wx.navigateTo({
+      url: '/pages/achievements/achievements'
+    });
+  },
+
+  goToOnboarding() {
+    wx.navigateTo({
+      url: '/pages/onboarding/onboarding'
     });
   },
 

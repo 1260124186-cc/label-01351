@@ -101,6 +101,10 @@ Page({
       wx.hideLoading();
 
       if (res.code === 200) {
+        await api.recordTaskAction('join_activity', {
+          activityId,
+          activityTitle: activity.title
+        });
         wx.showToast({
           title: res.message || '报名成功',
           icon: 'success'

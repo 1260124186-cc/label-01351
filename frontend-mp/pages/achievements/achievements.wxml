@@ -1,0 +1,150 @@
+<view class="container">
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading-text">加载中...</view>
+  </view>
+
+  <block wx:else>
+    <view class="profile-header">
+      <view class="header-bg"></view>
+      <view class="header-content">
+        <view class="user-crown">
+          <text class="crown-icon">👑</text>
+        </view>
+        <view class="stats-row">
+          <view class="stat-block">
+            <view class="stat-num">{{points}}</view>
+            <view class="stat-label">💎 积分</view>
+          </view>
+          <view class="stat-divider"></view>
+          <view class="stat-block">
+            <view class="stat-num">{{ownedCount}}/{{totalCount}}</view>
+            <view class="stat-label">🏅 勋章</view>
+          </view>
+        </view>
+        <view class="progress-section">
+          <view class="progress-info">
+            <text class="progress-label">成就完成度</text>
+            <text class="progress-value">{{progressPercent}}%</text>
+          </view>
+          <view class="progress-bar">
+            <view class="progress-fill" style="width: {{progressPercent}}%"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="action-row">
+      <button class="action-btn" bindtap="goToTasks">
+        <text class="btn-icon">📅</text>
+        <text>去做任务</text>
+      </button>
+    </view>
+
+    <view class="rarity-filter">
+      <view
+        wx:for="{{rarityOptions}}"
+        wx:key="id"
+        class="filter-chip {{filterRarity === item.id ? 'active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onFilterRarity"
+      >
+        <text class="chip-name">{{item.name}}</text>
+        <text class="chip-count">{{item.count}}</text>
+      </view>
+    </view>
+
+    <view class="badge-grid">
+      <view
+        wx:for="{{displayBadges}}"
+        wx:key="id"
+        class="badge-card {{item.isOwned ? 'owned' : 'locked'}}"
+        style="background: {{item.isOwned ? item.rarityInfo.bg : 'linear-gradient(135deg, #F5F5F5, #EEEEEE)'}}"
+        bindtap="onBadgeTap"
+        data-badge="{{item}}"
+      >
+        <view class="badge-rarity" wx:if="{{item.isOwned}}">
+          <text class="rarity-tag" style="background: {{item.rarityInfo.color}}">{{item.rarityInfo.name}}</text>
+        </view>
+        <view class="badge-rarity locked" wx:else>
+          <text class="rarity-tag locked">未解锁</text>
+        </view>
+        <view class="badge-icon-wrap">
+          <view class="badge-glow" wx:if="{{item.isOwned && item.rarity === 'legendary'}}"></view>
+          <text class="badge-icon">{{item.isOwned ? item.icon : '🔒'}}</text>
+        </view>
+        <view class="badge-name" style="color: {{item.isOwned ? item.rarityInfo.color : '#9E9E9E'}}">
+          {{item.name}}
+        </view>
+        <view class="badge-desc">{{item.description}}</view>
+        <view class="badge-points" wx:if="{{item.isOwned && item.points}}">
+          <text class="points-icon">💎</text>
+          <text>+{{item.points}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{displayBadges.length === 0}}" class="empty-state">
+      <view class="empty-icon">🎖️</view>
+      <view class="empty-text">暂无该分类的勋章</view>
+    </view>
+  </block>
+
+  <view wx:if="{{showBadgeDetail && selectedBadge}}" class="modal-overlay" bindtap="closeBadgeDetail">
+    <view class="modal-content badge-detail" catchtap="">
+      <view class="detail-badge-card" style="background: {{selectedBadge.isOwned ? selectedBadge.rarityInfo.bg : 'linear-gradient(135deg, #F5F5F5, #EEEEEE)'}}">
+        <view class="detail-rarity-tag" wx:if="{{selectedBadge.isOwned}}" style="background: {{selectedBadge.rarityInfo.color}}">
+          {{selectedBadge.rarityInfo.name}}
+        </view>
+        <view class="detail-rarity-tag locked" wx:else>未解锁</view>
+        <view class="detail-icon-wrap">
+          <view class="detail-glow" wx:if="{{selectedBadge.isOwned && selectedBadge.rarity === 'legendary'}}"></view>
+          <text class="detail-badge-icon">{{selectedBadge.isOwned ? selectedBadge.icon : '🔒'}}</text>
+        </view>
+        <view class="detail-badge-name" style="color: {{selectedBadge.isOwned ? selectedBadge.rarityInfo.color : '#9E9E9E'}}">
+          {{selectedBadge.name}}
+        </view>
+      </view>
+
+      <view class="detail-section">
+        <view class="detail-section-title">勋章说明</view>
+        <view class="detail-description">{{selectedBadge.description}}</view>
+      </view>
+
+      <view class="detail-section" wx:if="{{selectedBadge.condition}}">
+        <view class="detail-section-title">解锁条件</view>
+        <view class="detail-condition">
+          <block wx:if="{{selectedBadge.condition.type === 'favorite_count'}}">
+            累计收藏 {{selectedBadge.condition.value}} 篇文章
+          </block>
+          <block wx:elif="{{selectedBadge.condition.type === 'correct_quiz_count'}}">
+            累计答对 {{selectedBadge.condition.value}} 道题目
+          </block>
+          <block wx:elif="{{selectedBadge.condition.type === 'published_count'}}">
+            累计发布 {{selectedBadge.condition.value}} 篇文章
+          </block>
+          <block wx:elif="{{selectedBadge.condition.type === 'viewed_figure_count'}}">
+            浏览 {{selectedBadge.condition.value}} 位乡贤人物
+          </block>
+          <block wx:elif="{{selectedBadge.condition.type === 'subscribed_all_festivals'}}">
+            订阅所有传统节日提醒
+          </block>
+          <block wx:elif="{{selectedBadge.festival}}">
+            完成{{selectedBadge.festival === 'spring_festival' ? '春节' : selectedBadge.festival === 'dragon_boat' ? '端午' : '中秋'}}特别任务线
+          </block>
+          <block wx:else>
+            完成指定任务获得
+          </block>
+        </view>
+      </view>
+
+      <view class="detail-section" wx:if="{{selectedBadge.isOwned && selectedBadge.points}}">
+        <view class="detail-section-title">获得奖励</view>
+        <view class="detail-reward">💎 积分 +{{selectedBadge.points}}</view>
+      </view>
+
+      <button class="btn-primary close-btn" bindtap="closeBadgeDetail">
+        {{selectedBadge.isOwned ? '我知道了' : '努力解锁'}}
+      </button>
+    </view>
+  </view>
+</view>

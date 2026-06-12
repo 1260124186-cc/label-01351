@@ -3,6 +3,7 @@ const api = require('./utils/api');
 const util = require('./utils/util');
 const figureData = require('./utils/figure-data');
 const quizData = require('./utils/quiz-data');
+const taskSystem = require('./utils/task');
 
 App({
   globalData: {
@@ -10,7 +11,9 @@ App({
     isLoggedIn: false,
     token: null,
     baseUrl: 'http://localhost:3000',
-    useRemote: false
+    useRemote: false,
+    isFirstLaunch: false,
+    newBadges: []
   },
 
   onLaunch() {
@@ -18,6 +21,41 @@ App({
     this.checkLoginStatus();
     this.ensureFallbackLogin();
     this.initMockData();
+    this.checkFirstLaunch();
+    this.maybeShowOnboarding();
+  },
+
+  maybeShowOnboarding() {
+    setTimeout(() => {
+      if (this.shouldShowOnboarding()) {
+        console.log('[App] 自动跳转到新手引导页面');
+        wx.redirectTo({
+          url: '/pages/onboarding/onboarding',
+          fail: (err) => {
+            console.error('[App] 跳转新手引导失败:', err);
+          }
+        });
+      }
+    }, 500);
+  },
+
+  checkFirstLaunch() {
+    const hasLaunched = wx.getStorageSync('hasLaunchedBefore');
+    if (!hasLaunched) {
+      this.globalData.isFirstLaunch = true;
+      wx.setStorageSync('hasLaunchedBefore', true);
+      console.log('[App] 首次启动，将展示新手引导');
+    } else {
+      this.globalData.isFirstLaunch = false;
+    }
+  },
+
+  shouldShowOnboarding() {
+    if (!this.globalData.isLoggedIn) return false;
+    if (!this.globalData.isFirstLaunch && taskSystem.isOnboardingCompleted()) {
+      return false;
+    }
+    return !taskSystem.isOnboardingCompleted();
   },
 
   initApiConfig() {

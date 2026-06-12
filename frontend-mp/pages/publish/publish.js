@@ -567,6 +567,17 @@ Page({
             wx.navigateBack();
           }, 1000);
         } else {
+          const articleId = res.data && res.data.id;
+          if (!isEditingDraft) {
+            const categoryName = (this.data.categories.find(c => c.id === category) || {}).name;
+            await api.recordTaskAction('publish_article', {
+              articleId,
+              category,
+              categoryName,
+              tags: tags && tags.length > 0 ? tags : []
+            });
+          }
+
           this.setData({
             showPreview: false,
             previewData: null,

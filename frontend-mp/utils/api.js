@@ -7,6 +7,7 @@ const figureData = require('./figure-data');
 const quizData = require('./quiz-data');
 const interviewData = require('./interview-data');
 const calendarData = require('./calendar-data');
+const taskSystem = require('./task');
 
 const config = {
   useRemote: false,
@@ -4168,6 +4169,171 @@ const storageApi = {
     wx.setStorageSync('history', history);
 
     return { code: 200, data: { success: true }, message: '已清空阅读历史' };
+  },
+
+  getOnboardingStatus: async () => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    return { code: 200, data: taskSystem.getOnboardingStatus(), message: 'success' };
+  },
+
+  getCurrentOnboardingStep: async () => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    return { code: 200, data: taskSystem.getCurrentOnboardingStep(), message: 'success' };
+  },
+
+  completeOnboardingStep: async (stepId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!stepId) return { code: 400, data: null, message: '步骤ID不能为空' };
+    const result = taskSystem.completeOnboardingStep(stepId);
+    if (result.alreadyCompleted) {
+      return { code: 200, data: { alreadyCompleted: true }, message: '步骤已完成' };
+    }
+    if (result.conditionNotMet) {
+      return { code: 400, data: { conditionNotMet: true }, message: '条件未达成' };
+    }
+    if (!result.success) {
+      return { code: 400, data: null, message: result.message || '完成失败' };
+    }
+    return { code: 200, data: result, message: '完成成功' };
+  },
+
+  skipOnboarding: async () => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    taskSystem.skipOnboarding();
+    return { code: 200, data: { success: true }, message: '已跳过新手引导' };
+  },
+
+  getOnboardingProgress: async () => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    return { code: 200, data: taskSystem.getOnboardingProgress(), message: 'success' };
+  },
+
+  getSevenDayProgress: async () => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    taskSystem.initSevenDayTasks();
+    return { code: 200, data: taskSystem.getSevenDayProgress(), message: 'success' };
+  },
+
+  claimSevenDayReward: async (taskId) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!taskId) return { code: 400, data: null, message: '任务ID不能为空' };
+    const result = taskSystem.claimSevenDayReward(taskId);
+    if (!result.success) {
+      return { code: 400, data: result, message: result.message || '领取失败' };
+    }
+    return { code: 200, data: result, message: '领取成功' };
+  },
+
+  getActiveFestivalTaskLine: async () => {
+    await delay(100);
+    const festival = taskSystem.getActiveFestivalTaskLine();
+    return { code: 200, data: festival, message: 'success' };
+  },
+
+  getFestivalProgress: async (festivalId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!festivalId) return { code: 400, data: null, message: '节日ID不能为空' };
+    const result = taskSystem.getFestivalProgress(festivalId);
+    if (!result) return { code: 404, data: null, message: '节日不存在' };
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  claimFestivalReward: async (festivalId, taskId) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!festivalId || !taskId) {
+      return { code: 400, data: null, message: '参数不完整' };
+    }
+    const result = taskSystem.claimFestivalReward(festivalId, taskId);
+    if (!result.success) {
+      return { code: 400, data: result, message: result.message || '领取失败' };
+    }
+    return { code: 200, data: result, message: '领取成功' };
+  },
+
+  getUserPoints: async () => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    return { code: 200, data: { points: taskSystem.getUserPoints() }, message: 'success' };
+  },
+
+  getUserBadges: async () => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    return { code: 200, data: { badges: taskSystem.getUserBadges() }, message: 'success' };
+  },
+
+  getAllBadges: async () => {
+    await delay(100);
+    return { code: 200, data: { badges: taskSystem.getAllBadges() }, message: 'success' };
+  },
+
+  recordTaskAction: async (actionType, data = {}) => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!actionType) return { code: 400, data: null, message: '动作类型不能为空' };
+    const result = taskSystem.recordAction(actionType, data);
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  getTaskCenterData: async () => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    taskSystem.initSevenDayTasks();
+    const onboarding = taskSystem.getOnboardingProgress();
+    const sevenDay = taskSystem.getSevenDayProgress();
+    const festival = taskSystem.getActiveFestivalTaskLine();
+    let festivalProgress = null;
+    let activeFestival = null;
+    if (festival && festival.active && festival.id) {
+      festivalProgress = taskSystem.getFestivalProgress(festival.id);
+      activeFestival = festival;
+    }
+    const points = taskSystem.getUserPoints();
+    const badges = taskSystem.getUserBadges();
+    return {
+      code: 200,
+      data: {
+        onboarding,
+        sevenDay,
+        festival,
+        activeFestival,
+        festivalProgress,
+        points,
+        badges,
+        today: taskSystem.getTodayStr()
+      },
+      message: 'success'
+    };
+  },
+
+  resetTaskData: async () => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    taskSystem.resetUserData();
+    return { code: 200, data: { success: true }, message: '任务数据已重置' };
   }
 };
 
@@ -5245,6 +5411,118 @@ const remoteApi = {
       method: 'POST',
       data: { ...data, userId }
     });
+  },
+
+  getOnboardingStatus: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/task/onboarding/status', method: 'GET' });
+  },
+
+  getCurrentOnboardingStep: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/task/onboarding/current-step', method: 'GET' });
+  },
+
+  completeOnboardingStep: async (stepId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/task/onboarding/complete',
+      method: 'POST',
+      data: { stepId }
+    });
+  },
+
+  skipOnboarding: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/task/onboarding/skip', method: 'POST' });
+  },
+
+  getOnboardingProgress: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/task/onboarding/progress', method: 'GET' });
+  },
+
+  getSevenDayProgress: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/task/seven-day/progress', method: 'GET' });
+  },
+
+  claimSevenDayReward: async (taskId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/task/seven-day/claim',
+      method: 'POST',
+      data: { taskId }
+    });
+  },
+
+  getActiveFestivalTaskLine: async () => {
+    return request({ url: '/api/task/festival/active', method: 'GET' });
+  },
+
+  getFestivalProgress: async (festivalId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/task/festival/progress',
+      method: 'GET',
+      data: { festivalId }
+    });
+  },
+
+  claimFestivalReward: async (festivalId, taskId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/task/festival/claim',
+      method: 'POST',
+      data: { festivalId, taskId }
+    });
+  },
+
+  getUserPoints: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/task/points', method: 'GET' });
+  },
+
+  getUserBadges: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/task/badges', method: 'GET' });
+  },
+
+  getAllBadges: async () => {
+    return request({ url: '/api/task/badges/all', method: 'GET' });
+  },
+
+  recordTaskAction: async (actionType, data = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/task/record-action',
+      method: 'POST',
+      data: { actionType, ...data }
+    });
+  },
+
+  getTaskCenterData: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/task/center', method: 'GET' });
+  },
+
+  resetTaskData: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/task/reset', method: 'POST' });
   }
 };
 

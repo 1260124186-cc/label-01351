@@ -1,0 +1,417 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FFF8DC 0%, #FFE4B5 50%, #DEB887 100%);
+  padding: 0;
+}
+
+.loading-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-text {
+  color: #8B4513;
+  font-size: 32rpx;
+}
+
+.welcome-page {
+  padding: 60rpx 40rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.welcome-header {
+  text-align: center;
+  padding: 40rpx 0 60rpx;
+}
+
+.welcome-icon {
+  font-size: 120rpx;
+  margin-bottom: 30rpx;
+}
+
+.welcome-title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #8B4513;
+  margin-bottom: 16rpx;
+}
+
+.welcome-subtitle {
+  font-size: 28rpx;
+  color: #A0522D;
+}
+
+.welcome-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-bottom: 80rpx;
+}
+
+.welcome-card {
+  width: 48%;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20rpx;
+  padding: 30rpx 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(139, 69, 19, 0.1);
+}
+
+.card-icon {
+  font-size: 56rpx;
+  margin-bottom: 16rpx;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #5D4037;
+  margin-bottom: 8rpx;
+}
+
+.card-desc {
+  font-size: 22rpx;
+  color: #8B7355;
+  line-height: 1.4;
+}
+
+.welcome-buttons {
+  padding: 0 20rpx;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #CD853F, #8B4513);
+  color: white;
+  border-radius: 50rpx;
+  padding: 24rpx 0;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  width: 100%;
+  box-shadow: 0 8rpx 24rpx rgba(139, 69, 19, 0.3);
+}
+
+.btn-primary::after {
+  border: none;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.8);
+  color: #8B4513;
+  border-radius: 50rpx;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+  border: 2rpx solid #D2691E;
+}
+
+.btn-secondary::after {
+  border: none;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #8B4513;
+  border-radius: 50rpx;
+  padding: 20rpx 0;
+  font-size: 28rpx;
+  border: 2rpx solid #8B4513;
+}
+
+.btn-outline::after {
+  border: none;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #52C41A, #389E0D);
+  color: white;
+  border-radius: 50rpx;
+  padding: 24rpx 0;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 8rpx 24rpx rgba(82, 196, 26, 0.3);
+}
+
+.btn-success::after {
+  border: none;
+}
+
+.skip-link {
+  text-align: center;
+  color: #8B7355;
+  font-size: 26rpx;
+  padding: 30rpx 0;
+  text-decoration: underline;
+}
+
+.guide-page {
+  padding: 40rpx 40rpx 60rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 40rpx;
+}
+
+.progress-bar-container {
+  flex: 1;
+  height: 12rpx;
+  background: rgba(139, 69, 19, 0.2);
+  border-radius: 6rpx;
+  overflow: hidden;
+  margin-right: 24rpx;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #CD853F, #8B4513);
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #8B4513;
+  min-width: 80rpx;
+  text-align: right;
+}
+
+.steps-indicator {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 60rpx;
+}
+
+.step-dot {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+  border: 3rpx solid #D2B48C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 12rpx;
+  transition: all 0.3s ease;
+}
+
+.step-dot.active {
+  background: linear-gradient(135deg, #CD853F, #8B4513);
+  border-color: #8B4513;
+  transform: scale(1.1);
+  box-shadow: 0 4rpx 12rpx rgba(139, 69, 19, 0.4);
+}
+
+.step-dot.completed {
+  background: linear-gradient(135deg, #52C41A, #389E0D);
+  border-color: #52C41A;
+}
+
+.dot-number {
+  font-size: 26rpx;
+  color: #8B7355;
+  font-weight: bold;
+}
+
+.step-dot.active .dot-number,
+.step-dot.completed .dot-number {
+  color: white;
+}
+
+.guide-content {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 24rpx;
+  padding: 60rpx 40rpx;
+  margin-bottom: 40rpx;
+  text-align: center;
+  box-shadow: 0 8rpx 32rpx rgba(139, 69, 19, 0.12);
+}
+
+.step-icon {
+  font-size: 120rpx;
+  margin-bottom: 30rpx;
+}
+
+.step-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #5D4037;
+  margin-bottom: 20rpx;
+}
+
+.step-description {
+  font-size: 28rpx;
+  color: #8B7355;
+  line-height: 1.6;
+  padding: 0 20rpx;
+}
+
+.step-status {
+  margin-top: 40rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.status-badge {
+  padding: 10rpx 36rpx;
+  border-radius: 30rpx;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+.status-badge.pending {
+  background: #FFF3E0;
+  color: #E65100;
+}
+
+.status-badge.completed {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.guide-reward {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 40rpx;
+}
+
+.reward-label {
+  font-size: 24rpx;
+  color: #8B7355;
+  margin-bottom: 16rpx;
+}
+
+.reward-items {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.reward-item {
+  display: flex;
+  align-items: center;
+  background: #FFF8E1;
+  padding: 12rpx 24rpx;
+  border-radius: 30rpx;
+  margin-right: 20rpx;
+}
+
+.reward-icon {
+  font-size: 28rpx;
+  margin-right: 8rpx;
+}
+
+.reward-text {
+  font-size: 26rpx;
+  color: #E65100;
+  font-weight: bold;
+}
+
+.guide-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.action-btn {
+  flex: 1;
+}
+
+.action-btn.flex-1 {
+  flex: 1;
+}
+
+.bottom-skip {
+  text-align: center;
+  color: #8B7355;
+  font-size: 24rpx;
+  text-decoration: underline;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 24rpx;
+  padding: 60rpx 40rpx;
+  margin: 0 60rpx;
+  width: 80%;
+  max-width: 600rpx;
+  text-align: center;
+}
+
+.modal-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #5D4037;
+  margin-bottom: 40rpx;
+}
+
+.reward-list {
+  margin-bottom: 50rpx;
+}
+
+.reward-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 0;
+}
+
+.reward-emoji {
+  font-size: 48rpx;
+  margin-right: 16rpx;
+}
+
+.reward-name {
+  font-size: 32rpx;
+  color: #E65100;
+  font-weight: bold;
+}
+
+.modal-btn {
+  margin-top: 20rpx;
+}
+
+.complete-icon {
+  font-size: 120rpx;
+  margin-bottom: 20rpx;
+}
+
+.complete-desc {
+  font-size: 28rpx;
+  color: #8B7355;
+  line-height: 1.6;
+  margin-bottom: 50rpx;
+  padding: 0 10rpx;
+}
+
+.complete-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.complete-actions .modal-btn {
+  margin: 0;
+}

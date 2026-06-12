@@ -56,10 +56,69 @@
           <text class="stat-label">阅读</text>
         </view>
       </view>
+
+      <!-- 积分与成就卡片 -->
+      <view class="achievement-card" bindtap="goToAchievements">
+        <view class="achievement-left">
+          <view class="achievement-stat">
+            <text class="achievement-icon">💎</text>
+            <view class="achievement-info">
+              <text class="achievement-value">{{userPoints}}</text>
+              <text class="achievement-label">积分</text>
+            </view>
+          </view>
+          <view class="achievement-divider"></view>
+          <view class="achievement-stat">
+            <text class="achievement-icon">🏅</text>
+            <view class="achievement-info">
+              <text class="achievement-value">{{badgeCount}}/{{totalBadgeCount}}</text>
+              <text class="achievement-label">勋章</text>
+            </view>
+          </view>
+        </view>
+        <text class="achievement-arrow">›</text>
+      </view>
+
+      <!-- 任务中心快捷卡片 -->
+      <view class="task-quick-card" bindtap="goToTasks">
+        <view class="task-quick-left">
+          <view class="task-quick-icon-wrap">
+            <text class="task-quick-icon">🎯</text>
+          </view>
+          <view class="task-quick-info">
+            <view class="task-quick-title">
+              <text>任务中心</text>
+              <view class="task-quick-badge" wx:if="{{claimableCount > 0}}">
+                <text>{{claimableCount}}</text>
+              </view>
+            </view>
+            <view class="task-quick-desc">
+              <text wx:if="{{sevenDayCurrentDay <= 7}}">七日任务：第 {{sevenDayCurrentDay}} 天</text>
+              <text wx:else>完成今日任务赢取奖励</text>
+            </view>
+          </view>
+        </view>
+        <text class="task-quick-arrow">›</text>
+      </view>
     </view>
 
     <!-- 快捷入口 -->
     <view class="quick-actions">
+      <view class="action-item" bindtap="goToTasks">
+        <view class="action-icon-wrap icon-task">
+          <text class="action-icon">🎯</text>
+          <view class="unread-badge" wx:if="{{claimableCount > 0}}">
+            <text class="badge-text">{{claimableCount > 99 ? '99+' : claimableCount}}</text>
+          </view>
+        </view>
+        <text class="action-text">任务中心</text>
+      </view>
+      <view class="action-item" bindtap="goToAchievements">
+        <view class="action-icon-wrap icon-achievement">
+          <text class="action-icon">🏆</text>
+        </view>
+        <text class="action-text">成就勋章</text>
+      </view>
       <view class="action-item" bindtap="goToNotifications">
         <view class="action-icon-wrap">
           <text class="action-icon">🔔</text>

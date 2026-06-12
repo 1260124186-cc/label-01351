@@ -42,7 +42,10 @@
     "pages/profile-edit/profile-edit",
     "pages/history/history",
     "pages/author-home/author-home",
-    "pages/drafts/drafts"
+    "pages/drafts/drafts",
+    "pages/onboarding/onboarding",
+    "pages/tasks/tasks",
+    "pages/achievements/achievements"
   ],
   "window": {
     "backgroundTextStyle": "dark",
