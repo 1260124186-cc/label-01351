@@ -1,0 +1,147 @@
+<!--pages/my-certificates/my-certificates.wxml-->
+<view class="page-container">
+  <!-- 未登录状态 -->
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">🏆</text>
+      <text class="login-text">登录后查看我的证书</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <!-- 已登录状态 -->
+  <block wx:else>
+    <!-- 统计卡片 -->
+    <view class="stats-card">
+      <view class="stats-header">
+        <text class="stats-title">我的荣誉</text>
+        <view class="verify-entry" bindtap="goToVerify">
+          <text class="verify-icon">🔍</text>
+          <text class="verify-text">查验证书</text>
+        </view>
+      </view>
+      <view class="stats-main">
+        <view class="total-count">
+          <text class="count-value">{{stats.totalCount}}</text>
+          <text class="count-label">证书总数</text>
+        </view>
+        <scroll-view class="type-scroll" scroll-x="true" show-scrollbar="false">
+          <view class="type-list">
+            <view 
+              class="type-item" 
+              wx:for="{{stats.typeStats}}" 
+              wx:key="typeId"
+            >
+              <text class="type-icon" style="color: {{item.color}}">{{item.icon}}</text>
+              <text class="type-count">{{item.count}}</text>
+              <text class="type-name">{{item.typeName}}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <!-- 搜索栏 -->
+    <view class="search-section">
+      <view class="search-bar">
+        <text class="search-icon">🔍</text>
+        <input 
+          class="search-input" 
+          placeholder="搜索证书名称、编号、颁发单位" 
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="onSearchConfirm"
+          confirm-type="search"
+        />
+        <view class="search-clear" wx:if="{{searchKeyword}}" bindtap="onClearSearch">✕</view>
+      </view>
+    </view>
+
+    <!-- 类型筛选 -->
+    <scroll-view class="filter-scroll" scroll-x="true" show-scrollbar="false">
+      <view class="filter-list">
+        <view 
+          class="filter-item {{filterType === item.id ? 'active' : ''}}" 
+          wx:for="{{certificateTypes}}" 
+          wx:key="id"
+          data-type="{{item.id}}"
+          bindtap="onFilterTypeChange"
+        >
+          <text class="filter-icon" wx:if="{{item.icon}}">{{item.icon}}</text>
+          <text class="filter-text">{{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 证书列表 -->
+    <view class="list-section">
+      <!-- 空状态 -->
+      <view class="empty-wrap" wx:if="{{!loading && certificates.length === 0}}">
+        <text class="empty-icon">📜</text>
+        <text class="empty-text">
+          {{searchKeyword || filterType !== 'all' ? '没有找到相关证书' : '还没有获得证书'}}
+        </text>
+      </view>
+
+      <!-- 加载中 -->
+      <view class="loading-wrap" wx:if="{{loading && certificates.length === 0}}">
+        <text class="loading-text">加载中...</text>
+      </view>
+
+      <!-- 证书卡片列表 -->
+      <view class="certificate-list" wx:if="{{certificates.length > 0}}">
+        <view 
+          class="certificate-card" 
+          wx:for="{{certificates}}" 
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="goToDetail"
+        >
+          <view class="cert-header" style="background: linear-gradient(135deg, {{item.typeInfo.color}} 0%, {{item.typeInfo.color}}dd 100%);">
+            <text class="cert-type-icon">{{item.typeInfo.icon}}</text>
+            <view class="cert-type-info">
+              <text class="cert-type-name">{{item.typeName}}</text>
+              <text class="cert-status" style="color: {{item.statusInfo.color}}">{{item.statusInfo.name}}</text>
+            </view>
+          </view>
+          <view class="cert-body">
+            <view class="cert-title">{{item.title}}</view>
+            <view class="cert-reason">{{item.reason}}</view>
+            <view class="cert-meta">
+              <view class="meta-row">
+                <text class="meta-label">持有人：</text>
+                <text class="meta-value">{{item.userName}}</text>
+              </view>
+              <view class="meta-row">
+                <text class="meta-label">颁发单位：</text>
+                <text class="meta-value">{{item.issuingUnitName}}</text>
+              </view>
+              <view class="meta-row">
+                <text class="meta-label">颁发日期：</text>
+                <text class="meta-value">{{item.formattedDate}}</text>
+              </view>
+            </view>
+          </view>
+          <view class="cert-footer">
+            <view class="cert-number">
+              <text class="number-label">证书编号：</text>
+              <text class="number-value">{{item.certificateNumber}}</text>
+            </view>
+            <view class="cert-stats">
+              <text class="stat-item">👁 {{item.viewCount}}</text>
+              <text class="stat-item">📤 {{item.shareCount}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 加载更多 -->
+      <view class="load-more" wx:if="{{hasMore && certificates.length > 0}}">
+        <text class="load-more-text">{{loading ? '加载中...' : '上拉加载更多'}}</text>
+      </view>
+      <view class="no-more" wx:if="{{!hasMore && certificates.length > 0}}">
+        <text class="no-more-text">—— 没有更多了 ——</text>
+      </view>
+    </view>
+  </block>
+</view>

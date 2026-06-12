@@ -445,5 +445,19 @@ Page({
     wx.navigateTo({
       url: '/pages/drafts/drafts'
     });
+  },
+
+  goToMyCertificates() {
+    const app = getApp();
+    if (!app.checkLogin()) return;
+    wx.navigateTo({
+      url: '/pages/my-certificates/my-certificates'
+    });
+  },
+
+  goToCertificateVerify() {
+    wx.navigateTo({
+      url: '/pages/certificate-verify/certificate-verify'
+    });
   }
 });

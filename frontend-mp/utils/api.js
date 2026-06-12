@@ -7,6 +7,7 @@ const figureData = require('./figure-data');
 const quizData = require('./quiz-data');
 const interviewData = require('./interview-data');
 const calendarData = require('./calendar-data');
+const certificateData = require('./certificate-data');
 
 const config = {
   useRemote: false,
@@ -4174,6 +4175,595 @@ const storageApi = {
     wx.setStorageSync('history', history);
 
     return { code: 200, data: { success: true }, message: '已清空阅读历史' };
+  },
+
+  initCertificates: async () => {
+    await delay(200);
+    let certificates = wx.getStorageSync('certificates');
+    if (!certificates || certificates.length === 0) {
+      certificates = JSON.parse(JSON.stringify(certificateData.DEFAULT_CERTIFICATES));
+      wx.setStorageSync('certificates', certificates);
+    }
+    return {
+      code: 200,
+      data: null,
+      message: 'success'
+    };
+  },
+
+  getMyCertificates: async (params = {}) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    const { page = 1, pageSize = 10, typeId = '', keyword = '' } = params;
+
+    await storageApi.initCertificates();
+    let certificates = wx.getStorageSync('certificates') || [];
+
+    certificates = certificates.filter(cert => cert.userId === userId && cert.status === 'issued');
+
+    if (typeId && typeId !== 'all') {
+      certificates = certificates.filter(cert => cert.typeId === typeId);
+    }
+
+    if (keyword) {
+      const lowerKeyword = keyword.toLowerCase();
+      certificates = certificates.filter(cert =>
+        cert.title.toLowerCase().includes(lowerKeyword) ||
+        cert.reason.toLowerCase().includes(lowerKeyword) ||
+        cert.certificateNumber.toLowerCase().includes(lowerKeyword) ||
+        cert.issuingUnitName.toLowerCase().includes(lowerKeyword)
+      );
+    }
+
+    certificates.sort((a, b) => new Date(b.issueDate) - new Date(a.issueDate));
+
+    const total = certificates.length;
+    const start = (page - 1) * pageSize;
+    const list = certificates.slice(start, start + pageSize).map(cert => ({
+      ...cert,
+      typeInfo: certificateData.getCertificateTypeInfo(cert.typeId),
+      statusInfo: certificateData.getCertificateStatusInfo(cert.status),
+      formattedDate: certificateData.formatCertificateDate(cert.issueDate)
+    }));
+
+    return {
+      code: 200,
+      data: {
+        list,
+        total,
+        page,
+        pageSize,
+        hasMore: start + pageSize < total
+      },
+      message: 'success'
+    };
+  },
+
+  getCertificateDetail: async (certificateId) => {
+    await delay(500);
+    if (!certificateId) {
+      return { code: 400, data: null, message: '证书ID不能为空' };
+    }
+
+    await storageApi.initCertificates();
+    const certificates = wx.getStorageSync('certificates') || [];
+    const certificate = certificates.find(cert => cert.id === certificateId);
+
+    if (!certificate) {
+      return { code: 404, data: null, message: '证书不存在' };
+    }
+
+    const certIndex = certificates.findIndex(cert => cert.id === certificateId);
+    if (certIndex !== -1) {
+      certificates[certIndex].viewCount = (certificates[certIndex].viewCount || 0) + 1;
+      wx.setStorageSync('certificates', certificates);
+    }
+
+    const verifyResult = certificateData.verifyCertificateHash(certificate);
+    const typeInfo = certificateData.getCertificateTypeInfo(certificate.typeId);
+    const statusInfo = certificateData.getCertificateStatusInfo(certificate.status);
+    const isRevoked = certificate.status === 'revoked';
+
+    const fullVerifyResult = {
+      ...verifyResult,
+      hashValid: verifyResult.valid,
+      revoked: isRevoked
+    };
+
+    if (isRevoked) {
+      fullVerifyResult.valid = false;
+      fullVerifyResult.message = '证书已被撤销';
+    }
+
+    return {
+      code: 200,
+      data: {
+        ...certificate,
+        viewCount: certificates[certIndex].viewCount,
+        typeInfo,
+        statusInfo,
+        formattedDate: certificateData.formatCertificateDate(certificate.issueDate),
+        verifyResult: fullVerifyResult
+      },
+      message: 'success'
+    };
+  },
+
+  verifyCertificate: async (params = {}) => {
+    await delay(500);
+    const { certificateNumber = '', verificationCode = '' } = params;
+
+    if (!certificateNumber) {
+      return { code: 400, data: null, message: '请输入证书编号' };
+    }
+
+    await storageApi.initCertificates();
+    const certificates = wx.getStorageSync('certificates') || [];
+    const certificate = certificates.find(cert => cert.certificateNumber === certificateNumber);
+
+    if (!certificate) {
+      return {
+        code: 404,
+        data: null,
+        message: '证书不存在，请检查编号是否正确'
+      };
+    }
+
+    if (verificationCode && certificate.verificationCode !== verificationCode) {
+      return {
+        code: 400,
+        data: {
+          certificateNumber: certificate.certificateNumber,
+          userName: certificate.userName,
+          title: certificate.title
+        },
+        message: '验证码错误，请重新输入'
+      };
+    }
+
+    const verifyResult = certificateData.verifyCertificateHash(certificate);
+    const typeInfo = certificateData.getCertificateTypeInfo(certificate.typeId);
+    const isRevoked = certificate.status === 'revoked';
+    const codeValid = !verificationCode || certificate.verificationCode === verificationCode;
+
+    const fullVerifyResult = {
+      ...verifyResult,
+      hashValid: verifyResult.valid,
+      codeValid,
+      revoked: isRevoked
+    };
+
+    if (isRevoked) {
+      fullVerifyResult.valid = false;
+      fullVerifyResult.message = '证书已被撤销';
+    }
+
+    return {
+      code: 200,
+      data: {
+        certificate: {
+          ...certificate,
+          typeInfo,
+          formattedDate: certificateData.formatCertificateDate(certificate.issueDate)
+        },
+        verifyResult: fullVerifyResult,
+        isVerified: !isRevoked && verifyResult.valid
+      },
+      message: fullVerifyResult.valid ? '证书验证通过' : fullVerifyResult.message
+    };
+  },
+
+  getCertificateTypes: async () => {
+    await delay(200);
+    return {
+      code: 200,
+      data: certificateData.getCertificateTypes(),
+      message: 'success'
+    };
+  },
+
+  getIssuingUnits: async () => {
+    await delay(200);
+    return {
+      code: 200,
+      data: certificateData.getIssuingUnits(),
+      message: 'success'
+    };
+  },
+
+  issueCertificate: async (data = {}) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const currentUser = wx.getStorageSync('userInfo');
+    if (currentUser.role !== 'admin') {
+      return { code: 403, data: null, message: '无权限颁发证书' };
+    }
+
+    const {
+      userId,
+      userName,
+      typeId,
+      title,
+      reason,
+      issuingUnit,
+      issuingUnitId,
+      issueDate,
+      relatedType,
+      relatedId,
+      relatedTitle
+    } = data;
+    const unitId = issuingUnitId || issuingUnit;
+
+    if (!userId || !userName) {
+      return { code: 400, data: null, message: '用户信息不完整' };
+    }
+    if (!typeId) {
+      return { code: 400, data: null, message: '请选择证书类型' };
+    }
+
+    await storageApi.initCertificates();
+    const certificate = certificateData.createCertificateData({
+      userId,
+      userName,
+      typeId,
+      title,
+      reason,
+      issuingUnit: unitId,
+      issueDate,
+      relatedType,
+      relatedId,
+      relatedTitle,
+      issuerId: currentUser.id,
+      issuerName: currentUser.nickname
+    });
+
+    const certificates = wx.getStorageSync('certificates') || [];
+    certificates.unshift(certificate);
+    wx.setStorageSync('certificates', certificates);
+
+    return {
+      code: 200,
+      data: { certificate },
+      message: '证书颁发成功'
+    };
+  },
+
+  batchIssueCertificates: async (data = {}) => {
+    await delay(1000);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const currentUser = wx.getStorageSync('userInfo');
+    if (currentUser.role !== 'admin') {
+      return { code: 403, data: null, message: '无权限颁发证书' };
+    }
+
+    const { recipients, users, typeId, title, reason, issuingUnit, issuingUnitId, issueDate, relatedType, relatedId, relatedTitle } = data;
+    const userList = (recipients && recipients.length > 0) ? recipients : users;
+    const unitId = issuingUnitId || issuingUnit;
+
+    if (!userList || userList.length === 0) {
+      return { code: 400, data: null, message: '请选择要颁发证书的用户' };
+    }
+    if (!typeId) {
+      return { code: 400, data: null, message: '请选择证书类型' };
+    }
+
+    await storageApi.initCertificates();
+    const certificates = wx.getStorageSync('certificates') || [];
+    const issuedCertificates = [];
+    const failedUsers = [];
+
+    for (const user of userList) {
+      try {
+        const certificate = certificateData.createCertificateData({
+          userId: user.userId || user.id,
+          userName: user.userName || user.name,
+          userAvatar: user.avatar || '',
+          typeId,
+          title,
+          reason,
+          issuingUnit: unitId,
+          issueDate,
+          relatedType,
+          relatedId,
+          relatedTitle,
+          issuerId: currentUser.id,
+          issuerName: currentUser.nickname
+        });
+        certificates.unshift(certificate);
+        issuedCertificates.push(certificate);
+      } catch (e) {
+        failedUsers.push({ user, error: e.message });
+      }
+    }
+
+    wx.setStorageSync('certificates', certificates);
+
+    return {
+      code: 200,
+      data: {
+        count: issuedCertificates.length,
+        certificates: issuedCertificates,
+        successCount: issuedCertificates.length,
+        failedCount: failedUsers.length,
+        issuedCertificates,
+        failedUsers
+      },
+      message: `成功颁发 ${issuedCertificates.length} 张证书，失败 ${failedUsers.length} 张`
+    };
+  },
+
+  revokeCertificate: async (certificateId, reason) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const currentUser = wx.getStorageSync('userInfo');
+    if (currentUser.role !== 'admin') {
+      return { code: 403, data: null, message: '无权限撤销证书' };
+    }
+
+    if (!certificateId) {
+      return { code: 400, data: null, message: '证书ID不能为空' };
+    }
+
+    await storageApi.initCertificates();
+    const certificates = wx.getStorageSync('certificates') || [];
+    const certIndex = certificates.findIndex(cert => cert.id === certificateId);
+
+    if (certIndex === -1) {
+      return { code: 404, data: null, message: '证书不存在' };
+    }
+
+    certificates[certIndex].status = 'revoked';
+    certificates[certIndex].revokeTime = new Date().toISOString();
+    certificates[certIndex].revokerId = currentUser.id;
+    certificates[certIndex].revokerName = currentUser.nickname;
+    if (reason) {
+      certificates[certIndex].revokeReason = reason;
+    }
+
+    wx.setStorageSync('certificates', certificates);
+
+    return {
+      code: 200,
+      data: certificates[certIndex],
+      message: '证书已撤销'
+    };
+  },
+
+  getAllCertificates: async (params = {}) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const currentUser = wx.getStorageSync('userInfo');
+    if (currentUser.role !== 'admin') {
+      return { code: 403, data: null, message: '无权限查看所有证书' };
+    }
+
+    const { page = 1, pageSize = 10, userId = '', typeId = '', status = '', keyword = '' } = params;
+
+    await storageApi.initCertificates();
+    let certificates = wx.getStorageSync('certificates') || [];
+
+    if (userId) {
+      certificates = certificates.filter(cert => cert.userId === userId);
+    }
+    if (typeId && typeId !== 'all') {
+      certificates = certificates.filter(cert => cert.typeId === typeId);
+    }
+    if (status && status !== 'all') {
+      certificates = certificates.filter(cert => cert.status === status);
+    }
+    if (keyword) {
+      const lowerKeyword = keyword.toLowerCase();
+      certificates = certificates.filter(cert =>
+        cert.userName.toLowerCase().includes(lowerKeyword) ||
+        cert.title.toLowerCase().includes(lowerKeyword) ||
+        cert.certificateNumber.toLowerCase().includes(lowerKeyword)
+      );
+    }
+
+    certificates.sort((a, b) => new Date(b.issueTime) - new Date(a.issueTime));
+
+    const total = certificates.length;
+    const start = (page - 1) * pageSize;
+    const list = certificates.slice(start, start + pageSize).map(cert => ({
+      ...cert,
+      typeInfo: certificateData.getCertificateTypeInfo(cert.typeId),
+      statusInfo: certificateData.getCertificateStatusInfo(cert.status),
+      formattedDate: certificateData.formatCertificateDate(cert.issueDate)
+    }));
+
+    return {
+      code: 200,
+      data: {
+        list,
+        total,
+        page,
+        pageSize,
+        hasMore: start + pageSize < total
+      },
+      message: 'success'
+    };
+  },
+
+  issueCertificatesForActivity: async (activityId) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const currentUser = wx.getStorageSync('userInfo');
+    if (currentUser.role !== 'admin') {
+      return { code: 403, data: null, message: '无权限操作' };
+    }
+
+    if (!activityId) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+
+    const activities = wx.getStorageSync('activities') || [];
+    const activity = activities.find(a => a.id === activityId);
+    if (!activity) {
+      return { code: 404, data: null, message: '活动不存在' };
+    }
+
+    const registrations = wx.getStorageSync('activityRegistrations') || {};
+    const activityRegistrations = registrations[activityId] || [];
+
+    if (activityRegistrations.length === 0) {
+      return { code: 400, data: null, message: '该活动没有报名用户' };
+    }
+
+    const users = activityRegistrations.map(reg => ({
+      id: reg.userId,
+      name: reg.userName,
+      avatar: reg.userAvatar || ''
+    }));
+
+    return await storageApi.batchIssueCertificates({
+      users,
+      typeId: 'activity_completion',
+      title: '活动结业证书',
+      reason: `已完成"${activity.title}"全部课程学习，成绩合格，准予结业。`,
+      issuingUnit: 'education_base',
+      issueDate: new Date().toISOString().split('T')[0],
+      relatedType: 'activity',
+      relatedId: activityId,
+      relatedTitle: activity.title
+    });
+  },
+
+  issueCertificateForArticle: async (articleId) => {
+    await delay(600);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const currentUser = wx.getStorageSync('userInfo');
+    if (currentUser.role !== 'admin') {
+      return { code: 403, data: null, message: '无权限操作' };
+    }
+
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+
+    const articles = wx.getStorageSync('articles') || [];
+    const article = articles.find(a => a.id === articleId);
+    if (!article) {
+      return { code: 404, data: null, message: '文章不存在' };
+    }
+
+    const result = await storageApi.issueCertificate({
+      userId: article.authorId,
+      userName: article.authorName,
+      typeId: 'collection_completion',
+      title: '文化贡献证书',
+      reason: `您的作品《${article.title}》已被收录至乡村文化库，感谢您为乡村文化传承做出的宝贵贡献。`,
+      issuingUnit: 'heritage_center',
+      issueDate: new Date().toISOString().split('T')[0],
+      relatedType: 'article',
+      relatedId: articleId,
+      relatedTitle: article.title
+    });
+    return result;
+  },
+
+  shareCertificate: async (certificateId) => {
+    await delay(300);
+    if (!certificateId) {
+      return { code: 400, data: null, message: '证书ID不能为空' };
+    }
+
+    await storageApi.initCertificates();
+    const certificates = wx.getStorageSync('certificates') || [];
+    const certIndex = certificates.findIndex(cert => cert.id === certificateId);
+
+    if (certIndex === -1) {
+      return { code: 404, data: null, message: '证书不存在' };
+    }
+
+    certificates[certIndex].shareCount = (certificates[certIndex].shareCount || 0) + 1;
+    wx.setStorageSync('certificates', certificates);
+
+    return {
+      code: 200,
+      data: {
+        shareCount: certificates[certIndex].shareCount,
+        shareUrl: `/pages/certificate-detail/certificate-detail?id=${certificateId}`,
+        shareTitle: `${certificates[certIndex].userName}的${certificates[certIndex].title}`
+      },
+      message: 'success'
+    };
+  },
+
+  getCertificateStats: async () => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    await storageApi.initCertificates();
+    const certificates = wx.getStorageSync('certificates') || [];
+
+    const myCertificates = certificates.filter(cert => cert.userId === userId && cert.status === 'issued');
+
+    const typeStats = {};
+    myCertificates.forEach(cert => {
+      if (!typeStats[cert.typeId]) {
+        const typeInfo = certificateData.getCertificateTypeInfo(cert.typeId);
+        typeStats[cert.typeId] = {
+          typeId: cert.typeId,
+          typeName: typeInfo.name,
+          icon: typeInfo.icon,
+          color: typeInfo.color,
+          count: 0
+        };
+      }
+      typeStats[cert.typeId].count++;
+    });
+
+    return {
+      code: 200,
+      data: {
+        totalCount: myCertificates.length,
+        typeStats: Object.values(typeStats),
+        recentCertificates: myCertificates.slice(0, 3).map(cert => ({
+          ...cert,
+          typeInfo: certificateData.getCertificateTypeInfo(cert.typeId),
+          formattedDate: certificateData.formatCertificateDate(cert.issueDate)
+        }))
+      },
+      message: 'success'
+    };
+  },
+
+  getAllUsers: async () => {
+    await delay(200);
+    const users = wx.getStorageSync('users') || [];
+    return {
+      code: 200,
+      data: users,
+      message: 'success'
+    };
+  },
+
+  getAllArticles: async () => {
+    await delay(200);
+    const articles = wx.getStorageSync('articles') || [];
+    const publishedArticles = articles.filter(a => a.status === 1);
+    return {
+      code: 200,
+      data: publishedArticles,
+      message: 'success'
+    };
   }
 };
 
@@ -5250,6 +5840,160 @@ const remoteApi = {
       url: '/api/feedback/submit',
       method: 'POST',
       data: { ...data, userId }
+    });
+  },
+
+  initCertificates: async () => {
+    return request({
+      url: '/api/certificates/init',
+      method: 'GET'
+    });
+  },
+
+  getMyCertificates: async (params = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/certificates/my',
+      method: 'GET',
+      data: params
+    });
+  },
+
+  getCertificateDetail: async (certificateId) => {
+    if (!certificateId) {
+      return { code: 400, data: null, message: '证书ID不能为空' };
+    }
+    return request({
+      url: `/api/certificates/${certificateId}`,
+      method: 'GET'
+    });
+  },
+
+  verifyCertificate: async (params = {}) => {
+    return request({
+      url: '/api/certificates/verify',
+      method: 'POST',
+      data: params
+    });
+  },
+
+  getCertificateTypes: async () => {
+    return request({
+      url: '/api/certificates/types',
+      method: 'GET'
+    });
+  },
+
+  getIssuingUnits: async () => {
+    return request({
+      url: '/api/certificates/issuing-units',
+      method: 'GET'
+    });
+  },
+
+  issueCertificate: async (data = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/certificates/issue',
+      method: 'POST',
+      data
+    });
+  },
+
+  batchIssueCertificates: async (data = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/certificates/batch-issue',
+      method: 'POST',
+      data
+    });
+  },
+
+  revokeCertificate: async (certificateId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!certificateId) {
+      return { code: 400, data: null, message: '证书ID不能为空' };
+    }
+    return request({
+      url: `/api/certificates/${certificateId}/revoke`,
+      method: 'POST'
+    });
+  },
+
+  getAllCertificates: async (params = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/certificates/all',
+      method: 'GET',
+      data: params
+    });
+  },
+
+  issueCertificatesForActivity: async (activityId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!activityId) {
+      return { code: 400, data: null, message: '活动ID不能为空' };
+    }
+    return request({
+      url: '/api/certificates/issue-for-activity',
+      method: 'POST',
+      data: { activityId }
+    });
+  },
+
+  issueCertificateForArticle: async (articleId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+    return request({
+      url: '/api/certificates/issue-for-article',
+      method: 'POST',
+      data: { articleId }
+    });
+  },
+
+  shareCertificate: async (certificateId) => {
+    if (!certificateId) {
+      return { code: 400, data: null, message: '证书ID不能为空' };
+    }
+    return request({
+      url: `/api/certificates/${certificateId}/share`,
+      method: 'POST'
+    });
+  },
+
+  getCertificateStats: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/certificates/stats',
+      method: 'GET'
+    });
+  },
+
+  getAllUsers: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/users/all',
+      method: 'GET'
+    });
+  },
+
+  getAllArticles: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/articles/all',
+      method: 'GET'
     });
   }
 };

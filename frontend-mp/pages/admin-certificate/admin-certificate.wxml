@@ -1,0 +1,281 @@
+<!--pages/admin-certificate/admin-certificate.wxml-->
+<view class="page-container">
+  <!-- 颁发结果 -->
+  <view class="result-section" wx:if="{{issueResult}}">
+    <view class="result-card success">
+      <text class="result-icon">🎉</text>
+      <text class="result-title">颁发成功</text>
+      <text class="result-desc">已成功颁发 {{issueResult.count}} 张证书</text>
+      <view class="result-actions">
+        <button class="result-btn primary" bindtap="goToCertificateList">查看证书列表</button>
+        <button class="result-btn secondary" bindtap="resetForm">继续颁发</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 颁发模式选择 -->
+  <view class="mode-section" wx:if="{{!issueResult}}">
+    <view class="section-title">
+      <text class="title-text">颁发模式</text>
+    </view>
+    <view class="mode-grid">
+      <view
+        class="mode-item {{issueMode === item.id ? 'active' : ''}}"
+        wx:for="{{issueModes}}"
+        wx:key="id"
+        data-mode="{{item.id}}"
+        bindtap="onModeChange"
+      >
+        <text class="mode-icon">{{item.icon}}</text>
+        <text class="mode-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 表单区域 -->
+  <view class="form-section" wx:if="{{!issueResult}}">
+    <view class="section-title">
+      <text class="title-text">证书信息</text>
+    </view>
+
+    <view class="form-card">
+      <!-- 证书类型 -->
+      <view class="form-item">
+        <text class="form-label required">证书类型</text>
+        <picker
+          mode="selector"
+          range="{{certificateTypes}}"
+          range-key="name"
+          value="{{certificateTypes.findIndex(t => t.id === selectedTypeId)}}"
+          bindchange="onTypeChange"
+        >
+          <view class="picker-display">
+            <text class="picker-value">{{certificateTypes.find(t => t.id === selectedTypeId).name || '请选择'}}</text>
+            <text class="picker-arrow">›</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 颁发单位 -->
+      <view class="form-item">
+        <text class="form-label required">颁发单位</text>
+        <picker
+          mode="selector"
+          range="{{issuingUnits}}"
+          range-key="name"
+          value="{{issuingUnits.findIndex(u => u.id === selectedUnitId)}}"
+          bindchange="onUnitChange"
+        >
+          <view class="picker-display">
+            <text class="picker-value">{{issuingUnits.find(u => u.id === selectedUnitId).name || '请选择'}}</text>
+            <text class="picker-arrow">›</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 颁发日期 -->
+      <view class="form-item">
+        <text class="form-label">颁发日期</text>
+        <picker mode="date" value="{{issueDate}}" bindchange="onDateChange">
+          <view class="picker-display">
+            <text class="picker-value">{{issueDate}}</text>
+            <text class="picker-arrow">›</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 事由 -->
+      <view class="form-item">
+        <text class="form-label">证书事由</text>
+        <textarea
+          class="form-textarea"
+          placeholder="请输入证书事由，不填则使用默认事由"
+          value="{{reason}}"
+          bindinput="onReasonInput"
+          maxlength="200"
+          placeholder-class="input-placeholder"
+          auto-height
+        />
+      </view>
+    </view>
+
+    <!-- 接收人选择 - 单张/批量 -->
+    <view class="form-card" wx:if="{{issueMode === 'single' || issueMode === 'batch' || issueMode === 'annual'}}">
+      <view class="section-title-inline">
+        <text class="title-text">
+          {{issueMode === 'single' ? '接收人' : '接收人（可多选）'}}
+        </text>
+        <text class="selected-count" wx:if="{{selectedUserIds.length > 0}}">
+          已选 {{selectedUserIds.length}} 人
+        </text>
+      </view>
+
+      <view class="selected-users" wx:if="{{selectedUserIds.length > 0}}">
+        <scroll-view scroll-x class="selected-scroll">
+          <view class="selected-user" wx:for="{{users}}" wx:for-item="user" wx:key="id" wx:if="{{selectedUserIds.includes(user.id)}}">
+            <text class="selected-name">{{user.nickname}}</text>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view class="picker-btn" bindtap="openUserPicker">
+        <text class="picker-btn-text">
+          {{selectedUserIds.length > 0 ? '重新选择' : '选择接收人'}}
+        </text>
+        <text class="picker-btn-arrow">›</text>
+      </view>
+    </view>
+
+    <!-- 活动选择 -->
+    <view class="form-card" wx:if="{{issueMode === 'activity'}}">
+      <view class="section-title-inline">
+        <text class="title-text">选择活动</text>
+      </view>
+      <picker
+        mode="selector"
+        range="{{activities}}"
+        range-key="title"
+        value="{{activities.findIndex(a => a.id === selectedActivityId)}}"
+        bindchange="onActivityChange"
+      >
+        <view class="picker-display">
+          <text class="picker-value">{{activities.find(a => a.id === selectedActivityId).title || '请选择活动'}}</text>
+          <text class="picker-arrow">›</text>
+        </view>
+      </picker>
+      <view class="tip" wx:if="{{selectedActivityId}}">
+        <text>💡 将为该活动的所有参与者颁发结业证书</text>
+      </view>
+    </view>
+
+    <!-- 文章选择 -->
+    <view class="form-card" wx:if="{{issueMode === 'collection'}}">
+      <view class="section-title-inline">
+        <text class="title-text">选择征集作品</text>
+      </view>
+      <picker
+        mode="selector"
+        range="{{articles}}"
+        range-key="title"
+        value="{{articles.findIndex(a => a.id === selectedArticleId)}}"
+        bindchange="onArticleChange"
+      >
+        <view class="picker-display">
+          <text class="picker-value">{{articles.find(a => a.id === selectedArticleId).title || '请选择作品'}}</text>
+          <text class="picker-arrow">›</text>
+        </view>
+      </picker>
+      <view class="tip" wx:if="{{selectedArticleId}}">
+        <text>💡 将为该作品的作者颁发征集完成证书</text>
+      </view>
+    </view>
+
+    <!-- 预览 -->
+    <view class="preview-section" wx:if="{{previewData && previewData.count > 0}}">
+      <view class="section-title">
+        <text class="title-text">颁发预览</text>
+        <text class="preview-count">共 {{previewData.count}} 张</text>
+      </view>
+
+      <view class="preview-card">
+        <view class="preview-header">
+          <text class="preview-icon">{{previewData.typeInfo.icon}}</text>
+          <view class="preview-info">
+            <text class="preview-title">{{previewData.typeInfo.name}}</text>
+            <text class="preview-unit">{{previewData.unitInfo.name}}</text>
+          </view>
+        </view>
+
+        <view class="preview-reason">
+          <text class="reason-label">事由：</text>
+          <text class="reason-text">{{previewData.reason}}</text>
+        </view>
+
+        <view class="preview-date">
+          <text>颁发日期：{{previewData.issueDate}}</text>
+        </view>
+
+        <view class="preview-related" wx:if="{{previewData.relatedTitle}}">
+          <text>关联项目：{{previewData.relatedTitle}}</text>
+        </view>
+
+        <view class="preview-users">
+          <text class="users-label">接收人：</text>
+          <view class="users-list">
+            <text class="user-tag" wx:for="{{previewData.selectedUsers}}" wx:for-item="user" wx:key="id">
+              {{user.nickname}}
+            </text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 提交按钮 -->
+    <view class="submit-section">
+      <button
+        class="btn-submit"
+        bindtap="submitIssue"
+        disabled="{{submitting || !previewData || previewData.count === 0}}"
+      >
+        {{submitting ? '颁发中...' : `确认颁发 ${previewData.count || 0} 张证书`}}
+      </button>
+    </view>
+  </view>
+
+  <!-- 用户选择弹窗 -->
+  <view class="picker-modal {{showUserPicker ? 'show' : ''}}">
+    <view class="modal-mask" bindtap="closeUserPicker"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">选择接收人</text>
+        <view class="modal-close" bindtap="closeUserPicker">✕</view>
+      </view>
+
+      <view class="modal-body">
+        <view class="search-section">
+          <input
+            class="search-input"
+            placeholder="搜索姓名或手机号"
+            value="{{searchKeyword}}"
+            bindinput="onSearchInput"
+            placeholder-class="input-placeholder"
+          />
+        </view>
+
+        <view class="picker-actions">
+          <view class="action-text" bindtap="selectAllUsers">全选</view>
+          <view class="action-text" bindtap="clearSelectedUsers">清空</view>
+        </view>
+
+        <scroll-view class="user-list" scroll-y>
+          <view
+            class="user-item {{selectedUserIds.includes(user.id) ? 'selected' : ''}}"
+            wx:for="{{users}}"
+            wx:for-item="user"
+            wx:key="id"
+            wx:if="{{!searchKeyword || user.nickname.includes(searchKeyword) || (user.phone && user.phone.includes(searchKeyword))}}"
+            data-user-id="{{user.id}}"
+            bindtap="toggleUserSelect"
+          >
+            <view class="user-avatar">
+              <text>{{user.nickname.charAt(0)}}</text>
+            </view>
+            <view class="user-info">
+              <text class="user-name">{{user.nickname}}</text>
+              <text class="user-phone" wx:if="{{user.phone}}">{{user.phone}}</text>
+            </view>
+            <view class="user-check">
+              <text wx:if="{{selectedUserIds.includes(user.id)}}">✓</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view class="modal-footer">
+        <button class="btn-confirm" bindtap="confirmUserPicker">
+          确定（已选 {{selectedUserIds.length}} 人）
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

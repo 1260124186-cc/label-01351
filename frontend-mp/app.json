@@ -42,7 +42,11 @@
     "pages/profile-edit/profile-edit",
     "pages/history/history",
     "pages/author-home/author-home",
-    "pages/drafts/drafts"
+    "pages/drafts/drafts",
+    "pages/my-certificates/my-certificates",
+    "pages/certificate-detail/certificate-detail",
+    "pages/certificate-verify/certificate-verify",
+    "pages/admin-certificate/admin-certificate"
   ],
   "window": {
     "backgroundTextStyle": "dark",

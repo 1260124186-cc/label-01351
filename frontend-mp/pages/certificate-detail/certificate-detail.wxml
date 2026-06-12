@@ -1,0 +1,241 @@
+<!--pages/certificate-detail/certificate-detail.wxml-->
+<view class="page-container">
+  <!-- 加载中 -->
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 证书详情 -->
+  <block wx:elif="{{certificate}}">
+    <!-- 证书主体 -->
+    <view class="certificate-wrapper">
+      <view class="certificate-main" style="background: linear-gradient(135deg, {{certificate.typeInfo.color}}10 0%, {{certificate.typeInfo.color}}05 100%); border: 4rpx solid {{certificate.typeInfo.color}}30;">
+        <!-- 顶部装饰 -->
+        <view class="cert-top-decoration">
+          <view class="decoration-line" style="background: {{certificate.typeInfo.color}};"></view>
+          <text class="cert-icon">{{certificate.typeInfo.icon}}</text>
+          <view class="decoration-line" style="background: {{certificate.typeInfo.color}};"></view>
+        </view>
+
+        <!-- 证书标题 -->
+        <view class="cert-title-section">
+          <text class="cert-title" style="color: {{certificate.typeInfo.color}};">{{certificate.title}}</text>
+          <view class="cert-type-tag" style="background: {{certificate.typeInfo.color}}20; color: {{certificate.typeInfo.color}};">
+            {{certificate.typeName}}
+          </view>
+        </view>
+
+        <!-- 证书持有人 -->
+        <view class="cert-holder-section">
+          <text class="holder-label">兹证明</text>
+          <text class="holder-name">{{certificate.userName}}</text>
+        </view>
+
+        <!-- 证书事由 -->
+        <view class="cert-reason-section">
+          <text class="reason-text">{{certificate.reason}}</text>
+        </view>
+
+        <!-- 颁发信息 -->
+        <view class="cert-issue-section">
+          <view class="issue-row">
+            <text class="issue-label">颁发单位：</text>
+            <text class="issue-value">{{certificate.issuingUnitName}}</text>
+          </view>
+          <view class="issue-row">
+            <text class="issue-label">颁发日期：</text>
+            <text class="issue-value">{{certificate.formattedDate}}</text>
+          </view>
+          <view class="issue-row" wx:if="{{certificate.relatedTitle}}">
+            <text class="issue-label">关联项目：</text>
+            <text class="issue-value highlight">{{certificate.relatedTitle}}</text>
+          </view>
+        </view>
+
+        <!-- 印章 -->
+        <view class="cert-seal-section">
+          <view class="seal" style="border-color: {{certificate.typeInfo.color}}; color: {{certificate.typeInfo.color}};">
+            <text class="seal-text">{{certificate.issuingUnitSeal}}</text>
+          </view>
+        </view>
+
+        <!-- 底部信息 -->
+        <view class="cert-bottom-section">
+          <view class="bottom-item" bindtap="copyNumber">
+            <text class="bottom-label">证书编号</text>
+            <text class="bottom-value">{{certificate.certificateNumber}}</text>
+            <text class="copy-hint">点击复制</text>
+          </view>
+          <view class="bottom-item" wx:if="{{isOwner}}" bindtap="copyVerifyCode">
+            <text class="bottom-label">验证码</text>
+            <text class="bottom-value code">{{certificate.verificationCode}}</text>
+            <text class="copy-hint">点击复制</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 防伪验证标识 -->
+      <view class="anti-forgery-section">
+        <view class="verify-status {{certificate.verifyResult.valid ? 'valid' : 'invalid'}}">
+          <text class="verify-icon">{{certificate.verifyResult.valid ? '✅' : '⚠️'}}</text>
+          <text class="verify-text">{{certificate.verifyResult.message}}</text>
+        </view>
+        <view class="hash-info">
+          <text class="hash-label">数据指纹：</text>
+          <text class="hash-value">{{certificate.hash}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-section">
+      <view class="action-btn primary" bindtap="showPoster">
+        <text class="action-icon">🖼️</text>
+        <text class="action-text">生成海报</text>
+      </view>
+      <view class="action-btn secondary" bindtap="showVerify">
+        <text class="action-icon">🔍</text>
+        <text class="action-text">证书查验</text>
+      </view>
+      <button class="action-btn share" open-type="share">
+        <text class="action-icon">📤</text>
+        <text class="action-text">分享好友</text>
+      </button>
+    </view>
+
+    <!-- 统计信息 -->
+    <view class="stats-section">
+      <view class="stat-item">
+        <text class="stat-icon">👁️</text>
+        <text class="stat-value">{{certificate.viewCount}}</text>
+        <text class="stat-label">浏览</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-icon">📤</text>
+        <text class="stat-value">{{certificate.shareCount}}</text>
+        <text class="stat-label">分享</text>
+      </view>
+      <view class="stat-divider"></view>
+      <view class="stat-item">
+        <text class="stat-icon">🏢</text>
+        <text class="stat-value">{{certificate.issuerName}}</text>
+        <text class="stat-label">签发人</text>
+      </view>
+    </view>
+
+    <!-- 更多服务 -->
+    <view class="service-section">
+      <view class="section-title">
+        <text class="title-text">证书服务</text>
+      </view>
+      <view class="service-list">
+        <view class="service-item" bindtap="goToVerifyPage">
+          <text class="service-icon">🔎</text>
+          <view class="service-info">
+            <text class="service-name">证书查验</text>
+            <text class="service-desc">输入编号查询证书真伪</text>
+          </view>
+          <text class="service-arrow">›</text>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 海报弹窗 -->
+  <view class="poster-modal {{showPosterModal ? 'show' : ''}}">
+    <view class="modal-mask" bindtap="hidePoster"></view>
+    <view class="modal-content poster-content">
+      <view class="modal-header">
+        <text class="modal-title">分享海报</text>
+        <view class="modal-close" bindtap="hidePoster">✕</view>
+      </view>
+      <view class="poster-preview">
+        <view class="poster-certificate" style="background: linear-gradient(135deg, {{certificate.typeInfo.color}}15 0%, #ffffff 100%); border: 4rpx solid {{certificate.typeInfo.color}}40;">
+          <view class="poster-top">
+            <text class="poster-icon">{{certificate.typeInfo.icon}}</text>
+            <text class="poster-cert-title" style="color: {{certificate.typeInfo.color}};">{{certificate.title}}</text>
+          </view>
+          <view class="poster-holder">
+            <text class="poster-holder-name">{{certificate.userName}}</text>
+          </view>
+          <view class="poster-reason">
+            <text>{{certificate.reason}}</text>
+          </view>
+          <view class="poster-bottom">
+            <view class="poster-seal" style="color: {{certificate.typeInfo.color}}; border-color: {{certificate.typeInfo.color}};">
+              {{certificate.issuingUnitSeal}}
+            </view>
+            <view class="poster-date">{{certificate.formattedDate}}</view>
+          </view>
+          <view class="poster-number">
+            <text>编号：{{certificate.certificateNumber}}</text>
+          </view>
+        </view>
+        <view class="poster-qr">
+          <text class="qr-placeholder">📱 扫码查验</text>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="btn-save" bindtap="savePoster">保存到相册</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 查验弹窗 -->
+  <view class="verify-modal {{showVerifyModal ? 'show' : ''}}">
+    <view class="modal-mask" bindtap="hideVerify"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">证书查验</text>
+        <view class="modal-close" bindtap="hideVerify">✕</view>
+      </view>
+      <view class="verify-body">
+        <view class="verify-info">
+          <text class="verify-info-label">证书编号</text>
+          <text class="verify-info-value">{{certificate.certificateNumber}}</text>
+        </view>
+        <view class="verify-input-section">
+          <text class="verify-input-label">请输入6位验证码</text>
+          <input
+            class="verify-input"
+            placeholder="请输入验证码"
+            value="{{verifyCode}}"
+            bindinput="onVerifyCodeInput"
+            maxlength="6"
+            placeholder-class="input-placeholder"
+          />
+        </view>
+
+        <view class="verify-result" wx:if="{{verifyResult}}">
+          <view class="result-content {{verifyResult.success ? 'success' : 'error'}}">
+            <text class="result-icon">{{verifyResult.success ? '✅' : '❌'}}</text>
+            <text class="result-text">{{verifyResult.message}}</text>
+          </view>
+          <view class="result-detail" wx:if="{{verifyResult.success && verifyResult.data}}">
+            <view class="detail-row">
+              <text class="detail-label">持有人：</text>
+              <text class="detail-value">{{verifyResult.data.certificate.userName}}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">证书名称：</text>
+              <text class="detail-value">{{verifyResult.data.certificate.title}}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">颁发单位：</text>
+              <text class="detail-value">{{verifyResult.data.certificate.issuingUnitName}}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">颁发日期：</text>
+              <text class="detail-value">{{verifyResult.data.certificate.formattedDate}}</text>
+            </view>
+          </view>
+        </view>
+
+        <button class="btn-verify" bindtap="doVerify" disabled="{{verifying || verifyCode.length !== 6}}">
+          {{verifying ? '验证中...' : '开始验证'}}
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -408,6 +408,13 @@
   background: linear-gradient(135deg, #FFD54F 0%, #FFC107 100%);
 }
 
+.icon-certificate {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #81C784 0%, #4CAF50 100%);
+}
+
 .unread-badge {
   position: absolute;
   top: -10rpx;

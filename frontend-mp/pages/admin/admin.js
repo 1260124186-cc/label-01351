@@ -94,6 +94,13 @@ Page({
         icon: '🛑',
         desc: '维护敏感词库用于内容过滤',
         count: 0
+      },
+      {
+        id: 'certificate',
+        title: '证书颁发管理',
+        icon: '🏅',
+        desc: '批量颁发、活动结业、征集完成、年度评选联动',
+        page: '/pages/admin-certificate/admin-certificate'
       }
     ],
 

@@ -668,7 +668,13 @@ function initStorage(overrides = {}) {
   if (overrides.activityRegistrations) {
     wx.setStorageSync('activityRegistrations', overrides.activityRegistrations);
   } else {
-    wx.setStorageSync('activityRegistrations', {});
+    wx.setStorageSync('activityRegistrations', {
+      'activity_001': [
+        { userId: 'user_001', userName: '张大爷', userAvatar: '', registerTime: '2024-12-15T10:00:00.000Z', status: 'registered' },
+        { userId: 'user_002', userName: '李阿姨', userAvatar: '', registerTime: '2024-12-15T11:00:00.000Z', status: 'registered' },
+        { userId: 'user_003', userName: '王老师', userAvatar: '', registerTime: '2024-12-15T12:00:00.000Z', status: 'registered' }
+      ]
+    });
   }
   if (overrides.quizzes) {
     wx.setStorageSync('quizzes', overrides.quizzes);
@@ -747,6 +753,19 @@ function loginAsUser(userId, nickname, phone) {
   wx.setStorageSync('isLoggedIn', true);
   wx.setStorageSync('userInfo', user);
   return user;
+}
+
+function loginAsAdmin() {
+  const users = wx.getStorageSync('users') || [];
+  let admin = users.find(u => u.id === 'admin_001');
+  if (!admin) {
+    admin = { id: 'admin_001', nickname: '系统管理员', avatar: '', phone: '13800000000', createTime: '2024-01-01', role: 'admin' };
+    users.push(admin);
+    wx.setStorageSync('users', users);
+  }
+  wx.setStorageSync('isLoggedIn', true);
+  wx.setStorageSync('userInfo', admin);
+  return admin;
 }
 
 function mergeBehaviors(pageDef) {
@@ -868,5 +887,6 @@ module.exports = {
   initStorage,
   createPageInstance,
   logoutUser,
-  loginAsUser
+  loginAsUser,
+  loginAsAdmin
 };

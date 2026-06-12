@@ -1,0 +1,165 @@
+<!--pages/certificate-verify/certificate-verify.wxml-->
+<view class="page-container">
+  <!-- 顶部说明 -->
+  <view class="header-section">
+    <view class="header-icon">🔍</view>
+    <text class="header-title">证书真伪查验</text>
+    <text class="header-desc">输入证书编号和验证码，即可验证证书的真实性和有效性</text>
+  </view>
+
+  <!-- 查验表单 -->
+  <view class="form-section">
+    <view class="form-card">
+      <view class="form-item">
+        <text class="form-label">证书编号</text>
+        <view class="input-wrapper">
+          <input
+            class="form-input"
+            placeholder="请输入证书编号"
+            value="{{certificateNumber}}"
+            bindinput="onNumberInput"
+            placeholder-class="input-placeholder"
+            confirm-type="next"
+          />
+          <view class="input-icon" bindtap="toggleHistory" wx:if="{{historyList.length > 0}}">
+            <text>📋</text>
+          </view>
+        </view>
+        <!-- 历史记录下拉 -->
+        <view class="history-dropdown {{showHistory ? 'show' : ''}}" wx:if="{{historyList.length > 0}}">
+          <view class="history-header">
+            <text class="history-title">查询历史</text>
+            <text class="history-clear" bindtap="clearHistory">清空</text>
+          </view>
+          <scroll-view class="history-list" scroll-y>
+            <view class="history-item" wx:for="{{historyList}}" wx:key="index" data-number="{{item}}" bindtap="useHistory">
+              <text class="history-icon">🕐</text>
+              <text class="history-text">{{item}}</text>
+            </view>
+          </scroll-view>
+        </view>
+      </view>
+
+      <view class="form-item">
+        <text class="form-label">验证码</text>
+        <input
+          class="form-input code-input"
+          placeholder="请输入6位验证码"
+          value="{{verificationCode}}"
+          bindinput="onCodeInput"
+          maxlength="6"
+          placeholder-class="input-placeholder"
+          confirm-type="done"
+          bindconfirm="doVerify"
+        />
+      </view>
+
+      <button
+        class="btn-verify"
+        bindtap="doVerify"
+        disabled="{{verifying || !certificateNumber || verificationCode.length !== 6}}"
+      >
+        {{verifying ? '验证中...' : '开始查验'}}
+      </button>
+
+      <button class="btn-reset" bindtap="resetForm" wx:if="{{certificateNumber || verificationCode}}">
+        重新输入
+      </button>
+    </view>
+  </view>
+
+  <!-- 查验结果 -->
+  <view class="result-section" wx:if="{{verifyResult}}">
+    <view class="result-card {{verifyResult.success ? 'success' : 'error'}}">
+      <view class="result-header">
+        <text class="result-icon">{{verifyResult.success ? '✅' : '❌'}}</text>
+        <text class="result-status">{{verifyResult.success ? '查验通过' : '查验失败'}}</text>
+      </view>
+      <view class="result-message">
+        <text>{{verifyResult.message}}</text>
+      </view>
+
+      <!-- 证书详情 -->
+      <view class="certificate-info" wx:if="{{verifyResult.success && verifyResult.certificate}}">
+        <view class="info-divider"></view>
+
+        <view class="info-row">
+          <text class="info-label">证书名称</text>
+          <text class="info-value">{{verifyResult.certificate.title}}</text>
+        </view>
+        <view class="info-row">
+          <text class="info-label">证书类型</text>
+          <text class="info-value">{{verifyResult.certificate.typeName}}</text>
+        </view>
+        <view class="info-row">
+          <text class="info-label">持有人</text>
+          <text class="info-value">{{verifyResult.certificate.userName}}</text>
+        </view>
+        <view class="info-row">
+          <text class="info-label">颁发单位</text>
+          <text class="info-value">{{verifyResult.certificate.issuingUnitName}}</text>
+        </view>
+        <view class="info-row">
+          <text class="info-label">颁发日期</text>
+          <text class="info-value">{{verifyResult.certificate.formattedDate}}</text>
+        </view>
+        <view class="info-row">
+          <text class="info-label">证书状态</text>
+          <view class="status-badge {{verifyResult.certificate.status}}">
+            {{verifyResult.certificate.status === 'valid' ? '有效' : verifyResult.certificate.status === 'revoked' ? '已撤销' : '已过期'}}
+          </view>
+        </view>
+
+        <!-- 防伪信息 -->
+        <view class="anti-forgery-info" wx:if="{{verifyResult.verifyResult}}">
+          <view class="forgery-item">
+            <text class="forgery-label">数据完整性</text>
+            <text class="forgery-value {{verifyResult.verifyResult.hashValid ? 'valid' : 'invalid'}}">
+              {{verifyResult.verifyResult.hashValid ? '✓ 未被篡改' : '✗ 已被篡改'}}
+            </text>
+          </view>
+          <view class="forgery-item">
+            <text class="forgery-label">验证码匹配</text>
+            <text class="forgery-value {{verifyResult.verifyResult.codeValid ? 'valid' : 'invalid'}}">
+              {{verifyResult.verifyResult.codeValid ? '✓ 匹配成功' : '✗ 匹配失败'}}
+            </text>
+          </view>
+          <view class="forgery-item">
+            <text class="forgery-label">数据指纹</text>
+            <text class="forgery-value hash">{{verifyResult.certificate.hash}}</text>
+          </view>
+        </view>
+
+        <button class="btn-view-detail" data-id="{{verifyResult.certificate.id}}" bindtap="goToDetail">
+          查看证书详情
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 查验说明 -->
+  <view class="tips-section">
+    <view class="tips-title">
+      <text class="tips-icon">💡</text>
+      <text class="tips-text">查验说明</text>
+    </view>
+    <view class="tips-list">
+      <view class="tips-item">
+        <text class="tips-dot">•</text>
+        <text class="tips-content">证书编号和验证码可在证书详情页面或证书海报上找到</text>
+      </view>
+      <view class="tips-item">
+        <text class="tips-dot">•</text>
+        <text class="tips-content">每张证书拥有唯一的编号和验证码，可验证证书真伪</text>
+      </view>
+      <view class="tips-item">
+        <text class="tips-dot">•</text>
+        <text class="tips-content">系统采用数据哈希技术确保证书内容不被篡改</text>
+      </view>
+      <view class="tips-item">
+        <text class="tips-dot">•</text>
+        <text class="tips-content">如对查验结果有疑问，请联系证书颁发单位核实</text>
+      </view>
+    </view>
+  </view>
+</view>
