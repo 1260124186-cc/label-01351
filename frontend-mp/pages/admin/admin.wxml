@@ -64,6 +64,25 @@
           data-id="{{item.id}}"
         >{{item.name}}</view>
       </scroll-view>
+
+      <!-- 村庄筛选（超级管理员可见） -->
+      <view class="village-filter" wx:if="{{isSuperAdmin && villageList.length > 0}}">
+        <text class="village-filter-label">村庄：</text>
+        <scroll-view class="village-filter-list" scroll-x enable-flex>
+          <view
+            class="village-chip {{reviewVillageId === 'all' ? 'active' : ''}}"
+            bindtap="onReviewVillageChange"
+            data-id="all"
+          >全部村庄</view>
+          <view
+            class="village-chip {{reviewVillageId === item.id ? 'active' : ''}}"
+            wx:for="{{villageList}}"
+            wx:key="id"
+            bindtap="onReviewVillageChange"
+            data-id="{{item.id}}"
+          >{{item.name}}</view>
+        </scroll-view>
+      </view>
     </view>
 
     <view
@@ -195,6 +214,7 @@
               <view class="review-desc">{{item.desc}}</view>
               <view class="review-meta">
                 <text class="review-submitter">提交人：{{item.submitter}}</text>
+                <text class="review-village" wx:if="{{item.villageName}}">🏘️ {{item.villageName}}</text>
               </view>
               <view class="review-actions">
                 <button class="btn-approve" bindtap="onApprove" data-id="{{item.id}}" data-type="{{item.type}}">✅ 通过</button>

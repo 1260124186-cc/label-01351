@@ -17,6 +17,18 @@
       <text class="header-desc">{{isEditingArticle ? '修改文章内容，保存后立即生效' : '记录乡村记忆，传承文化智慧'}}</text>
     </view>
 
+    <!-- 归属村庄 -->
+    <view class="village-info-bar" bindtap="goToVillageSelect">
+      <view class="village-info-left">
+        <text class="village-info-icon">🏘️</text>
+        <view class="village-info-detail">
+          <text class="village-info-label">归属村庄</text>
+          <text class="village-info-name">{{currentVillage.name || '请选择村庄'}}</text>
+        </view>
+      </view>
+      <text class="village-info-arrow">›</text>
+    </view>
+
     <!-- 表单区域 -->
     <view class="form-container">
       <!-- 标题输入 -->

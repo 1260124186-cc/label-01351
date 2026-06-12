@@ -6,6 +6,7 @@ const quizData = require('./utils/quiz-data');
 const taskSystem = require('./utils/task');
 const i18n = require('./utils/i18n');
 const dialect = require('./utils/dialect-dictionary');
+const villageData = require('./utils/village-data');
 
 App({
   globalData: {
@@ -17,7 +18,9 @@ App({
     isFirstLaunch: false,
     newBadges: [],
     language: 'zh-CN',
-    showDialectAnnotation: true
+    showDialectAnnotation: true,
+    currentVillage: null,
+    currentVillageId: ''
   },
 
   onLaunch() {
@@ -26,6 +29,7 @@ App({
     this.checkLoginStatus();
     this.ensureFallbackLogin();
     this.initMockData();
+    this.initCurrentVillage();
     this.checkFirstLaunch();
     this.maybeShowOnboarding();
   },
@@ -291,8 +295,93 @@ App({
     return false;
   },
 
+  initCurrentVillage() {
+    try {
+      let villageId = wx.getStorageSync('currentVillageId');
+      if (!villageId) {
+        const villages = villageData.getVillageList({ level: 'village' });
+        if (villages.length > 0) {
+          villageId = villages[0].id;
+          wx.setStorageSync('currentVillageId', villageId);
+        }
+      }
+      if (villageId) {
+        const village = villageData.getVillageById(villageId);
+        if (village) {
+          this.globalData.currentVillage = village;
+          this.globalData.currentVillageId = villageId;
+          console.log('[App] 当前村庄已初始化:', village.name);
+        }
+      }
+    } catch (error) {
+      console.error('[App] 初始化当前村庄失败:', error);
+    }
+  },
+
+  getCurrentVillage() {
+    if (this.globalData.currentVillage) {
+      return this.globalData.currentVillage;
+    }
+    const villageId = wx.getStorageSync('currentVillageId');
+    if (villageId) {
+      const village = villageData.getVillageById(villageId);
+      if (village) {
+        this.globalData.currentVillage = village;
+        this.globalData.currentVillageId = villageId;
+        return village;
+      }
+    }
+    return null;
+  },
+
+  getCurrentVillageId() {
+    if (this.globalData.currentVillageId) {
+      return this.globalData.currentVillageId;
+    }
+    return wx.getStorageSync('currentVillageId') || '';
+  },
+
+  setCurrentVillage(villageId) {
+    const village = villageData.getVillageById(villageId);
+    if (!village) {
+      console.warn('[App] 切换村庄失败：村庄不存在');
+      return false;
+    }
+    wx.setStorageSync('currentVillageId', villageId);
+    this.globalData.currentVillage = village;
+    this.globalData.currentVillageId = villageId;
+    console.log('[App] 已切换到村庄:', village.name);
+    return village;
+  },
+
+  getVillageById(villageId) {
+    return villageData.getVillageById(villageId);
+  },
+
+  getVillageList(params) {
+    return villageData.getVillageList(params);
+  },
+
+  getFeaturedChannels() {
+    return villageData.getFeaturedChannels();
+  },
+
+  isVillageAdmin(villageId) {
+    const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+    if (!userInfo) return false;
+    if (userInfo.role === 'superAdmin') return true;
+    const village = villageData.getVillageById(villageId || this.getCurrentVillageId());
+    return village && village.adminId === userInfo.id;
+  },
+
+  isSuperAdmin() {
+    const userInfo = this.globalData.userInfo || wx.getStorageSync('userInfo');
+    return !!(userInfo && userInfo.role === 'superAdmin');
+  },
+
   initMockData() {
     figureData.initFigureData();
+    villageData.initVillageData();
 
     const articles = wx.getStorageSync('articles');
     if (!articles || articles.length === 0) {
@@ -307,7 +396,8 @@ App({
           viewCount: 328,
           likeCount: 56,
           createTime: '2024-12-15',
-          status: 1
+          status: 1,
+          villageId: 'village_001'
         },
         {
           id: 'article_002',
@@ -319,7 +409,8 @@ App({
           viewCount: 256,
           likeCount: 89,
           createTime: '2024-12-10',
-          status: 1
+          status: 1,
+          villageId: 'village_002'
         },
         {
           id: 'article_003',
@@ -331,7 +422,8 @@ App({
           viewCount: 412,
           likeCount: 127,
           createTime: '2024-12-08',
-          status: 1
+          status: 1,
+          villageId: 'village_003'
         },
         {
           id: 'article_004',
@@ -343,7 +435,8 @@ App({
           viewCount: 567,
           likeCount: 203,
           createTime: '2024-12-05',
-          status: 1
+          status: 1,
+          villageId: 'village_001'
         },
         {
           id: 'article_005',
@@ -355,7 +448,8 @@ App({
           viewCount: 389,
           likeCount: 145,
           createTime: '2024-12-01',
-          status: 1
+          status: 1,
+          villageId: 'village_004'
         }
       ];
       wx.setStorageSync('articles', defaultArticles);

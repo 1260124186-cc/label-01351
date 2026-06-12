@@ -13,6 +13,46 @@
   border-radius: 0 0 32rpx 32rpx;
 }
 
+.village-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.village-info {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10rpx 24rpx;
+  border-radius: 30rpx;
+}
+
+.village-icon {
+  font-size: 28rpx;
+}
+
+.village-name {
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: 500;
+  max-width: 200rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.village-arrow {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.header-slogan {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .header-title {
   display: flex;
   flex-direction: column;

@@ -1,10 +1,13 @@
 const articleListBehavior = require('../../behaviors/article-list');
+const app = getApp();
 
 Page({
   behaviors: [articleListBehavior],
 
   data: {
-    articleList: []
+    articleList: [],
+    currentVillage: null,
+    currentVillageId: ''
   },
 
   getListKey() {
@@ -17,14 +20,27 @@ Page({
 
   onLoad() {
     this.loadCategories();
+    this.loadCurrentVillage();
   },
 
   onShow() {
     this.refreshData();
+    this.loadCurrentVillage();
   },
 
-  async loadArticles() {
-    return this.loadList();
+  loadCurrentVillage() {
+    const currentVillage = app.getCurrentVillage();
+    const currentVillageId = app.getCurrentVillageId();
+    this.setData({
+      currentVillage,
+      currentVillageId
+    });
+  },
+
+  goToVillageSelect() {
+    wx.navigateTo({
+      url: '/pages/village-select/village-select'
+    });
   },
 
   goToMap() {

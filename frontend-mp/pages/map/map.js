@@ -22,6 +22,7 @@ Page({
     const app = getApp();
     const isLoggedIn = app.getLoginStatus();
     this.setData({ isLoggedIn });
+    this.loadLandmarks(this.data.selectedCategory);
   },
 
   async loadCategories() {

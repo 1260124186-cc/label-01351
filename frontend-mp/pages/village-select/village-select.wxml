@@ -1,0 +1,121 @@
+<!--pages/village-select/village-select.wxml-->
+<view class="page-container">
+  <!-- 顶部标题 -->
+  <view class="header">
+    <view class="header-title">
+      <text class="title-main">选择村庄</text>
+      <text class="title-sub">切换所在村庄，探索本地文化</text>
+    </view>
+  </view>
+
+  <!-- 当前村庄 -->
+  <view class="current-village" wx:if="{{currentVillage}}">
+    <view class="current-label">当前村庄</view>
+    <view class="current-info">
+      <view class="village-avatar">
+        <text class="village-emoji">🏘️</text>
+      </view>
+      <view class="village-detail">
+        <text class="village-name">{{currentVillage.name}}</text>
+        <text class="village-level" wx:if="{{currentVillage.level === 'village'}}">村级</text>
+        <text class="village-level county" wx:elif="{{currentVillage.level === 'county'}}">县级频道</text>
+        <text class="village-level city" wx:elif="{{currentVillage.level === 'city'}}">市级频道</text>
+      </view>
+      <view class="current-tag">
+        <text>当前</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input 
+        class="search-input" 
+        placeholder="搜索村庄名称" 
+        placeholder-class="search-placeholder"
+        value="{{searchKeyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+      />
+      <text class="search-clear" wx:if="{{searchKeyword}}" bindtap="clearSearch">✕</text>
+    </view>
+  </view>
+
+  <!-- 精选频道 -->
+  <view class="featured-section" wx:if="{{featuredChannels.length > 0}}">
+    <view class="section-title">
+      <text class="section-title-text">精选频道</text>
+      <text class="section-title-desc">跨村优质内容聚合</text>
+    </view>
+    <scroll-view class="featured-scroll" scroll-x>
+      <view class="featured-list">
+        <view 
+          class="featured-item {{currentVillageId === item.id ? 'active' : ''}}"
+          wx:for="{{featuredChannels}}"
+          wx:key="id"
+          bindtap="selectChannel"
+          data-id="{{item.id}}"
+        >
+          <view class="featured-banner">
+            <text class="featured-emoji">{{item.level === 'city' ? '🏙️' : '🗺️'}}</text>
+          </view>
+          <view class="featured-info">
+            <text class="featured-name">{{item.name}}</text>
+            <text class="featured-slogan" wx:if="{{item.channelSlogan}}">{{item.channelSlogan}}</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 层级切换 -->
+  <view class="level-tabs">
+    <view 
+      class="level-tab {{activeLevel === item.id ? 'active' : ''}}"
+      wx:for="{{levelTabs}}"
+      wx:key="id"
+      bindtap="onLevelChange"
+      data-level="{{item.id}}"
+    >
+      <text>{{item.name}}</text>
+    </view>
+  </view>
+
+  <!-- 村庄列表 -->
+  <scroll-view class="village-list" scroll-y>
+    <view 
+      class="village-item {{currentVillageId === item.id ? 'selected' : ''}}"
+      wx:for="{{villageList}}"
+      wx:key="id"
+      bindtap="selectVillage"
+      data-id="{{item.id}}"
+    >
+      <view class="village-avatar-lg">
+        <text class="village-emoji">{{item.level === 'village' ? '🏡' : item.level === 'county' ? '🗺️' : '🏙️'}}</text>
+      </view>
+      <view class="village-content">
+        <view class="village-header">
+          <text class="village-name">{{item.name}}</text>
+          <view class="village-level-tag" wx:if="{{item.level === 'village'}}">村级</view>
+          <view class="village-level-tag county" wx:elif="{{item.level === 'county'}}">县级</view>
+          <view class="village-level-tag city" wx:elif="{{item.level === 'city'}}">市级</view>
+        </view>
+        <text class="village-intro" wx:if="{{item.introduction}}">{{item.introduction}}</text>
+        <view class="village-meta" wx:if="{{item.adminName || item.cultureFeatures}}">
+          <text class="meta-item" wx:if="{{item.adminName}}">👤 {{item.adminName}}</text>
+          <text class="meta-item" wx:if="{{item.cultureFeatures && item.cultureFeatures.length > 0}}">✨ {{item.cultureFeatures[0]}}</text>
+        </view>
+      </view>
+      <view class="village-check" wx:if="{{currentVillageId === item.id}}">
+        <text>✓</text>
+      </view>
+    </view>
+
+    <view class="empty-state" wx:if="{{villageList.length === 0}}">
+      <text class="empty-icon">🏘️</text>
+      <text class="empty-text">暂无相关村庄</text>
+    </view>
+  </scroll-view>
+</view>

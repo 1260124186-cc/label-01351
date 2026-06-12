@@ -3,11 +3,16 @@
 
 const api = require('../../utils/api');
 const util = require('../../utils/util');
+const app = getApp();
 
 Page({
   data: {
     // 登录状态
     isLoggedIn: false,
+
+    // 村庄信息
+    currentVillage: null,
+    currentVillageId: '',
 
     // 分类数据
     categories: [],
@@ -66,6 +71,7 @@ Page({
 
   onLoad(options) {
     this.loadCategories();
+    this.loadCurrentVillage();
     this._categoriesLoaded = true;
     this.setData({ suggestedTags: util.SUGGESTED_TAGS });
 
@@ -82,6 +88,7 @@ Page({
   onShow() {
     const app = getApp();
     const isLoggedIn = app.getLoginStatus();
+    this.loadCurrentVillage();
     this.setData({ isLoggedIn });
 
     if (isLoggedIn) {
@@ -253,6 +260,21 @@ Page({
   goToCreateFigure() {
     wx.navigateTo({
       url: '/pages/figure-create/figure-create'
+    });
+  },
+
+  loadCurrentVillage() {
+    const currentVillage = app.getCurrentVillage();
+    const currentVillageId = app.getCurrentVillageId();
+    this.setData({
+      currentVillage,
+      currentVillageId
+    });
+  },
+
+  goToVillageSelect() {
+    wx.navigateTo({
+      url: '/pages/village-select/village-select'
     });
   },
 

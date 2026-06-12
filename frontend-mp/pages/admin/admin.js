@@ -1,5 +1,6 @@
 const api = require('../../utils/api');
 const util = require('../../utils/util');
+const app = getApp();
 
 Page({
   data: {
@@ -7,6 +8,11 @@ Page({
     checkingPermission: true,
     hasPermission: false,
     userInfo: null,
+    isSuperAdmin: false,
+
+    // 村庄筛选
+    villageList: [],
+    reviewVillageId: 'all',
 
     // 当前 Tab
     currentTab: 0,
@@ -148,6 +154,7 @@ Page({
 
     const isLoggedIn = app.getLoginStatus();
     const isAdmin = app.isAdmin();
+    const isSuperAdmin = app.isSuperAdmin();
     const userInfo = app.getUserInfo();
 
     if (!isLoggedIn) {
@@ -184,10 +191,12 @@ Page({
     this.setData({
       checkingPermission: false,
       hasPermission: true,
-      userInfo: userInfo || null
+      userInfo: userInfo || null,
+      isSuperAdmin
     });
     // 权限通过后：立即触发测量（不依赖 onReady 时序）
     setTimeout(() => this.measureAllRegions(), 100);
+    this.loadVillageList();
     this.refreshAllData();
   },
 
@@ -386,36 +395,83 @@ Page({
     }
   },
 
+  // === 村庄列表 ===
+  async loadVillageList() {
+    try {
+      const res = await api.getVillageList({ pageSize: 100 });
+      if (res.code === 200) {
+        this.setData({
+          villageList: res.data.list || []
+        });
+      }
+    } catch (error) {
+      console.error('[Admin] 加载村庄列表失败:', error);
+    }
+  },
+
+  onReviewVillageChange(e) {
+    const villageId = e.currentTarget.dataset.id;
+    this.setData({
+      reviewVillageId: villageId
+    });
+    this.loadPendingReview();
+    this.loadReports();
+  },
+
   // === 待审核内容 ===
   async loadPendingReview() {
     try {
+      const { reviewVillageId, villageList, isSuperAdmin } = this.data;
+
+      const currentVillageId = app.getCurrentVillageId();
+      const filterVillageId = isSuperAdmin ? reviewVillageId : currentVillageId;
+
+      const getVillageName = (vid) => {
+        const v = villageList.find(item => item.id === vid);
+        return v ? v.name : '';
+      };
+
       // 从 figureDrafts 读取待审人物志
       const drafts = wx.getStorageSync('figureDrafts') || [];
-      const pendingFigureDrafts = drafts
-        .filter(d => d.reviewStatus === 'pending' || d.status === 0)
-        .map(d => ({
-          id: d.id,
-          type: 'figure',
-          title: d.name,
-          desc: (d.briefIntroduction || '').slice(0, 60),
-          submitter: d.submitterName || '匿名',
-          createTime: d.createTime,
-          data: d
-        }));
+      let pendingFigureDrafts = drafts
+        .filter(d => d.reviewStatus === 'pending' || d.status === 0);
+
+      if (filterVillageId && filterVillageId !== 'all') {
+        pendingFigureDrafts = pendingFigureDrafts.filter(d => d.villageId === filterVillageId);
+      }
+
+      pendingFigureDrafts = pendingFigureDrafts.map(d => ({
+        id: d.id,
+        type: 'figure',
+        title: d.name,
+        desc: (d.briefIntroduction || '').slice(0, 60),
+        submitter: d.submitterName || '匿名',
+        createTime: d.createTime,
+        villageId: d.villageId,
+        villageName: getVillageName(d.villageId),
+        data: d
+      }));
 
       // 从 articles 找 status=0 的待审文章
       const articles = wx.getStorageSync('articles') || [];
-      const pendingArticles = articles
-        .filter(a => a.status === 0)
-        .map(a => ({
-          id: a.id,
-          type: 'article',
-          title: a.title,
-          desc: (a.content || '').slice(0, 60),
-          submitter: a.authorName || '匿名',
-          createTime: a.createTime,
-          data: a
-        }));
+      let pendingArticles = articles
+        .filter(a => a.status === 0);
+
+      if (filterVillageId && filterVillageId !== 'all') {
+        pendingArticles = pendingArticles.filter(a => a.villageId === filterVillageId);
+      }
+
+      pendingArticles = pendingArticles.map(a => ({
+        id: a.id,
+        type: 'article',
+        title: a.title,
+        desc: (a.content || '').slice(0, 60),
+        submitter: a.authorName || '匿名',
+        createTime: a.createTime,
+        villageId: a.villageId,
+        villageName: getVillageName(a.villageId),
+        data: a
+      }));
 
       const typeMap = {
         figure: '人物志',

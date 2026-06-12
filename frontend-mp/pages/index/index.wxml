@@ -2,6 +2,14 @@
 <view class="page-container">
   <!-- 顶部标题区域 -->
   <view class="header">
+    <view class="village-bar" bindtap="goToVillageSelect">
+      <view class="village-info">
+        <text class="village-icon">🏘️</text>
+        <text class="village-name">{{currentVillage.name || '选择村庄'}}</text>
+        <text class="village-arrow">▼</text>
+      </view>
+      <text class="header-slogan">发现家乡的美</text>
+    </view>
     <view class="header-title">
       <text class="title-main">乡村文化库</text>
       <text class="title-sub">传承乡村文化 · 传递银龄力量</text>

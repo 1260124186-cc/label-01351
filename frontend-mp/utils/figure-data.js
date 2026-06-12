@@ -72,7 +72,8 @@ const DEFAULT_FIGURES = [
     viewCount: 568,
     likeCount: 127,
     createTime: '2024-12-01',
-    status: 1
+    status: 1,
+    villageId: 'village_001'
   },
   {
     id: 'figure_002',
@@ -103,7 +104,8 @@ const DEFAULT_FIGURES = [
     viewCount: 892,
     likeCount: 256,
     createTime: '2024-12-05',
-    status: 1
+    status: 1,
+    villageId: 'village_002'
   },
   {
     id: 'figure_003',
@@ -133,7 +135,8 @@ const DEFAULT_FIGURES = [
     viewCount: 423,
     likeCount: 98,
     createTime: '2024-12-08',
-    status: 1
+    status: 1,
+    villageId: 'village_003'
   },
   {
     id: 'figure_004',
@@ -163,7 +166,8 @@ const DEFAULT_FIGURES = [
     viewCount: 634,
     likeCount: 156,
     createTime: '2024-12-10',
-    status: 1
+    status: 1,
+    villageId: 'village_004'
   },
   {
     id: 'figure_005',
@@ -193,7 +197,8 @@ const DEFAULT_FIGURES = [
     viewCount: 512,
     likeCount: 189,
     createTime: '2024-12-12',
-    status: 1
+    status: 1,
+    villageId: 'village_001'
   },
   {
     id: 'figure_006',
@@ -222,7 +227,8 @@ const DEFAULT_FIGURES = [
     viewCount: 445,
     likeCount: 134,
     createTime: '2024-12-15',
-    status: 1
+    status: 1,
+    villageId: 'village_002'
   },
   {
     id: 'figure_007',
@@ -252,7 +258,8 @@ const DEFAULT_FIGURES = [
     viewCount: 378,
     likeCount: 112,
     createTime: '2024-12-18',
-    status: 1
+    status: 1,
+    villageId: 'village_003'
   },
   {
     id: 'figure_008',
@@ -282,7 +289,8 @@ const DEFAULT_FIGURES = [
     viewCount: 567,
     likeCount: 145,
     createTime: '2024-12-20',
-    status: 1
+    status: 1,
+    villageId: 'village_004'
   }
 ];
 

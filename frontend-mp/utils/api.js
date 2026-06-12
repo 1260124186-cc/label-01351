@@ -321,13 +321,434 @@ const storageApi = {
     if (authError) return authError;
     const userId = getCurrentUserId();
     let articles = wx.getStorageSync('articles') || [];
-    articles = articles.filter(item => item.authorId === userId);
+    articles = articles.filter(item => item.authorId === userId && item.status === 1);
     articles.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
     return {
       code: 200,
       data: { list: articles, total: articles.length },
       message: 'success'
     };
+  },
+
+  updateArticle: async (id, data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const index = articles.findIndex(item => item.id === id && item.authorId === userId && item.status === 1);
+
+    if (index === -1) {
+      return { code: 404, data: null, message: '文章不存在或无权编辑' };
+    }
+
+    const oldArticle = articles[index];
+
+    if (data.title !== undefined) {
+      const titleTrimmed = data.title.trim();
+      if (titleTrimmed.length < 2) {
+        return { code: 400, data: null, message: '标题至少2个字符' };
+      }
+    }
+    if (data.content !== undefined) {
+      const contentTrimmed = data.content.trim();
+      if (contentTrimmed.length < 10) {
+        return { code: 400, data: null, message: '内容至少10个字符' };
+      }
+    }
+    if (data.category !== undefined && !data.category) {
+      return { code: 400, data: null, message: '请选择分类' };
+    }
+
+    const title = data.title !== undefined ? data.title.trim() : oldArticle.title;
+    const content = data.content !== undefined ? data.content.trim() : oldArticle.content;
+    const summaryInput = data.summary !== undefined ? data.summary.trim() : oldArticle.summary;
+    const summary = summaryInput || util.truncateText(content, 100);
+
+    const sensitiveCheck = util.checkSensitiveWords(
+      title + ' ' + summary + ' ' + content + ' ' + ((data.tags || oldArticle.tags) || []).join(' ')
+    );
+    if (sensitiveCheck.hasSensitive) {
+      return {
+        code: 400,
+        data: { matchedWords: sensitiveCheck.matchedWords },
+        message: '内容包含敏感词：' + sensitiveCheck.matchedWords.join('、') + '，请修改后重试'
+      };
+    }
+
+    if (data.tags !== undefined) {
+      if (!Array.isArray(data.tags)) {
+        return { code: 400, data: null, message: '标签格式错误' };
+      }
+      if (data.tags.length > 3) {
+        return { code: 400, data: null, message: '标签数量最多3个' };
+      }
+    }
+
+    const updateData = {};
+    if (data.title !== undefined) updateData.title = title;
+    if (data.category !== undefined) updateData.category = data.category;
+    if (data.summary !== undefined) updateData.summary = summary;
+    if (data.content !== undefined) updateData.content = content;
+    if (data.tags !== undefined) updateData.tags = data.tags;
+    if (data.figureId !== undefined) updateData.figureId = data.figureId;
+    updateData.updateTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+
+    const oldFigureId = oldArticle.figureId;
+    const newFigureId = data.figureId !== undefined ? data.figureId : oldFigureId;
+
+    articles[index] = { ...oldArticle, ...updateData };
+    wx.setStorageSync('articles', articles);
+
+    if (oldFigureId !== newFigureId) {
+      const figures = wx.getStorageSync('figures') || [];
+      if (oldFigureId) {
+        const oldFigureIndex = figures.findIndex(f => f.id === oldFigureId);
+        if (oldFigureIndex > -1 && figures[oldFigureIndex].relatedArticles) {
+          figures[oldFigureIndex].relatedArticles = figures[oldFigureIndex].relatedArticles.filter(aid => aid !== id);
+        }
+      }
+      if (newFigureId) {
+        const newFigureIndex = figures.findIndex(f => f.id === newFigureId);
+        if (newFigureIndex > -1) {
+          if (!figures[newFigureIndex].relatedArticles) {
+            figures[newFigureIndex].relatedArticles = [];
+          }
+          if (!figures[newFigureIndex].relatedArticles.includes(id)) {
+            figures[newFigureIndex].relatedArticles.push(id);
+          }
+        }
+      }
+      wx.setStorageSync('figures', figures);
+    }
+
+    return { code: 200, data: articles[index], message: '更新成功' };
+  },
+
+  deleteArticle: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const index = articles.findIndex(item => item.id === id && item.authorId === userId && item.status === 1);
+
+    if (index === -1) {
+      return { code: 404, data: null, message: '文章不存在或无权删除' };
+    }
+
+    const article = articles[index];
+
+    articles.splice(index, 1);
+    wx.setStorageSync('articles', articles);
+
+    const figureId = article.figureId;
+    if (figureId) {
+      const figures = wx.getStorageSync('figures') || [];
+      const figureIndex = figures.findIndex(f => f.id === figureId);
+      if (figureIndex > -1 && figures[figureIndex].relatedArticles) {
+        figures[figureIndex].relatedArticles = figures[figureIndex].relatedArticles.filter(aid => aid !== id);
+        wx.setStorageSync('figures', figures);
+      }
+    }
+
+    const favorites = wx.getStorageSync('favorites') || {};
+    Object.keys(favorites).forEach(uid => {
+      const userFavorites = favorites[uid] || [];
+      const favIndex = userFavorites.indexOf(id);
+      if (favIndex > -1) {
+        userFavorites.splice(favIndex, 1);
+        favorites[uid] = userFavorites;
+      }
+    });
+    wx.setStorageSync('favorites', favorites);
+
+    const likes = wx.getStorageSync('likes') || {};
+    Object.keys(likes).forEach(uid => {
+      const userLikes = likes[uid] || [];
+      const likeIndex = userLikes.indexOf(id);
+      if (likeIndex > -1) {
+        userLikes.splice(likeIndex, 1);
+        likes[uid] = userLikes;
+      }
+    });
+    wx.setStorageSync('likes', likes);
+
+    const history = wx.getStorageSync('history') || {};
+    Object.keys(history).forEach(uid => {
+      const userHistory = history[uid] || [];
+      history[uid] = userHistory.filter(item => item.articleId !== id);
+    });
+    wx.setStorageSync('history', history);
+
+    return { code: 200, data: null, message: '删除成功' };
+  },
+
+  saveArticleDraft: async (data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userInfo = wx.getStorageSync('userInfo');
+    const articles = wx.getStorageSync('articles') || [];
+
+    const title = data.title ? data.title.trim() : '';
+    const content = data.content ? data.content.trim() : '';
+
+    if (!title && !content) {
+      return { code: 400, data: null, message: '请至少输入标题或内容' };
+    }
+
+    const category = data.category || '';
+    const summaryInput = data.summary ? data.summary.trim() : '';
+    const summary = summaryInput || (content ? util.truncateText(content, 100) : '');
+    const id = data.id;
+
+    if (id) {
+      const existingIndex = articles.findIndex(item => item.id === id);
+      if (existingIndex === -1) {
+        return { code: 404, data: null, message: '草稿不存在' };
+      }
+      if (articles[existingIndex].authorId !== userInfo.id) {
+        return { code: 403, data: null, message: '无权限修改此草稿' };
+      }
+      const index = existingIndex;
+      articles[index] = {
+        ...articles[index],
+        title: title || articles[index].title || '无标题',
+        category: category || articles[index].category || '',
+        summary: summary || articles[index].summary || '',
+        content: content || articles[index].content || '',
+        tags: data.tags || articles[index].tags || [],
+        figureId: data.figureId || articles[index].figureId || '',
+        updateTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+        status: 0
+      };
+      wx.setStorageSync('articles', articles);
+      return { code: 200, data: articles[index], message: '保存成功' };
+    }
+
+    const newDraft = {
+      id: util.generateId('draft'),
+      title: title || '无标题',
+      category: category || '',
+      summary: summary || '',
+      content: content || '',
+      tags: data.tags || [],
+      figureId: data.figureId || '',
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      viewCount: 0,
+      likeCount: 0,
+      commentCount: 0,
+      createTime: '',
+      updateTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 0
+    };
+    articles.unshift(newDraft);
+    wx.setStorageSync('articles', articles);
+    return { code: 200, data: newDraft, message: '保存成功' };
+  },
+
+  getArticleDraftList: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    let articles = wx.getStorageSync('articles') || [];
+    const drafts = articles.filter(item => item.authorId === userId && item.status === 0);
+    drafts.sort((a, b) => new Date(b.updateTime) - new Date(a.updateTime));
+
+    const list = drafts.map(item => ({
+      ...item,
+      categoryName: util.getCategoryName(item.category)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total: list.length },
+      message: 'success'
+    };
+  },
+
+  getArticleDraftDetail: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '草稿ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const draft = articles.find(item => item.id === id);
+
+    if (!draft) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+    if (draft.authorId !== userId) {
+      return { code: 403, data: null, message: '无权限查看此草稿' };
+    }
+    if (draft.status !== 0) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+
+    return { code: 200, data: draft, message: 'success' };
+  },
+
+  updateArticleDraft: async (id, data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '草稿ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const index = articles.findIndex(item => item.id === id);
+
+    if (index === -1) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+    if (articles[index].authorId !== userId) {
+      return { code: 403, data: null, message: '无权限修改此草稿' };
+    }
+    if (articles[index].status !== 0) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+
+    const updateData = {};
+    if (data.title !== undefined) updateData.title = data.title.trim();
+    if (data.category !== undefined) updateData.category = data.category;
+    if (data.summary !== undefined) updateData.summary = data.summary.trim();
+    if (data.content !== undefined) updateData.content = data.content.trim();
+    if (data.tags !== undefined) updateData.tags = data.tags;
+    if (data.figureId !== undefined) updateData.figureId = data.figureId;
+    updateData.updateTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+
+    articles[index] = { ...articles[index], ...updateData };
+    wx.setStorageSync('articles', articles);
+
+    return { code: 200, data: articles[index], message: '更新成功' };
+  },
+
+  publishArticleDraft: async (id) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '草稿ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const index = articles.findIndex(item => item.id === id);
+
+    if (index === -1) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+    if (articles[index].authorId !== userId) {
+      return { code: 403, data: null, message: '无权限发布此草稿' };
+    }
+    if (articles[index].status !== 0) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+
+    const draft = articles[index];
+    if (!draft.title || draft.title.trim().length < 2) {
+      return { code: 400, data: null, message: '请输入文章标题（至少2字）' };
+    }
+    if (!draft.category) {
+      return { code: 400, data: null, message: '请选择文章分类' };
+    }
+    if (!draft.content || draft.content.trim().length < 10) {
+      return { code: 400, data: null, message: '请输入文章内容（至少10字）' };
+    }
+
+    const contentTrimmed = draft.content.trim();
+    const autoSummary = (draft.summary || '').trim() || util.truncateText(contentTrimmed, 100);
+    const sensitiveCheck = util.checkSensitiveWords(
+      draft.title + ' ' + autoSummary + ' ' + contentTrimmed + ' ' + (draft.tags || []).join(' ')
+    );
+    if (sensitiveCheck.hasSensitive) {
+      return {
+        code: 400,
+        data: { matchedWords: sensitiveCheck.matchedWords },
+        message: '内容包含敏感词：' + sensitiveCheck.matchedWords.join('、') + '，请修改后重试'
+      };
+    }
+
+    articles[index] = {
+      ...draft,
+      title: draft.title.trim(),
+      summary: autoSummary,
+      content: contentTrimmed,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      updateTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 1
+    };
+    wx.setStorageSync('articles', articles);
+
+    const figureId = articles[index].figureId;
+    if (figureId) {
+      const figures = wx.getStorageSync('figures') || [];
+      const figureIndex = figures.findIndex(item => item.id === figureId);
+      if (figureIndex > -1) {
+        if (!figures[figureIndex].relatedArticles) {
+          figures[figureIndex].relatedArticles = [];
+        }
+        if (!figures[figureIndex].relatedArticles.includes(id)) {
+          figures[figureIndex].relatedArticles.push(id);
+        }
+        wx.setStorageSync('figures', figures);
+      }
+    }
+
+    return { code: 200, data: articles[index], message: '发布成功' };
+  },
+
+  deleteArticleDraft: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '草稿ID不能为空' };
+    }
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const index = articles.findIndex(item => item.id === id);
+
+    if (index === -1) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+    if (articles[index].authorId !== userId) {
+      return { code: 403, data: null, message: '无权限删除此草稿' };
+    }
+    if (articles[index].status !== 0) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+
+    articles.splice(index, 1);
+    wx.setStorageSync('articles', articles);
+
+    return { code: 200, data: null, message: '删除成功' };
   },
 
   getCategoryList: async () => {
@@ -350,6 +771,12 @@ const storageApi = {
     if (authError) return authError;
     if (data.nickname && (data.nickname.length < 2 || data.nickname.length > 20)) {
       return { code: 400, data: null, message: '昵称需要2-20个字符' };
+    }
+    if (data.signature !== undefined && data.signature.length > 100) {
+      return { code: 400, data: null, message: '个性签名不能超过100字' };
+    }
+    if (data.location !== undefined && data.location.length > 30) {
+      return { code: 400, data: null, message: '地区不能超过30字' };
     }
     const userInfo = wx.getStorageSync('userInfo');
     const updatedInfo = { ...userInfo, ...data };
@@ -768,6 +1195,7 @@ const storageApi = {
 
     const userInfo = wx.getStorageSync('userInfo');
     const drafts = wx.getStorageSync('figureDrafts') || [];
+    const currentVillageId = wx.getStorageSync('currentVillageId') || '';
 
     const newDraft = {
       id: util.generateId('figure_draft'),
@@ -787,7 +1215,8 @@ const storageApi = {
       submitterName: userInfo.nickname,
       createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
       status: 0,
-      reviewStatus: 'pending'
+      reviewStatus: 'pending',
+      villageId: data.villageId || currentVillageId
     };
 
     drafts.unshift(newDraft);
@@ -1768,9 +2197,24 @@ const storageApi = {
 
   getLandmarkList: async (params = {}) => {
     await delay(500);
-    const { category = 'all', page = 1, pageSize = 20, keyword = '' } = params;
+    const { category = 'all', page = 1, pageSize = 20, keyword = '', villageId = '' } = params;
     let landmarks = wx.getStorageSync('landmarks') || [];
     landmarks = landmarks.filter(item => item.status === 'approved');
+
+    if (villageId && villageId !== 'all') {
+      const villageIds = villageData.getVillageAndChildrenIds(villageId);
+      if (villageIds.length > 0) {
+        landmarks = landmarks.filter(item => villageIds.includes(item.villageId));
+      }
+    } else if (!villageId) {
+      const currentVillageId = wx.getStorageSync('currentVillageId');
+      if (currentVillageId) {
+        const villageIds = villageData.getVillageAndChildrenIds(currentVillageId);
+        if (villageIds.length > 0) {
+          landmarks = landmarks.filter(item => villageIds.includes(item.villageId));
+        }
+      }
+    }
 
     if (category && category !== 'all') {
       landmarks = landmarks.filter(item => item.category === category);
@@ -1830,6 +2274,7 @@ const storageApi = {
 
     const userInfo = wx.getStorageSync('userInfo');
     const landmarks = wx.getStorageSync('landmarks') || [];
+    const currentVillageId = wx.getStorageSync('currentVillageId') || '';
 
     const newLandmark = {
       id: util.generateId('landmark'),
@@ -1845,7 +2290,8 @@ const storageApi = {
       submitterName: userInfo.nickname,
       status: 'pending',
       createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
-      viewCount: 0
+      viewCount: 0,
+      villageId: data.villageId || currentVillageId
     };
 
     landmarks.unshift(newLandmark);
@@ -3728,587 +4174,6 @@ const storageApi = {
     wx.setStorageSync('history', history);
 
     return { code: 200, data: { success: true }, message: '已清空阅读历史' };
-  },
-
-  getFundProjectList: async (params = {}) => {
-    await delay(500);
-    const { status = 'all', page = 1, pageSize = 10, keyword = '' } = params;
-    let projects = wx.getStorageSync('fundProjects') || [];
-
-    if (projects.length === 0) {
-      projects = [
-        {
-          id: 'fund_001',
-          name: '乡村非遗传承人扶持计划',
-          targetAmount: 500000,
-          raisedAmount: 328500,
-          usedAmount: 156000,
-          projectStatus: 'ongoing',
-          description: '为乡村非遗传承人提供技艺传承、设备更新、市场推广等多方面支持，帮助传统技艺焕发新生。',
-          beneficiaryDesc: '受益对象：全国12个省份的56位非遗传承人，涵盖剪纸、刺绣、陶艺、木雕等20余种传统技艺。',
-          coverImage: '',
-          timeline: [
-            { id: 'tl_001', date: '2024-03-01', title: '项目启动', content: '项目正式启动，开始招募首批非遗传承人。', type: 'milestone' },
-            { id: 'tl_002', date: '2024-05-15', title: '首批资金拨付', content: '完成首批20位传承人的资助申请审核，拨付资助金80万元。', type: 'funding' },
-            { id: 'tl_003', date: '2024-08-20', title: '中期成果展', content: '举办"非遗新生"中期成果展，展示传承人的新作。', type: 'event' },
-            { id: 'tl_004', date: '2024-11-10', title: '第二期招募', content: '启动第二批传承人招募，新增15个扶持名额。', type: 'milestone' }
-          ],
-          relatedArticleIds: [],
-          relatedActivityIds: [],
-          createTime: '2024-03-01 09:00:00',
-          updateTime: '2024-11-10 14:30:00',
-          adminId: 'admin_001',
-          adminName: '文化基金会',
-          viewCount: 1286,
-          status: 1
-        },
-        {
-          id: 'fund_002',
-          name: '古村落文化保护基金',
-          targetAmount: 1000000,
-          raisedAmount: 756800,
-          usedAmount: 420000,
-          projectStatus: 'ongoing',
-          description: '用于传统村落的古建筑修缮、民俗文化抢救记录、村史资料整理等工作，守护乡愁记忆。',
-          beneficiaryDesc: '受益对象：全国8个传统村落，涉及古建筑修缮36处，抢救性记录民俗活动28项。',
-          coverImage: '',
-          timeline: [
-            { id: 'tl_005', date: '2024-01-15', title: '基金成立', content: '古村落文化保护基金正式成立。', type: 'milestone' },
-            { id: 'tl_006', date: '2024-04-20', title: '首批修缮启动', content: '首批6处古建筑修缮工程开工。', type: 'milestone' }
-          ],
-          relatedArticleIds: [],
-          relatedActivityIds: [],
-          createTime: '2024-01-15 10:00:00',
-          updateTime: '2024-04-20 16:00:00',
-          adminId: 'admin_001',
-          adminName: '文化基金会',
-          viewCount: 892,
-          status: 1
-        },
-        {
-          id: 'fund_003',
-          name: '儿童艺术教育公益项目',
-          targetAmount: 300000,
-          raisedAmount: 300000,
-          usedAmount: 285000,
-          projectStatus: 'ended',
-          description: '为乡村地区儿童提供艺术教育资源，包括美术、音乐、舞蹈等课程，让每个孩子都能接触艺术。',
-          beneficiaryDesc: '受益对象：5所乡村小学的320名学生，捐赠艺术教材1200册，组织艺术活动18场。',
-          coverImage: '',
-          timeline: [
-            { id: 'tl_007', date: '2023-09-01', title: '项目启动', content: '儿童艺术教育公益项目正式启动。', type: 'milestone' },
-            { id: 'tl_008', date: '2023-12-15', title: '筹款完成', content: '项目筹款目标达成，感谢所有爱心人士的支持。', type: 'milestone' },
-            { id: 'tl_009', date: '2024-06-30', title: '项目结项', content: '完成全部教学活动，项目圆满结束。', type: 'milestone' }
-          ],
-          relatedArticleIds: [],
-          relatedActivityIds: [],
-          createTime: '2023-09-01 08:00:00',
-          updateTime: '2024-06-30 18:00:00',
-          adminId: 'admin_001',
-          adminName: '文化基金会',
-          viewCount: 2150,
-          status: 1
-        }
-      ];
-      wx.setStorageSync('fundProjects', projects);
-
-      const mockComments = [
-        { id: 'fc_001', projectId: 'fund_001', userId: 'user_001', userName: '文化爱好者', avatar: '', content: '支持非遗传承，加油！', reviewStatus: 'approved', createTime: '2024-05-10 12:30:00' },
-        { id: 'fc_002', projectId: 'fund_001', userId: 'user_002', userName: '小明', avatar: '', content: '希望能看到更多成果展示', reviewStatus: 'approved', createTime: '2024-06-15 09:20:00' },
-        { id: 'fc_003', projectId: 'fund_002', userId: 'user_003', userName: '乡愁记忆', avatar: '', content: '古村落保护太重要了', reviewStatus: 'approved', createTime: '2024-03-20 14:00:00' }
-      ];
-      wx.setStorageSync('fundComments', mockComments);
-
-      const mockDonations = [
-        { id: 'fd_001', projectId: 'fund_001', donorName: '张先生', amount: 5000, method: 'offline_bank', isAnonymous: false, remark: '支持非遗', createTime: '2024-04-10 10:00:00' },
-        { id: 'fd_002', projectId: 'fund_001', donorName: '匿名人士', amount: 10000, method: 'offline_wechat', isAnonymous: true, remark: '', createTime: '2024-05-05 15:30:00' },
-        { id: 'fd_003', projectId: 'fund_001', donorName: '李女士', amount: 2000, method: 'offline_alipay', isAnonymous: false, remark: '加油', createTime: '2024-06-12 08:45:00' },
-        { id: 'fd_004', projectId: 'fund_002', donorName: '王总', amount: 50000, method: 'offline_bank', isAnonymous: false, remark: '支持古村落保护', createTime: '2024-02-15 11:00:00' }
-      ];
-      wx.setStorageSync('fundDonations', mockDonations);
-    }
-
-    projects = projects.filter(item => item.status === 1);
-
-    if (status && status !== 'all') {
-      projects = projects.filter(item => item.projectStatus === status);
-    }
-
-    if (keyword && keyword.trim()) {
-      const kw = keyword.toLowerCase().trim();
-      projects = projects.filter(item =>
-        item.name.toLowerCase().includes(kw) ||
-        item.description.toLowerCase().includes(kw)
-      );
-    }
-
-    projects.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
-
-    const total = projects.length;
-    const start = (page - 1) * pageSize;
-    const list = projects.slice(start, start + pageSize).map(item => ({
-      ...item,
-      progress: item.targetAmount > 0 ? Math.min(Math.round((item.raisedAmount / item.targetAmount) * 100), 100) : 0,
-      statusInfo: util.getFundStatusInfo(item.projectStatus)
-    }));
-
-    return {
-      code: 200,
-      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
-      message: 'success'
-    };
-  },
-
-  getFundProjectDetail: async (id) => {
-    await delay(300);
-    if (!id) {
-      return { code: 400, data: null, message: '项目ID不能为空' };
-    }
-    const projects = wx.getStorageSync('fundProjects') || [];
-    const project = projects.find(item => item.id === id);
-    if (!project || project.status !== 1) {
-      return { code: 404, data: null, message: '项目不存在' };
-    }
-
-    const updatedProject = { ...project, viewCount: project.viewCount + 1 };
-    const projectIndex = projects.findIndex(p => p.id === id);
-    projects[projectIndex] = updatedProject;
-    wx.setStorageSync('fundProjects', projects);
-
-    const allComments = wx.getStorageSync('fundComments') || [];
-    const approvedComments = allComments.filter(c => c.projectId === id && c.reviewStatus === 'approved');
-
-    const allDonations = wx.getStorageSync('fundDonations') || [];
-    const projectDonations = allDonations.filter(d => d.projectId === id);
-
-    const articles = wx.getStorageSync('articles') || [];
-    const relatedArticles = (project.relatedArticleIds || []).map(aid => articles.find(a => a.id === aid)).filter(Boolean);
-
-    const activities = wx.getStorageSync('activities') || [];
-    const relatedActivities = (project.relatedActivityIds || []).map(aid => activities.find(a => a.id === aid)).filter(Boolean);
-
-    const progress = project.targetAmount > 0
-      ? Math.min(Math.round((project.raisedAmount / project.targetAmount) * 100), 100)
-      : 0;
-
-    const detail = {
-      ...updatedProject,
-      progress,
-      statusInfo: util.getFundStatusInfo(project.projectStatus),
-      comments: approvedComments,
-      donations: projectDonations,
-      relatedArticles,
-      relatedActivities,
-      commentCount: approvedComments.length
-    };
-
-    return { code: 200, data: detail, message: 'success' };
-  },
-
-  createFundProject: async (data) => {
-    await delay(800);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo.role || userInfo.role !== 'admin') {
-      return { code: 403, data: null, message: '仅管理员可创建基金项目' };
-    }
-
-    if (!data.name || !data.name.trim()) {
-      return { code: 400, data: null, message: '项目名称不能为空' };
-    }
-    if (!data.targetAmount || data.targetAmount <= 0) {
-      return { code: 400, data: null, message: '请输入有效的目标金额' };
-    }
-    if (!data.description || !data.description.trim()) {
-      return { code: 400, data: null, message: '项目描述不能为空' };
-    }
-    if (!data.beneficiaryDesc || !data.beneficiaryDesc.trim()) {
-      return { code: 400, data: null, message: '受益说明不能为空' };
-    }
-
-    const projects = wx.getStorageSync('fundProjects') || [];
-    const newProject = {
-      id: util.generateId('fund'),
-      name: data.name.trim(),
-      targetAmount: parseFloat(data.targetAmount),
-      raisedAmount: 0,
-      usedAmount: 0,
-      projectStatus: data.projectStatus || 'ongoing',
-      description: data.description.trim(),
-      beneficiaryDesc: data.beneficiaryDesc.trim(),
-      coverImage: data.coverImage || '',
-      timeline: data.timeline || [],
-      relatedArticleIds: data.relatedArticleIds || [],
-      relatedActivityIds: data.relatedActivityIds || [],
-      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
-      updateTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
-      adminId: userInfo.id,
-      adminName: userInfo.nickname,
-      viewCount: 0,
-      status: 1
-    };
-
-    projects.unshift(newProject);
-    wx.setStorageSync('fundProjects', projects);
-
-    const resultProject = {
-      ...newProject,
-      progress: newProject.targetAmount > 0 ? 0 : 0
-    };
-
-    return { code: 200, data: resultProject, message: '创建成功' };
-  },
-
-  updateFundProject: async (id, data) => {
-    await delay(500);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo.role || userInfo.role !== 'admin') {
-      return { code: 403, data: null, message: '仅管理员可编辑基金项目' };
-    }
-
-    if (!id) {
-      return { code: 400, data: null, message: '项目ID不能为空' };
-    }
-
-    const projects = wx.getStorageSync('fundProjects') || [];
-    const index = projects.findIndex(item => item.id === id);
-    if (index === -1) {
-      return { code: 404, data: null, message: '项目不存在' };
-    }
-
-    const updated = {
-      ...projects[index],
-      ...data,
-      updateTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
-    };
-
-    projects[index] = updated;
-    wx.setStorageSync('fundProjects', projects);
-
-    return { code: 200, data: updated, message: '更新成功' };
-  },
-
-  addFundTimeline: async (projectId, timelineData) => {
-    await delay(400);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo.role || userInfo.role !== 'admin') {
-      return { code: 403, data: null, message: '仅管理员可操作' };
-    }
-
-    if (!projectId) {
-      return { code: 400, data: null, message: '项目ID不能为空' };
-    }
-    if (!timelineData.title || !timelineData.title.trim()) {
-      return { code: 400, data: null, message: '标题不能为空' };
-    }
-
-    const projects = wx.getStorageSync('fundProjects') || [];
-    const projectIndex = projects.findIndex(item => item.id === projectId);
-    if (projectIndex === -1) {
-      return { code: 404, data: null, message: '项目不存在' };
-    }
-
-    const newTimeline = {
-      id: util.generateId('tl'),
-      title: timelineData.title.trim(),
-      date: timelineData.date || util.formatDate(new Date(), 'YYYY-MM-DD'),
-      content: timelineData.content || '',
-      type: timelineData.type || 'milestone'
-    };
-
-    projects[projectIndex].timeline = projects[projectIndex].timeline || [];
-    projects[projectIndex].timeline.push(newTimeline);
-    projects[projectIndex].timeline.sort((a, b) => new Date(a.date) - new Date(b.date));
-    projects[projectIndex].updateTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
-    wx.setStorageSync('fundProjects', projects);
-
-    return { code: 200, data: newTimeline, message: '添加成功' };
-  },
-
-  addFundComment: async (projectId, content) => {
-    await delay(300);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    if (!projectId) {
-      return { code: 400, data: null, message: '项目ID不能为空' };
-    }
-    if (!content || !content.trim()) {
-      return { code: 400, data: null, message: '留言内容不能为空' };
-    }
-    if (content.trim().length > 200) {
-      return { code: 400, data: null, message: '留言内容不能超过200字' };
-    }
-
-    const sensitiveResult = await storageApi.checkSensitiveWords({ content });
-    if (sensitiveResult.code === 200 && sensitiveResult.data && sensitiveResult.data.hasSensitive) {
-      return { code: 400, data: null, message: '留言包含敏感词，请修改后再提交' };
-    }
-
-    const userInfo = wx.getStorageSync('userInfo');
-    const newComment = {
-      id: util.generateId('fc'),
-      projectId,
-      userId: userInfo.id,
-      userName: userInfo.nickname,
-      avatar: userInfo.avatar || '',
-      content: content.trim(),
-      reviewStatus: 'pending',
-      rejectReason: '',
-      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
-    };
-
-    const comments = wx.getStorageSync('fundComments') || [];
-    comments.unshift(newComment);
-    wx.setStorageSync('fundComments', comments);
-
-    return { code: 200, data: newComment, message: '留言提交成功，等待审核' };
-  },
-
-  getPendingFundComments: async (params = {}) => {
-    await delay(300);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo.role || userInfo.role !== 'admin') {
-      return { code: 403, data: null, message: '仅管理员可查看' };
-    }
-
-    const { page = 1, pageSize = 20 } = params;
-    const allComments = wx.getStorageSync('fundComments') || [];
-    const pendingComments = allComments.filter(c => c.reviewStatus === 'pending');
-
-    const total = pendingComments.length;
-    const start = (page - 1) * pageSize;
-    const list = pendingComments.slice(start, start + pageSize);
-
-    return {
-      code: 200,
-      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
-      message: 'success'
-    };
-  },
-
-  approveFundComment: async (commentId) => {
-    await delay(300);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo.role || userInfo.role !== 'admin') {
-      return { code: 403, data: null, message: '仅管理员可审核' };
-    }
-
-    if (!commentId) {
-      return { code: 400, data: null, message: '留言ID不能为空' };
-    }
-
-    const comments = wx.getStorageSync('fundComments') || [];
-    const index = comments.findIndex(c => c.id === commentId);
-    if (index === -1) {
-      return { code: 404, data: null, message: '留言不存在' };
-    }
-
-    comments[index].reviewStatus = 'approved';
-    comments[index].reviewTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
-    wx.setStorageSync('fundComments', comments);
-
-    return { code: 200, data: comments[index], message: '审核通过' };
-  },
-
-  rejectFundComment: async (commentId, reason) => {
-    await delay(300);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo.role || userInfo.role !== 'admin') {
-      return { code: 403, data: null, message: '仅管理员可审核' };
-    }
-
-    if (!commentId) {
-      return { code: 400, data: null, message: '留言ID不能为空' };
-    }
-
-    if (!reason || !reason.trim() || reason.trim().length < 5) {
-      return { code: 400, data: null, message: '驳回原因至少5个字符' };
-    }
-
-    const comments = wx.getStorageSync('fundComments') || [];
-    const index = comments.findIndex(c => c.id === commentId);
-    if (index === -1) {
-      return { code: 404, data: null, message: '留言不存在' };
-    }
-
-    comments[index].reviewStatus = 'rejected';
-    comments[index].rejectReason = reason.trim();
-    comments[index].reviewTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
-    wx.setStorageSync('fundComments', comments);
-
-    return { code: 200, data: comments[index], message: '已驳回' };
-  },
-
-  addFundDonation: async (projectId, donationData) => {
-    await delay(400);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo.role || userInfo.role !== 'admin') {
-      return { code: 403, data: null, message: '仅管理员可登记捐赠' };
-    }
-
-    if (!projectId) {
-      return { code: 400, data: null, message: '项目ID不能为空' };
-    }
-    if (!donationData.amount || donationData.amount <= 0) {
-      return { code: 400, data: null, message: '请输入有效的捐赠金额' };
-    }
-
-    const projects = wx.getStorageSync('fundProjects') || [];
-    const projectIndex = projects.findIndex(item => item.id === projectId);
-    if (projectIndex === -1) {
-      return { code: 404, data: null, message: '项目不存在' };
-    }
-
-    const newDonation = {
-      id: util.generateId('fd'),
-      projectId,
-      donorName: donationData.isAnonymous ? '匿名人士' : (donationData.donorName || '爱心人士'),
-      amount: parseFloat(donationData.amount),
-      method: donationData.method || 'offline_other',
-      isAnonymous: !!donationData.isAnonymous,
-      remark: donationData.remark || '',
-      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
-    };
-
-    const donations = wx.getStorageSync('fundDonations') || [];
-    donations.unshift(newDonation);
-    wx.setStorageSync('fundDonations', donations);
-
-    projects[projectIndex].raisedAmount = parseFloat(projects[projectIndex].raisedAmount || 0) + parseFloat(donationData.amount);
-    projects[projectIndex].updateTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
-    wx.setStorageSync('fundProjects', projects);
-
-    return { code: 200, data: newDonation, message: '登记成功' };
-  },
-
-  linkFundArticle: async (projectId, articleId) => {
-    await delay(300);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo.role || userInfo.role !== 'admin') {
-      return { code: 403, data: null, message: '仅管理员可操作' };
-    }
-
-    if (!projectId || !articleId) {
-      return { code: 400, data: null, message: '参数不完整' };
-    }
-
-    const projects = wx.getStorageSync('fundProjects') || [];
-    const projectIndex = projects.findIndex(item => item.id === projectId);
-    if (projectIndex === -1) {
-      return { code: 404, data: null, message: '项目不存在' };
-    }
-
-    const articles = wx.getStorageSync('articles') || [];
-    const articleExists = articles.some(a => a.id === articleId);
-    if (!articleExists) {
-      return { code: 404, data: null, message: '文章不存在' };
-    }
-
-    projects[projectIndex].relatedArticleIds = projects[projectIndex].relatedArticleIds || [];
-    if (!projects[projectIndex].relatedArticleIds.includes(articleId)) {
-      projects[projectIndex].relatedArticleIds.push(articleId);
-      projects[projectIndex].updateTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
-      wx.setStorageSync('fundProjects', projects);
-    }
-
-    return { code: 200, data: { success: true }, message: '关联成功' };
-  },
-
-  unlinkFundArticle: async (projectId, articleId) => {
-    await delay(300);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo.role || userInfo.role !== 'admin') {
-      return { code: 403, data: null, message: '仅管理员可操作' };
-    }
-
-    if (!projectId || !articleId) {
-      return { code: 400, data: null, message: '参数不完整' };
-    }
-
-    const projects = wx.getStorageSync('fundProjects') || [];
-    const projectIndex = projects.findIndex(item => item.id === projectId);
-    if (projectIndex === -1) {
-      return { code: 404, data: null, message: '项目不存在' };
-    }
-
-    projects[projectIndex].relatedArticleIds = (projects[projectIndex].relatedArticleIds || []).filter(id => id !== articleId);
-    projects[projectIndex].updateTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
-    wx.setStorageSync('fundProjects', projects);
-
-    return { code: 200, data: { success: true }, message: '已取消关联' };
-  },
-
-  getFundProjectAdminList: async (params = {}) => {
-    await delay(500);
-    const authError = requireLogin();
-    if (authError) return authError;
-
-    const userInfo = wx.getStorageSync('userInfo');
-    if (!userInfo.role || userInfo.role !== 'admin') {
-      return { code: 403, data: null, message: '仅管理员可查看' };
-    }
-
-    const { status = 'all', page = 1, pageSize = 10, keyword = '' } = params;
-    let projects = wx.getStorageSync('fundProjects') || [];
-
-    if (projects.length === 0) {
-      await storageApi.getFundProjectList();
-      projects = wx.getStorageSync('fundProjects') || [];
-    }
-
-    if (status && status !== 'all') {
-      projects = projects.filter(item => item.projectStatus === status);
-    }
-
-    if (keyword && keyword.trim()) {
-      const kw = keyword.toLowerCase().trim();
-      projects = projects.filter(item =>
-        item.name.toLowerCase().includes(kw)
-      );
-    }
-
-    projects.sort((a, b) => new Date(b.updateTime) - new Date(a.updateTime));
-
-    const total = projects.length;
-    const start = (page - 1) * pageSize;
-    const list = projects.slice(start, start + pageSize).map(item => ({
-      ...item,
-      progress: item.targetAmount > 0 ? Math.min(Math.round((item.raisedAmount / item.targetAmount) * 100), 100) : 0,
-      statusInfo: util.getFundStatusInfo(item.projectStatus)
-    }));
-
-    return {
-      code: 200,
-      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
-      message: 'success'
-    };
   }
 };
 
@@ -4374,6 +4239,90 @@ const remoteApi = {
       url: '/api/article/my',
       method: 'GET',
       data: { authorId: userId }
+    });
+  },
+
+  updateArticle: async (id, data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '文章ID不能为空' };
+    return request({
+      url: `/api/article/update/${id}`,
+      method: 'POST',
+      data
+    });
+  },
+
+  deleteArticle: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '文章ID不能为空' };
+    return request({
+      url: `/api/article/delete/${id}`,
+      method: 'POST'
+    });
+  },
+
+  saveArticleDraft: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/article/draft/save',
+      method: 'POST',
+      data: { ...data, authorId: userId }
+    });
+  },
+
+  getArticleDraftList: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/article/drafts',
+      method: 'GET',
+      data: { authorId: userId }
+    });
+  },
+
+  getArticleDraftDetail: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '草稿ID不能为空' };
+    return request({
+      url: `/api/article/draft/${id}`,
+      method: 'GET'
+    });
+  },
+
+  updateArticleDraft: async (id, data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '草稿ID不能为空' };
+    return request({
+      url: `/api/article/draft/update/${id}`,
+      method: 'POST',
+      data
+    });
+  },
+
+  publishArticleDraft: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '草稿ID不能为空' };
+    return request({
+      url: `/api/article/draft/publish/${id}`,
+      method: 'POST'
+    });
+  },
+
+  deleteArticleDraft: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '草稿ID不能为空' };
+    return request({
+      url: `/api/article/draft/delete/${id}`,
+      method: 'POST'
     });
   },
 
@@ -5302,89 +5251,6 @@ const remoteApi = {
       method: 'POST',
       data: { ...data, userId }
     });
-  },
-
-  getFundProjectList: async (params = {}) => {
-    return request({ url: '/api/fund/projects', method: 'GET', data: params });
-  },
-
-  getFundProjectDetail: async (id) => {
-    if (!id) return { code: 400, data: null, message: '项目ID不能为空' };
-    return request({ url: `/api/fund/projects/${id}`, method: 'GET' });
-  },
-
-  createFundProject: async (data = {}) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    return request({ url: '/api/fund/projects', method: 'POST', data });
-  },
-
-  updateFundProject: async (id, data = {}) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    if (!id) return { code: 400, data: null, message: '项目ID不能为空' };
-    return request({ url: `/api/fund/projects/${id}`, method: 'PUT', data });
-  },
-
-  addFundTimeline: async (projectId, data = {}) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    if (!projectId) return { code: 400, data: null, message: '项目ID不能为空' };
-    return request({ url: `/api/fund/projects/${projectId}/timeline`, method: 'POST', data });
-  },
-
-  addFundComment: async (projectId, content) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    if (!projectId) return { code: 400, data: null, message: '项目ID不能为空' };
-    return request({ url: `/api/fund/projects/${projectId}/comments`, method: 'POST', data: { content } });
-  },
-
-  getPendingFundComments: async (params = {}) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    return request({ url: '/api/fund/comments/pending', method: 'GET', data: params });
-  },
-
-  approveFundComment: async (commentId) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    if (!commentId) return { code: 400, data: null, message: '留言ID不能为空' };
-    return request({ url: `/api/fund/comments/${commentId}/approve`, method: 'POST' });
-  },
-
-  rejectFundComment: async (commentId, reason) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    if (!commentId) return { code: 400, data: null, message: '留言ID不能为空' };
-    return request({ url: `/api/fund/comments/${commentId}/reject`, method: 'POST', data: { reason } });
-  },
-
-  addFundDonation: async (projectId, data = {}) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    if (!projectId) return { code: 400, data: null, message: '项目ID不能为空' };
-    return request({ url: `/api/fund/projects/${projectId}/donations`, method: 'POST', data });
-  },
-
-  linkFundArticle: async (projectId, articleId) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    if (!projectId || !articleId) return { code: 400, data: null, message: '参数不完整' };
-    return request({ url: `/api/fund/projects/${projectId}/articles/${articleId}`, method: 'POST' });
-  },
-
-  unlinkFundArticle: async (projectId, articleId) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    if (!projectId || !articleId) return { code: 400, data: null, message: '参数不完整' };
-    return request({ url: `/api/fund/projects/${projectId}/articles/${articleId}`, method: 'DELETE' });
-  },
-
-  getFundProjectAdminList: async (params = {}) => {
-    const authError = requireLogin();
-    if (authError) return authError;
-    return request({ url: '/api/fund/admin/projects', method: 'GET', data: params });
   }
 };
 

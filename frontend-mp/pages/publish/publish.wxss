@@ -28,6 +28,52 @@
   letter-spacing: 2rpx
 }
 
+/* 归属村庄 */
+.village-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  margin: -20rpx 24rpx 24rpx;
+  padding: 24rpx 28rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 10;
+}
+
+.village-info-left {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.village-info-icon {
+  font-size: 40rpx;
+}
+
+.village-info-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.village-info-label {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.village-info-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.village-info-arrow {
+  font-size: 32rpx;
+  color: #ccc;
+}
+
 /* 表单容器 */
 .form-container {
   padding: 32rpx;
