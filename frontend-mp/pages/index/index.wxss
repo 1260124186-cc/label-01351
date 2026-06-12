@@ -322,6 +322,10 @@
   background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
 }
 
+.icon-alliance {
+  background: linear-gradient(135deg, #00838F 0%, #26C6DA 100%);
+}
+
 .entry-icon {
   font-size: 40rpx;
 }

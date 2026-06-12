@@ -1,0 +1,312 @@
+<view class="page-container">
+  <view class="header">
+    <view class="header-title">
+      <text class="title-main">文化联盟</text>
+      <text class="title-sub">跨区域文化协作与内容联邦</text>
+    </view>
+  </view>
+
+  <scroll-view class="tab-bar" scroll-x enable-flex>
+    <view
+      class="tab-item {{activeTab === item.id ? 'active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="id"
+      bindtap="onTabChange"
+      data-id="{{item.id}}"
+    >
+      <text class="tab-name">{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="tab-content" wx:if="{{activeTab === 'featured'}}">
+    <scroll-view class="type-filter" scroll-x enable-flex>
+      <view
+        class="type-item {{featuredType === 'all' ? 'active' : ''}}"
+        bindtap="onFeaturedTypeChange"
+        data-type="all"
+      >全部</view>
+      <view
+        class="type-item {{featuredType === 'articles' ? 'active' : ''}}"
+        bindtap="onFeaturedTypeChange"
+        data-type="articles"
+      >文章</view>
+      <view
+        class="type-item {{featuredType === 'figures' ? 'active' : ''}}"
+        bindtap="onFeaturedTypeChange"
+        data-type="figures"
+      >人物</view>
+    </scroll-view>
+
+    <view class="featured-list">
+      <view class="loading-wrap" wx:if="{{featuredLoading && featuredList.length === 0}}">
+        <view class="loading-spinner"></view>
+        <text class="loading-text">加载中...</text>
+      </view>
+
+      <view class="empty-wrap" wx:elif="{{!featuredLoading && featuredList.length === 0}}">
+        <text class="empty-icon">🌐</text>
+        <text class="empty-text">暂无联盟精选</text>
+        <text class="empty-hint">敬请期待更多联盟内容</text>
+      </view>
+
+      <view
+        class="featured-card"
+        wx:for="{{featuredList}}"
+        wx:key="id"
+        bindtap="goToFeaturedDetail"
+        data-item="{{item}}"
+      >
+        <view class="source-badge" wx:if="{{item.sourceNodeName}}">
+          <text class="source-tag">{{item.sourceNodeName}}</text>
+        </view>
+        <view class="featured-title">{{item.title}}</view>
+        <view class="featured-summary">{{item.summary}}</view>
+        <view class="featured-footer">
+          <view class="featured-author">
+            <text class="author-icon">👤</text>
+            <text class="author-name">{{item.authorName}}</text>
+          </view>
+          <view class="featured-stats">
+            <view class="stat-item">
+              <text class="stat-icon">👁</text>
+              <text class="stat-value">{{item.viewCount}}</text>
+            </view>
+            <view class="stat-item">
+              <text class="stat-icon">👍</text>
+              <text class="stat-value">{{item.likeCount}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="copyright-notice" wx:if="{{item.sourceNodeName}}">
+          <text>来源：{{item.sourceNodeName}}</text>
+        </view>
+      </view>
+
+      <view class="load-more" wx:if="{{featuredList.length > 0}}">
+        <text wx:if="{{featuredLoading}}">加载中...</text>
+        <text wx:elif="{{!featuredHasMore}}">— 已经到底了 —</text>
+        <text wx:else bindtap="loadMore">点击加载更多</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="tab-content" wx:if="{{activeTab === 'nodes'}}">
+    <view class="nodes-actions" wx:if="{{userInfo}}">
+      <button class="btn-register" bindtap="showRegister">注册节点</button>
+    </view>
+
+    <view class="loading-wrap" wx:if="{{nodesLoading && nodesList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view class="empty-wrap" wx:elif="{{!nodesLoading && nodesList.length === 0}}">
+      <text class="empty-icon">🔗</text>
+      <text class="empty-text">暂无联盟节点</text>
+    </view>
+
+    <view class="nodes-list" wx:else>
+      <view
+        class="node-card"
+        wx:for="{{nodesList}}"
+        wx:key="id"
+        bindtap="goToNodeDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="node-header">
+          <text class="node-name">{{item.name}}</text>
+          <view class="node-status status-{{item.status}}">
+            {{item.status === 'approved' ? '已通过' : item.status === 'pending' ? '待审核' : '已拒绝'}}
+          </view>
+        </view>
+        <view class="node-api">
+          <text class="node-label">API地址：</text>
+          <text class="node-value">{{item.apiAddress}}</text>
+        </view>
+        <view class="node-sync">
+          <text class="node-label">同步策略：</text>
+          <text class="node-value">{{item.syncStrategy === 'full' ? '全量同步' : item.syncStrategy === 'incremental' ? '增量同步' : '手动同步'}}</text>
+        </view>
+        <view class="node-actions" wx:if="{{isAdmin}}" catchtap="">
+          <block wx:if="{{item.status === 'pending'}}">
+            <button class="btn-approve" catchtap="approveNode" data-id="{{item.id}}">通过</button>
+            <button class="btn-reject" catchtap="rejectNode" data-id="{{item.id}}">拒绝</button>
+          </block>
+          <button class="btn-remove" catchtap="removeNode" data-id="{{item.id}}">移除</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="tab-content" wx:if="{{activeTab === 'search'}}">
+    <view class="search-bar">
+      <view class="search-input-wrap">
+        <text class="search-icon">🔍</text>
+        <input
+          class="search-input"
+          placeholder="搜索联盟内容"
+          placeholder-class="search-placeholder"
+          value="{{searchKeyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="onSearch"
+          confirm-type="search"
+        />
+        <text class="search-clear" wx:if="{{searchKeyword}}" bindtap="clearSearch">✕</text>
+      </view>
+    </view>
+
+    <view class="search-alliance-row">
+      <text class="search-alliance-label">搜全联盟</text>
+      <switch
+        class="search-alliance-switch"
+        checked="{{searchAlliance}}"
+        bindchange="onSearchAllianceChange"
+        color="#4CAF50"
+      />
+    </view>
+
+    <scroll-view class="type-filter" scroll-x enable-flex>
+      <view
+        class="type-item {{searchType === 'all' ? 'active' : ''}}"
+        bindtap="onSearchTypeChange"
+        data-type="all"
+      >全部</view>
+      <view
+        class="type-item {{searchType === 'articles' ? 'active' : ''}}"
+        bindtap="onSearchTypeChange"
+        data-type="articles"
+      >文章</view>
+      <view
+        class="type-item {{searchType === 'figures' ? 'active' : ''}}"
+        bindtap="onSearchTypeChange"
+        data-type="figures"
+      >人物</view>
+      <view
+        class="type-item {{searchType === 'encyclopedia' ? 'active' : ''}}"
+        bindtap="onSearchTypeChange"
+        data-type="encyclopedia"
+      >百科</view>
+    </scroll-view>
+
+    <view class="search-results">
+      <view class="loading-wrap" wx:if="{{searchLoading && searchResults.length === 0}}">
+        <view class="loading-spinner"></view>
+        <text class="loading-text">搜索中...</text>
+      </view>
+
+      <view class="empty-wrap" wx:elif="{{!searchLoading && searchKeyword && searchResults.length === 0}}">
+        <text class="empty-icon">🔍</text>
+        <text class="empty-text">未找到相关内容</text>
+        <text class="empty-hint">换个关键词试试吧</text>
+      </view>
+
+      <view
+        class="search-result-item"
+        wx:for="{{searchResults}}"
+        wx:key="id"
+        bindtap="goToFeaturedDetail"
+        data-item="{{item}}"
+      >
+        <view class="result-source-tag" wx:if="{{item.sourceNodeId && item.sourceNodeId !== 'local'}}">
+          <text>{{item.sourceNodeName}}</text>
+        </view>
+        <view class="result-source-tag source-local" wx:elif="{{!item.sourceNodeId || item.sourceNodeId === 'local'}}">
+          <text>本站</text>
+        </view>
+        <view class="result-title">{{item.title}}</view>
+        <view class="result-summary">{{item.summary}}</view>
+        <view class="copyright-notice" wx:if="{{item.sourceNodeId && item.sourceNodeId !== 'local'}}">
+          <text>来源：{{item.sourceNodeName}}</text>
+        </view>
+      </view>
+
+      <view class="load-more" wx:if="{{searchResults.length > 0}}">
+        <text wx:if="{{searchLoading}}">加载中...</text>
+        <text wx:elif="{{!searchHasMore}}">— 已经到底了 —</text>
+        <text wx:else bindtap="loadMore">点击加载更多</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="register-modal" wx:if="{{showRegisterModal}}">
+    <view class="modal-mask" bindtap="hideRegister"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">注册节点</text>
+        <text class="modal-close" bindtap="hideRegister">✕</text>
+      </view>
+      <view class="modal-body">
+        <view class="form-item">
+          <text class="form-label">节点名称</text>
+          <input
+            class="form-input"
+            placeholder="请输入节点名称"
+            value="{{registerForm.name}}"
+            bindinput="onRegisterInput"
+            data-field="name"
+          />
+        </view>
+        <view class="form-item">
+          <text class="form-label">API地址</text>
+          <input
+            class="form-input"
+            placeholder="请输入API地址"
+            value="{{registerForm.apiAddress}}"
+            bindinput="onRegisterInput"
+            data-field="apiAddress"
+          />
+        </view>
+        <view class="form-item">
+          <text class="form-label">同步策略</text>
+          <picker
+            class="form-picker"
+            range="{{syncStrategyOptions}}"
+            range-key="name"
+            value="{{syncStrategyOptions[0].id === registerForm.syncStrategy ? 0 : syncStrategyOptions[1].id === registerForm.syncStrategy ? 1 : 2}}"
+            bindchange="onSyncStrategyChange"
+          >
+            <view class="picker-text">
+              {{registerForm.syncStrategy === 'full' ? '全量同步' : registerForm.syncStrategy === 'incremental' ? '增量同步' : '手动同步'}}
+            </view>
+          </picker>
+        </view>
+        <view class="form-item">
+          <text class="form-label">节点描述</text>
+          <textarea
+            class="form-textarea"
+            placeholder="请输入节点描述"
+            value="{{registerForm.description}}"
+            bindinput="onRegisterInput"
+            data-field="description"
+            auto-height
+            maxlength="500"
+          />
+        </view>
+        <view class="form-item">
+          <text class="form-label">所在地区</text>
+          <input
+            class="form-input"
+            placeholder="请输入所在地区"
+            value="{{registerForm.region}}"
+            bindinput="onRegisterInput"
+            data-field="region"
+          />
+        </view>
+        <view class="form-item">
+          <text class="form-label">联系人</text>
+          <input
+            class="form-input"
+            placeholder="请输入联系人"
+            value="{{registerForm.contactName}}"
+            bindinput="onRegisterInput"
+            data-field="contactName"
+          />
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="btn-cancel" bindtap="hideRegister">取消</button>
+        <button class="btn-submit" bindtap="submitRegister">提交</button>
+      </view>
+    </view>
+  </view>
+</view>

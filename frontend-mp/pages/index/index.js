@@ -156,6 +156,12 @@ Page({
     });
   },
 
+  goToAlliance() {
+    wx.navigateTo({
+      url: '/pages/alliance/alliance'
+    });
+  },
+
   onCardTagClick(e) {
     const tag = e.currentTarget.dataset.tag;
     if (!tag) return;

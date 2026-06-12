@@ -4334,6 +4334,358 @@ const storageApi = {
     if (authError) return authError;
     taskSystem.resetUserData();
     return { code: 200, data: { success: true }, message: '任务数据已重置' };
+  },
+
+  registerAllianceNode: async (data = {}) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!data.name || !data.name.trim()) {
+      return { code: 400, data: null, message: '节点名称不能为空' };
+    }
+    if (!data.apiAddress || !data.apiAddress.trim()) {
+      return { code: 400, data: null, message: 'API地址不能为空' };
+    }
+    const userInfo = wx.getStorageSync('userInfo');
+    const nodes = wx.getStorageSync('allianceNodes') || [];
+    const newNode = {
+      id: util.generateId('node'),
+      name: data.name.trim(),
+      apiAddress: data.apiAddress.trim(),
+      syncStrategy: data.syncStrategy || 'incremental',
+      description: data.description || '',
+      region: data.region || '',
+      contactName: data.contactName || '',
+      status: 'pending',
+      applicantId: userInfo.id,
+      applicantName: userInfo.nickname,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      updateTime: util.formatDate(new Date(), 'YYYY-MM-DD')
+    };
+    nodes.push(newNode);
+    wx.setStorageSync('allianceNodes', nodes);
+    return { code: 200, data: newNode, message: '节点注册成功' };
+  },
+
+  getAllianceNodeList: async (params = {}) => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { status = 'all', keyword = '', page = 1, pageSize = 10 } = params;
+    let nodes = wx.getStorageSync('allianceNodes') || [];
+    if (status && status !== 'all') {
+      nodes = nodes.filter(item => item.status === status);
+    }
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      nodes = nodes.filter(item =>
+        item.name.toLowerCase().includes(kw) ||
+        (item.description && item.description.toLowerCase().includes(kw))
+      );
+    }
+    nodes.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const total = nodes.length;
+    const start = (page - 1) * pageSize;
+    const list = nodes.slice(start, start + pageSize);
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getAllianceNodeDetail: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '节点ID不能为空' };
+    }
+    const nodes = wx.getStorageSync('allianceNodes') || [];
+    const node = nodes.find(item => item.id === id);
+    if (!node) {
+      return { code: 404, data: null, message: '节点不存在' };
+    }
+    return { code: 200, data: node, message: 'success' };
+  },
+
+  updateAllianceNode: async (id, data = {}) => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo.role !== 'admin') {
+      return { code: 403, data: null, message: '仅管理员可更新节点信息' };
+    }
+    if (!id) {
+      return { code: 400, data: null, message: '节点ID不能为空' };
+    }
+    const nodes = wx.getStorageSync('allianceNodes') || [];
+    const index = nodes.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '节点不存在' };
+    }
+    if (data.name !== undefined) nodes[index].name = data.name.trim();
+    if (data.apiAddress !== undefined) nodes[index].apiAddress = data.apiAddress.trim();
+    if (data.syncStrategy !== undefined) nodes[index].syncStrategy = data.syncStrategy;
+    if (data.description !== undefined) nodes[index].description = data.description;
+    if (data.region !== undefined) nodes[index].region = data.region;
+    if (data.contactName !== undefined) nodes[index].contactName = data.contactName;
+    nodes[index].updateTime = util.formatDate(new Date(), 'YYYY-MM-DD');
+    wx.setStorageSync('allianceNodes', nodes);
+    return { code: 200, data: nodes[index], message: '更新成功' };
+  },
+
+  approveAllianceNode: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo.role !== 'admin') {
+      return { code: 403, data: null, message: '仅管理员可审核节点' };
+    }
+    if (!id) {
+      return { code: 400, data: null, message: '节点ID不能为空' };
+    }
+    const nodes = wx.getStorageSync('allianceNodes') || [];
+    const index = nodes.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '节点不存在' };
+    }
+    if (nodes[index].status !== 'pending') {
+      return { code: 400, data: null, message: '节点不在待审核状态' };
+    }
+    nodes[index].status = 'approved';
+    nodes[index].updateTime = util.formatDate(new Date(), 'YYYY-MM-DD');
+    wx.setStorageSync('allianceNodes', nodes);
+    return { code: 200, data: nodes[index], message: '审核通过' };
+  },
+
+  rejectAllianceNode: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo.role !== 'admin') {
+      return { code: 403, data: null, message: '仅管理员可审核节点' };
+    }
+    if (!id) {
+      return { code: 400, data: null, message: '节点ID不能为空' };
+    }
+    const nodes = wx.getStorageSync('allianceNodes') || [];
+    const index = nodes.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '节点不存在' };
+    }
+    if (nodes[index].status !== 'pending') {
+      return { code: 400, data: null, message: '节点不在待审核状态' };
+    }
+    nodes[index].status = 'rejected';
+    nodes[index].updateTime = util.formatDate(new Date(), 'YYYY-MM-DD');
+    wx.setStorageSync('allianceNodes', nodes);
+    return { code: 200, data: nodes[index], message: '已拒绝' };
+  },
+
+  removeAllianceNode: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo.role !== 'admin') {
+      return { code: 403, data: null, message: '仅管理员可删除节点' };
+    }
+    if (!id) {
+      return { code: 400, data: null, message: '节点ID不能为空' };
+    }
+    const nodes = wx.getStorageSync('allianceNodes') || [];
+    const index = nodes.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '节点不存在' };
+    }
+    const removed = nodes.splice(index, 1)[0];
+    wx.setStorageSync('allianceNodes', nodes);
+    return { code: 200, data: removed, message: '节点已删除' };
+  },
+
+  getAllianceFeatured: async (params = {}) => {
+    await delay(500);
+    const { type = 'all', page = 1, pageSize = 10 } = params;
+    const mockNodes = [
+      { id: 'node_east', name: '华东文化库', api: 'https://east.culture.example.com/api' },
+      { id: 'node_south', name: '岭南文化库', api: 'https://south.culture.example.com/api' },
+      { id: 'node_west', name: '西部文化库', api: 'https://west.culture.example.com/api' }
+    ];
+    const mockArticles = [
+      { originalId: 'ea_001', title: '苏州园林的造景艺术', summary: '苏州园林以精巧的造景手法闻名于世，体现了中国传统园林设计的巅峰水平。', authorName: '李明远', viewCount: 2340, likeCount: 456, category: 'architecture', createTime: '2025-05-12' },
+      { originalId: 'ea_002', title: '宋代点茶文化复兴', summary: '从宋代点茶到现代茶艺，探索中国茶文化的千年传承与当代表达。', authorName: '王芳', viewCount: 1890, likeCount: 321, category: 'tradition', createTime: '2025-06-01' },
+      { originalId: 'sa_001', title: '粤剧的传承与创新', summary: '粤剧作为岭南文化瑰宝，在新时代背景下如何焕发新生。', authorName: '陈伟强', viewCount: 1560, likeCount: 278, category: 'performing-arts', createTime: '2025-04-20' },
+      { originalId: 'sa_002', title: '潮州木雕技艺考', summary: '潮州木雕以精雕细刻著称，是中国民间工艺的杰出代表。', authorName: '黄丽华', viewCount: 980, likeCount: 167, category: 'craft', createTime: '2025-05-28' },
+      { originalId: 'wa_001', title: '敦煌壁画的数字化保护', summary: '数字技术如何助力敦煌壁画这一人类文化遗产的永续传承。', authorName: '张晓峰', viewCount: 3210, likeCount: 589, category: 'heritage', createTime: '2025-03-15' }
+    ];
+    const mockFigures = [
+      { originalId: 'ef_001', title: '贝聿铭：建筑与文化的对话', summary: '华裔建筑大师贝聿铭如何将东方美学融入现代建筑。', authorName: '刘思远', viewCount: 4200, likeCount: 823, category: 'architecture', createTime: '2025-04-08' },
+      { originalId: 'ef_002', title: '梅兰芳的京剧革新之路', summary: '梅兰芳如何推动京剧艺术走向世界舞台。', authorName: '赵文博', viewCount: 2780, likeCount: 534, category: 'performing-arts', createTime: '2025-05-22' },
+      { originalId: 'sf_001', title: '红线女：粤剧传奇', summary: '粤剧表演艺术家红线女的艺术人生与贡献。', authorName: '梁秀英', viewCount: 1340, likeCount: 245, category: 'performing-arts', createTime: '2025-02-14' },
+      { originalId: 'wf_001', title: '张大千的泼墨山水', summary: '张大千晚年泼墨泼彩技法对中国画的革新意义。', authorName: '周明德', viewCount: 2890, likeCount: 512, category: 'painting', createTime: '2025-01-30' }
+    ];
+    let allItems = [];
+    if (type === 'all' || type === 'articles') {
+      mockArticles.forEach((article, i) => {
+        const nodeIdx = i % mockNodes.length;
+        allItems.push({
+          sourceNodeId: mockNodes[nodeIdx].id,
+          sourceNodeName: mockNodes[nodeIdx].name,
+          sourceNodeApi: mockNodes[nodeIdx].api,
+          originalId: article.originalId,
+          originalUrl: `${mockNodes[nodeIdx].api}/articles/${article.originalId}`,
+          title: article.title,
+          summary: article.summary,
+          authorName: article.authorName,
+          viewCount: article.viewCount,
+          likeCount: article.likeCount,
+          createTime: article.createTime,
+          category: article.category,
+          copyrightNotice: `来源：${mockNodes[nodeIdx].name}`,
+          itemType: 'article'
+        });
+      });
+    }
+    if (type === 'all' || type === 'figures') {
+      mockFigures.forEach((figure, i) => {
+        const nodeIdx = (i + 1) % mockNodes.length;
+        allItems.push({
+          sourceNodeId: mockNodes[nodeIdx].id,
+          sourceNodeName: mockNodes[nodeIdx].name,
+          sourceNodeApi: mockNodes[nodeIdx].api,
+          originalId: figure.originalId,
+          originalUrl: `${mockNodes[nodeIdx].api}/figures/${figure.originalId}`,
+          title: figure.title,
+          summary: figure.summary,
+          authorName: figure.authorName,
+          viewCount: figure.viewCount,
+          likeCount: figure.likeCount,
+          createTime: figure.createTime,
+          category: figure.category,
+          copyrightNotice: `来源：${mockNodes[nodeIdx].name}`,
+          itemType: 'figure'
+        });
+      });
+    }
+    allItems.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const total = allItems.length;
+    const start = (page - 1) * pageSize;
+    const list = allItems.slice(start, start + pageSize);
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  searchAlliance: async (params = {}) => {
+    await delay(500);
+    const { keyword = '', type = 'all', searchAlliance = false, page = 1, pageSize = 10 } = params;
+    if (!keyword || !keyword.trim()) {
+      return { code: 400, data: null, message: '搜索关键词不能为空' };
+    }
+    let results = [];
+    const localArticles = wx.getStorageSync('articles') || [];
+    const localFigures = wx.getStorageSync('figures') || [];
+    const kw = keyword.toLowerCase().trim();
+    if (type === 'all' || type === 'articles') {
+      localArticles.filter(item => item.status === 1).forEach(item => {
+        if (item.title.toLowerCase().includes(kw) || (item.summary && item.summary.toLowerCase().includes(kw))) {
+          results.push({
+            id: item.id,
+            title: item.title,
+            summary: item.summary || '',
+            type: 'article',
+            category: item.category || '',
+            createTime: item.createTime,
+            sourceNodeId: null,
+            sourceNodeName: null,
+            copyrightNotice: null
+          });
+        }
+      });
+    }
+    if (type === 'all' || type === 'figures') {
+      localFigures.forEach(item => {
+        if (item.name.toLowerCase().includes(kw) || (item.description && item.description.toLowerCase().includes(kw))) {
+          results.push({
+            id: item.id,
+            title: item.name,
+            summary: item.description || '',
+            type: 'figure',
+            category: item.category || '',
+            createTime: item.createTime,
+            sourceNodeId: null,
+            sourceNodeName: null,
+            copyrightNotice: null
+          });
+        }
+      });
+    }
+    if (searchAlliance) {
+      const mockNodes = [
+        { id: 'node_east', name: '华东文化库' },
+        { id: 'node_south', name: '岭南文化库' },
+        { id: 'node_west', name: '西部文化库' }
+      ];
+      const mockAllianceItems = [
+        { originalId: 'ea_001', title: '苏州园林的造景艺术', summary: '苏州园林以精巧的造景手法闻名于世。', type: 'article', category: 'architecture', createTime: '2025-05-12' },
+        { originalId: 'ea_002', title: '宋代点茶文化复兴', summary: '从宋代点茶到现代茶艺的千年传承。', type: 'article', category: 'tradition', createTime: '2025-06-01' },
+        { originalId: 'sa_001', title: '粤剧的传承与创新', summary: '粤剧作为岭南文化瑰宝的当代发展。', type: 'article', category: 'performing-arts', createTime: '2025-04-20' },
+        { originalId: 'wa_001', title: '敦煌壁画的数字化保护', summary: '数字技术助力敦煌壁画的永续传承。', type: 'article', category: 'heritage', createTime: '2025-03-15' },
+        { originalId: 'ef_001', title: '贝聿铭：建筑与文化的对话', summary: '华裔建筑大师的东方美学。', type: 'figure', category: 'architecture', createTime: '2025-04-08' },
+        { originalId: 'wf_001', title: '张大千的泼墨山水', summary: '泼墨泼彩技法对中国画的革新。', type: 'figure', category: 'painting', createTime: '2025-01-30' }
+      ];
+      if (type === 'all' || type === 'encyclopedia') {
+        const encyclopediaItems = wx.getStorageSync('encyclopedia') || [];
+        encyclopediaItems.forEach(item => {
+          if (item.title.toLowerCase().includes(kw) || (item.content && item.content.toLowerCase().includes(kw))) {
+            results.push({
+              id: item.id,
+              title: item.title,
+              summary: item.content ? util.truncateText(item.content, 100) : '',
+              type: 'encyclopedia',
+              category: item.category || '',
+              createTime: item.createTime,
+              sourceNodeId: null,
+              sourceNodeName: null,
+              copyrightNotice: null
+            });
+          }
+        });
+      }
+      mockAllianceItems.forEach((item, i) => {
+        const nodeIdx = i % mockNodes.length;
+        const typeMatch = type === 'all' || type === item.type || (type === 'encyclopedia');
+        const kwMatch = item.title.toLowerCase().includes(kw) || item.summary.toLowerCase().includes(kw);
+        if (typeMatch && kwMatch) {
+          results.push({
+            id: item.originalId,
+            title: item.title,
+            summary: item.summary,
+            type: item.type,
+            category: item.category,
+            createTime: item.createTime,
+            sourceNodeId: mockNodes[nodeIdx].id,
+            sourceNodeName: mockNodes[nodeIdx].name,
+            copyrightNotice: `来源：${mockNodes[nodeIdx].name}`
+          });
+        }
+      });
+    }
+    results.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const total = results.length;
+    const start = (page - 1) * pageSize;
+    const list = results.slice(start, start + pageSize);
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
   }
 };
 
@@ -5523,6 +5875,54 @@ const remoteApi = {
     const authError = requireLogin();
     if (authError) return authError;
     return request({ url: '/api/task/reset', method: 'POST' });
+  },
+
+  registerAllianceNode: async (data = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: '/api/alliance/nodes', method: 'POST', data });
+  },
+
+  getAllianceNodeList: async (params = {}) => {
+    return request({ url: '/api/alliance/nodes', method: 'GET', data: params });
+  },
+
+  getAllianceNodeDetail: async (id) => {
+    if (!id) return { code: 400, data: null, message: '节点ID不能为空' };
+    return request({ url: `/api/alliance/nodes/${id}`, method: 'GET' });
+  },
+
+  updateAllianceNode: async (id, data = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '节点ID不能为空' };
+    return request({ url: `/api/alliance/nodes/${id}`, method: 'PUT', data });
+  },
+
+  approveAllianceNode: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: `/api/alliance/nodes/${id}/approve`, method: 'POST' });
+  },
+
+  rejectAllianceNode: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: `/api/alliance/nodes/${id}/reject`, method: 'POST' });
+  },
+
+  removeAllianceNode: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({ url: `/api/alliance/nodes/${id}`, method: 'DELETE' });
+  },
+
+  getAllianceFeatured: async (params = {}) => {
+    return request({ url: '/api/alliance/featured', method: 'GET', data: params });
+  },
+
+  searchAlliance: async (params = {}) => {
+    return request({ url: '/api/alliance/search', method: 'GET', data: params });
   }
 };
 

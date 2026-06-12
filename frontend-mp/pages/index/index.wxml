@@ -132,6 +132,13 @@
       <text class="entry-name">成就勋章</text>
       <text class="entry-desc">收藏品</text>
     </view>
+    <view class="entry-item" bindtap="goToAlliance">
+      <view class="entry-icon-wrap icon-alliance">
+        <text class="entry-icon">🌐</text>
+      </view>
+      <text class="entry-name">文化联盟</text>
+      <text class="entry-desc">内容联邦</text>
+    </view>
   </view>
 
   <!-- 分类标签 -->

@@ -4480,3 +4480,391 @@ describe('文章草稿 - 草稿箱功能', () => {
     });
   });
 });
+
+describe('api.registerAllianceNode', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('allianceNodes', []);
+  });
+
+  test('注册联盟节点成功', async () => {
+    const res = await api.registerAllianceNode({
+      name: '测试文化库',
+      apiAddress: 'https://test.culture.example.com/api',
+      syncStrategy: 'incremental',
+      description: '测试节点描述',
+      region: '华东'
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.name).toBe('测试文化库');
+    expect(res.data.apiAddress).toBe('https://test.culture.example.com/api');
+    expect(res.data.syncStrategy).toBe('incremental');
+    expect(res.data.status).toBe('pending');
+    expect(res.data.id).toMatch(/^node_/);
+  });
+
+  test('节点名称不能为空', async () => {
+    const res = await api.registerAllianceNode({ name: '', apiAddress: 'https://test.com/api' });
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('节点名称');
+  });
+
+  test('API地址不能为空', async () => {
+    const res = await api.registerAllianceNode({ name: '测试节点', apiAddress: '' });
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('API地址');
+  });
+
+  test('未登录不能注册节点', async () => {
+    logoutUser();
+    const res = await api.registerAllianceNode({ name: '测试', apiAddress: 'https://test.com/api' });
+    expect(res.code).toBe(401);
+  });
+
+  test('默认同步策略为 incremental', async () => {
+    const res = await api.registerAllianceNode({ name: '默认策略节点', apiAddress: 'https://test.com/api' });
+    expect(res.code).toBe(200);
+    expect(res.data.syncStrategy).toBe('incremental');
+  });
+
+  test('注册后节点存入 storage', async () => {
+    await api.registerAllianceNode({ name: '节点A', apiAddress: 'https://a.com/api' });
+    await api.registerAllianceNode({ name: '节点B', apiAddress: 'https://b.com/api' });
+    const nodes = wx.getStorageSync('allianceNodes');
+    expect(nodes.length).toBe(2);
+  });
+});
+
+describe('api.getAllianceNodeList', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('返回联盟节点列表', async () => {
+    wx.setStorageSync('allianceNodes', [
+      { id: 'node_001', name: '华东文化库', status: 'approved', apiAddress: 'https://east.com/api', createTime: '2025-01-01' },
+      { id: 'node_002', name: '岭南文化库', status: 'pending', apiAddress: 'https://south.com/api', createTime: '2025-01-02' }
+    ]);
+    const res = await api.getAllianceNodeList();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBe(2);
+    expect(res.data.total).toBe(2);
+  });
+
+  test('按状态筛选节点', async () => {
+    wx.setStorageSync('allianceNodes', [
+      { id: 'node_001', name: '华东', status: 'approved', apiAddress: 'https://east.com/api', createTime: '2025-01-01' },
+      { id: 'node_002', name: '岭南', status: 'pending', apiAddress: 'https://south.com/api', createTime: '2025-01-02' }
+    ]);
+    const res = await api.getAllianceNodeList({ status: 'approved' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBe(1);
+    expect(res.data.list[0].status).toBe('approved');
+  });
+
+  test('按关键词搜索节点', async () => {
+    wx.setStorageSync('allianceNodes', [
+      { id: 'node_001', name: '华东文化库', description: '华东区域', status: 'approved', apiAddress: 'https://east.com/api', createTime: '2025-01-01' },
+      { id: 'node_002', name: '岭南文化库', description: '岭南区域', status: 'approved', apiAddress: 'https://south.com/api', createTime: '2025-01-02' }
+    ]);
+    const res = await api.getAllianceNodeList({ keyword: '华东' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBe(1);
+    expect(res.data.list[0].name).toContain('华东');
+  });
+
+  test('分页功能', async () => {
+    const nodes = Array.from({ length: 15 }, (_, i) => ({
+      id: `node_${String(i).padStart(3, '0')}`,
+      name: `节点${i}`,
+      status: 'approved',
+      apiAddress: `https://node${i}.com/api`,
+      createTime: '2025-01-01'
+    }));
+    wx.setStorageSync('allianceNodes', nodes);
+    const res = await api.getAllianceNodeList({ page: 1, pageSize: 10 });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBe(10);
+    expect(res.data.hasMore).toBe(true);
+  });
+
+  test('未登录返回401', async () => {
+    logoutUser();
+    const res = await api.getAllianceNodeList();
+    expect(res.code).toBe(401);
+  });
+});
+
+describe('api.getAllianceNodeDetail', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('allianceNodes', [
+      { id: 'node_001', name: '华东文化库', status: 'approved', apiAddress: 'https://east.com/api', createTime: '2025-01-01' }
+    ]);
+  });
+
+  test('获取节点详情', async () => {
+    const res = await api.getAllianceNodeDetail('node_001');
+    expect(res.code).toBe(200);
+    expect(res.data.name).toBe('华东文化库');
+    expect(res.data.id).toBe('node_001');
+  });
+
+  test('节点不存在返回404', async () => {
+    const res = await api.getAllianceNodeDetail('node_nonexist');
+    expect(res.code).toBe(404);
+  });
+
+  test('节点ID为空返回400', async () => {
+    const res = await api.getAllianceNodeDetail('');
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.updateAllianceNode', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('allianceNodes', [
+      { id: 'node_001', name: '华东文化库', status: 'approved', apiAddress: 'https://east.com/api', syncStrategy: 'incremental', createTime: '2025-01-01' }
+    ]);
+  });
+
+  test('管理员更新节点成功', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'admin' });
+    const res = await api.updateAllianceNode('node_001', { name: '华东新文化库', syncStrategy: 'full' });
+    expect(res.code).toBe(200);
+    expect(res.data.name).toBe('华东新文化库');
+    expect(res.data.syncStrategy).toBe('full');
+  });
+
+  test('非管理员返回403', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'user' });
+    const res = await api.updateAllianceNode('node_001', { name: '新名称' });
+    expect(res.code).toBe(403);
+  });
+
+  test('节点不存在返回404', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'admin' });
+    const res = await api.updateAllianceNode('node_nonexist', { name: '新名称' });
+    expect(res.code).toBe(404);
+  });
+
+  test('节点ID为空返回400', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'admin' });
+    const res = await api.updateAllianceNode('', { name: '新名称' });
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.approveAllianceNode', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('allianceNodes', [
+      { id: 'node_001', name: '华东文化库', status: 'pending', apiAddress: 'https://east.com/api', createTime: '2025-01-01' }
+    ]);
+  });
+
+  test('管理员审核通过节点', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'admin' });
+    const res = await api.approveAllianceNode('node_001');
+    expect(res.code).toBe(200);
+    expect(res.data.status).toBe('approved');
+  });
+
+  test('非管理员审核返回403', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'user' });
+    const res = await api.approveAllianceNode('node_001');
+    expect(res.code).toBe(403);
+  });
+
+  test('已审核节点不能重复审核', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'admin' });
+    await api.approveAllianceNode('node_001');
+    const res = await api.approveAllianceNode('node_001');
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('待审核');
+  });
+
+  test('节点不存在返回404', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'admin' });
+    const res = await api.approveAllianceNode('node_nonexist');
+    expect(res.code).toBe(404);
+  });
+});
+
+describe('api.rejectAllianceNode', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('allianceNodes', [
+      { id: 'node_001', name: '华东文化库', status: 'pending', apiAddress: 'https://east.com/api', createTime: '2025-01-01' }
+    ]);
+  });
+
+  test('管理员拒绝节点', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'admin' });
+    const res = await api.rejectAllianceNode('node_001');
+    expect(res.code).toBe(200);
+    expect(res.data.status).toBe('rejected');
+  });
+
+  test('非管理员拒绝返回403', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'user' });
+    const res = await api.rejectAllianceNode('node_001');
+    expect(res.code).toBe(403);
+  });
+
+  test('非待审核节点不能拒绝', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'admin' });
+    const nodes = wx.getStorageSync('allianceNodes');
+    nodes[0].status = 'approved';
+    wx.setStorageSync('allianceNodes', nodes);
+    const res = await api.rejectAllianceNode('node_001');
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.removeAllianceNode', () => {
+  beforeEach(() => {
+    initStorage();
+    wx.setStorageSync('allianceNodes', [
+      { id: 'node_001', name: '华东文化库', status: 'approved', apiAddress: 'https://east.com/api', createTime: '2025-01-01' },
+      { id: 'node_002', name: '岭南文化库', status: 'pending', apiAddress: 'https://south.com/api', createTime: '2025-01-02' }
+    ]);
+  });
+
+  test('管理员删除节点成功', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'admin' });
+    const res = await api.removeAllianceNode('node_001');
+    expect(res.code).toBe(200);
+    expect(res.data.id).toBe('node_001');
+    const remaining = wx.getStorageSync('allianceNodes');
+    expect(remaining.length).toBe(1);
+    expect(remaining[0].id).toBe('node_002');
+  });
+
+  test('非管理员删除返回403', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'user' });
+    const res = await api.removeAllianceNode('node_001');
+    expect(res.code).toBe(403);
+  });
+
+  test('删除不存在的节点返回404', async () => {
+    wx.setStorageSync('userInfo', { ...defaultUser, role: 'admin' });
+    const res = await api.removeAllianceNode('node_nonexist');
+    expect(res.code).toBe(404);
+  });
+});
+
+describe('api.getAllianceFeatured', () => {
+  test('返回联盟精选内容', async () => {
+    const res = await api.getAllianceFeatured();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    expect(res.data.total).toBeGreaterThan(0);
+  });
+
+  test('精选内容包含来源信息', async () => {
+    const res = await api.getAllianceFeatured();
+    expect(res.code).toBe(200);
+    res.data.list.forEach(item => {
+      expect(item.sourceNodeId).toBeDefined();
+      expect(item.sourceNodeName).toBeDefined();
+      expect(item.copyrightNotice).toContain('来源');
+    });
+  });
+
+  test('按文章类型筛选', async () => {
+    const res = await api.getAllianceFeatured({ type: 'articles' });
+    expect(res.code).toBe(200);
+    res.data.list.forEach(item => {
+      expect(item.itemType).toBe('article');
+    });
+  });
+
+  test('按人物类型筛选', async () => {
+    const res = await api.getAllianceFeatured({ type: 'figures' });
+    expect(res.code).toBe(200);
+    res.data.list.forEach(item => {
+      expect(item.itemType).toBe('figure');
+    });
+  });
+
+  test('分页功能正常', async () => {
+    const res = await api.getAllianceFeatured({ page: 1, pageSize: 3 });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeLessThanOrEqual(3);
+    expect(res.data.page).toBe(1);
+    expect(res.data.pageSize).toBe(3);
+  });
+
+  test('精选内容按时间倒序排列', async () => {
+    const res = await api.getAllianceFeatured({ pageSize: 20 });
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect(new Date(list[i].createTime) >= new Date(list[i + 1].createTime)).toBe(true);
+    }
+  });
+});
+
+describe('api.searchAlliance', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('关键词为空返回400', async () => {
+    const res = await api.searchAlliance({ keyword: '' });
+    expect(res.code).toBe(400);
+    expect(res.message).toContain('关键词');
+  });
+
+  test('本地文章搜索', async () => {
+    const res = await api.searchAlliance({ keyword: '农耕', type: 'articles' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    res.data.list.forEach(item => {
+      expect(item.sourceNodeId).toBeNull();
+      expect(item.type).toBe('article');
+    });
+  });
+
+  test('本地人物搜索', async () => {
+    const res = await api.searchAlliance({ keyword: '王', type: 'figures' });
+    expect(res.code).toBe(200);
+    const figures = res.data.list.filter(item => item.type === 'figure');
+    expect(figures.length).toBeGreaterThan(0);
+  });
+
+  test('开启搜全联盟包含远程结果', async () => {
+    const res = await api.searchAlliance({ keyword: '苏州', searchAlliance: true });
+    expect(res.code).toBe(200);
+    const allianceItems = res.data.list.filter(item => item.sourceNodeId !== null);
+    expect(allianceItems.length).toBeGreaterThan(0);
+    allianceItems.forEach(item => {
+      expect(item.sourceNodeName).toBeDefined();
+      expect(item.copyrightNotice).toContain('来源');
+    });
+  });
+
+  test('不开启搜全联盟仅返回本地结果', async () => {
+    const res = await api.searchAlliance({ keyword: '园林', searchAlliance: false });
+    expect(res.code).toBe(200);
+    const localItems = res.data.list.filter(item => item.sourceNodeId === null);
+    const remoteItems = res.data.list.filter(item => item.sourceNodeId !== null);
+    expect(remoteItems.length).toBe(0);
+  });
+
+  test('搜索结果按类型筛选', async () => {
+    const res = await api.searchAlliance({ keyword: '农耕', type: 'articles', searchAlliance: true });
+    expect(res.code).toBe(200);
+    res.data.list.forEach(item => {
+      expect(item.type).toBe('article');
+    });
+  });
+
+  test('搜索无结果返回空列表', async () => {
+    const res = await api.searchAlliance({ keyword: '不存在的关键词xyz999' });
+    expect(res.code).toBe(200);
+    expect(res.data.list).toEqual([]);
+    expect(res.data.total).toBe(0);
+  });
+});

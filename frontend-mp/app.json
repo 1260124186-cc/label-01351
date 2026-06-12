@@ -45,7 +45,8 @@
     "pages/drafts/drafts",
     "pages/onboarding/onboarding",
     "pages/tasks/tasks",
-    "pages/achievements/achievements"
+    "pages/achievements/achievements",
+    "pages/alliance/alliance"
   ],
   "window": {
     "backgroundTextStyle": "dark",
