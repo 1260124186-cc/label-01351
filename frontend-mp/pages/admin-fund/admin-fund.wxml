@@ -1,0 +1,474 @@
+<view class="admin-page">
+  <!-- 权限检查中 -->
+  <view class="permission-loading" wx:if="{{checkingPermission}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">权限检查中...</text>
+  </view>
+
+  <block wx:elif="{{hasPermission}}">
+    <!-- 顶部导航 -->
+    <view class="top-bar">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <view class="top-title">基金项目管理</view>
+      <view class="top-avatar">
+        <text wx:if="{{userInfo.avatar}}">{{userInfo.avatar}}</text>
+        <text wx:else>👤</text>
+      </view>
+    </view>
+
+    <!-- Tab 切换 -->
+    <view class="tab-bar">
+      <view
+        class="tab-item {{currentTab === item.id ? 'active' : ''}}"
+        wx:for="{{tabs}}"
+        wx:key="id"
+        bindtap="onTabChange"
+        data-id="{{item.id}}"
+      >
+        <text class="tab-icon">{{item.icon}}</text>
+        <text class="tab-name">{{item.name}}</text>
+        <view class="tab-badge" wx:if="{{item.badge > 0}}">{{item.badge}}</view>
+        <view class="tab-indicator" wx:if="{{currentTab === item.id}}"></view>
+      </view>
+    </view>
+
+    <!-- 项目管理 Tab -->
+    <scroll-view class="tab-content" scroll-y wx:if="{{currentTab === 0}}">
+      <!-- 状态筛选 -->
+      <view class="filter-bar">
+        <view
+          class="filter-item {{statusFilter === item.id ? 'active' : ''}}"
+          wx:for="{{statusFilters}}"
+          wx:key="id"
+          bindtap="onStatusFilterChange"
+          data-id="{{item.id}}"
+        >
+          {{item.name}}
+        </view>
+      </view>
+
+      <!-- 创建按钮 -->
+      <view class="action-bar">
+        <button class="btn-create" bindtap="openCreateModal">
+          <text class="btn-icon">＋</text>
+          <text class="btn-text">新建项目</text>
+        </button>
+      </view>
+
+      <!-- 项目列表 -->
+      <view class="project-list" wx:if="{{projectList.length > 0}}">
+        <view class="project-card" wx:for="{{projectList}}" wx:key="id">
+          <view class="card-header">
+            <view class="project-title" bindtap="goToDetail" data-id="{{item.id}}">{{item.name}}</view>
+            <view
+              class="status-tag {{item.statusInfo.id}}"
+              style="background-color: {{item.statusInfo.color}}20; color: {{item.statusInfo.color}};"
+            >
+              {{item.statusInfo.icon}} {{item.statusInfo.name}}
+            </view>
+          </view>
+
+          <view class="card-body">
+            <view class="stats-row">
+              <view class="stat-item">
+                <text class="stat-label">目标</text>
+                <text class="stat-value">¥{{item.targetAmountDisplay}}</text>
+              </view>
+              <view class="stat-item">
+                <text class="stat-label">已筹</text>
+                <text class="stat-value raised">¥{{item.raisedAmountDisplay}}</text>
+              </view>
+              <view class="stat-item">
+                <text class="stat-label">进度</text>
+                <text class="stat-value">{{item.progress}}%</text>
+              </view>
+            </view>
+
+            <view class="progress-bar">
+              <view class="progress-fill" style="width: {{item.progress}}%;"></view>
+            </view>
+
+            <view class="meta-row">
+              <text class="meta-text">👤 {{item.adminName}}</text>
+              <text class="meta-text">📅 {{item.createTime}}</text>
+            </view>
+          </view>
+
+          <view class="card-actions">
+            <button class="action-btn btn-outline" bindtap="onEditProject" data-id="{{item.id}}">
+              ✏️ 编辑
+            </button>
+            <button class="action-btn btn-outline" bindtap="openTimelineModal" data-id="{{item.id}}">
+              📅 进度
+            </button>
+            <button class="action-btn btn-outline" bindtap="openDonationModal" data-id="{{item.id}}">
+              💰 捐赠
+            </button>
+            <button
+              class="action-btn btn-primary"
+              wx:if="{{item.statusInfo.id !== 'ended'}}"
+              bindtap="onUpdateStatus"
+              data-id="{{item.id}}"
+              data-status="ended"
+            >
+              结束
+            </button>
+            <button
+              class="action-btn btn-success"
+              wx:if="{{item.statusInfo.id === 'ongoing'}}"
+              bindtap="onUpdateStatus"
+              data-id="{{item.id}}"
+              data-status="achieved"
+            >
+              达成
+            </button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view class="empty-list" wx:elif="{{!loading}}">
+        <text class="empty-icon">📋</text>
+        <text class="empty-text">暂无项目</text>
+      </view>
+
+      <!-- 加载更多 -->
+      <view class="load-more" wx:if="{{!hasMore && projectList.length > 0}}">
+        <text class="load-more-text">— 已加载全部项目 —</text>
+      </view>
+
+      <!-- 加载中 -->
+      <view class="loading-more" wx:if="{{loading && projectList.length > 0}}">
+        <view class="mini-spinner"></view>
+        <text class="loading-text">加载中...</text>
+      </view>
+    </scroll-view>
+
+    <!-- 留言审核 Tab -->
+    <scroll-view class="tab-content" scroll-y wx:if="{{currentTab === 1}}">
+      <view class="comment-section">
+        <view class="section-header">
+          <text class="section-title">待审核留言</text>
+          <text class="section-count">{{pendingComments.length}} 条</text>
+        </view>
+
+        <view class="comment-list" wx:if="{{pendingComments.length > 0}}">
+          <view class="comment-card" wx:for="{{pendingComments}}" wx:key="id">
+            <view class="comment-header">
+              <view class="comment-user">
+                <view class="user-avatar">
+                  <text wx:if="{{item.userAvatar}}">{{item.userAvatar}}</text>
+                  <text wx:else>👤</text>
+                </view>
+                <view class="user-info">
+                  <view class="user-name">{{item.userName}}</view>
+                  <view class="user-time">{{item.createTime}}</view>
+                </view>
+              </view>
+            </view>
+
+            <view class="comment-body">
+              <view class="comment-project">
+                <text class="project-label">项目：</text>
+                <text class="project-name">{{item.projectName}}</text>
+              </view>
+              <view class="comment-content">{{item.content}}</view>
+            </view>
+
+            <view class="comment-actions">
+              <button class="action-btn btn-danger" bindtap="openRejectModal" data-id="{{item.id}}">
+                ✕ 驳回
+              </button>
+              <button class="action-btn btn-success" bindtap="onApproveComment" data-id="{{item.id}}">
+                ✓ 通过
+              </button>
+            </view>
+          </view>
+        </view>
+
+        <!-- 空状态 -->
+        <view class="empty-list" wx:elif="{{!commentLoading}}">
+          <text class="empty-icon">✅</text>
+          <text class="empty-text">暂无待审核留言</text>
+        </view>
+
+        <!-- 加载更多 -->
+        <view class="load-more" wx:if="{{!commentHasMore && pendingComments.length > 0}}">
+          <text class="load-more-text">— 已加载全部留言 —</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 创建/编辑项目弹窗 -->
+    <view class="modal {{showEditModal ? 'show' : ''}}" catchtap="stopPropagation">
+      <view class="modal-mask" bindtap="closeEditModal"></view>
+      <view class="modal-content modal-large">
+        <view class="modal-header">
+          <text class="modal-title">{{editingProject ? '编辑项目' : '新建项目'}}</text>
+          <text class="modal-close" bindtap="closeEditModal">✕</text>
+        </view>
+        <scroll-view class="modal-body" scroll-y>
+          <view class="form-group">
+            <view class="form-label">项目名称 <text class="required">*</text></view>
+            <input
+              class="form-input"
+              placeholder="请输入项目名称"
+              value="{{editForm.name}}"
+              bindinput="onEditInput"
+              data-field="name"
+              maxlength="50"
+            />
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">目标金额（元）<text class="required">*</text></view>
+            <input
+              class="form-input"
+              type="digit"
+              placeholder="请输入目标金额"
+              value="{{editForm.targetAmount}}"
+              bindinput="onEditInput"
+              data-field="targetAmount"
+            />
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">项目状态</view>
+            <view class="status-options">
+              <view
+                class="status-option {{editForm.projectStatus === 'ongoing' ? 'active' : ''}}"
+                bindtap="onStatusSelect"
+                data-status="ongoing"
+              >
+                进行中
+              </view>
+              <view
+                class="status-option {{editForm.projectStatus === 'achieved' ? 'active' : ''}}"
+                bindtap="onStatusSelect"
+                data-status="achieved"
+              >
+                已达成
+              </view>
+              <view
+                class="status-option {{editForm.projectStatus === 'ended' ? 'active' : ''}}"
+                bindtap="onStatusSelect"
+                data-status="ended"
+              >
+                已结束
+              </view>
+            </view>
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">项目描述 <text class="required">*</text></view>
+            <textarea
+              class="form-textarea"
+              placeholder="请输入项目详细描述"
+              value="{{editForm.description}}"
+              bindinput="onEditInput"
+              data-field="description"
+              maxlength="500"
+              auto-height
+            ></textarea>
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">受益说明 <text class="required">*</text></view>
+            <textarea
+              class="form-textarea"
+              placeholder="请输入受益群体及用途说明"
+              value="{{editForm.beneficiaryDesc}}"
+              bindinput="onEditInput"
+              data-field="beneficiaryDesc"
+              maxlength="300"
+              auto-height
+            ></textarea>
+          </view>
+        </scroll-view>
+        <view class="modal-footer">
+          <button class="btn-cancel" bindtap="closeEditModal">取消</button>
+          <button class="btn-confirm" bindtap="onSaveProject">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 添加时间线弹窗 -->
+    <view class="modal {{showTimelineModal ? 'show' : ''}}" catchtap="stopPropagation">
+      <view class="modal-mask" bindtap="closeTimelineModal"></view>
+      <view class="modal-content modal-medium">
+        <view class="modal-header">
+          <text class="modal-title">添加项目进展</text>
+          <text class="modal-close" bindtap="closeTimelineModal">✕</text>
+        </view>
+        <scroll-view class="modal-body" scroll-y>
+          <view class="form-group">
+            <view class="form-label">类型</view>
+            <view class="type-options">
+              <view
+                class="type-option {{timelineForm.type === item.id ? 'active' : ''}}"
+                wx:for="{{timelineTypes}}"
+                wx:key="id"
+                bindtap="onTimelineTypeSelect"
+                data-type="{{item.id}}"
+              >
+                <text class="type-icon">{{item.icon}}</text>
+                <text class="type-name">{{item.name}}</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">标题 <text class="required">*</text></view>
+            <input
+              class="form-input"
+              placeholder="请输入进展标题"
+              value="{{timelineForm.title}}"
+              bindinput="onTimelineInput"
+              data-field="title"
+              maxlength="50"
+            />
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">日期</view>
+            <picker mode="date" value="{{timelineForm.date}}" bindchange="onTimelineDateChange">
+              <view class="form-input picker-input">{{timelineForm.date}}</view>
+            </picker>
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">详细内容</view>
+            <textarea
+              class="form-textarea"
+              placeholder="请输入进展详细内容（可选）"
+              value="{{timelineForm.content}}"
+              bindinput="onTimelineInput"
+              data-field="content"
+              maxlength="300"
+              auto-height
+            ></textarea>
+          </view>
+        </scroll-view>
+        <view class="modal-footer">
+          <button class="btn-cancel" bindtap="closeTimelineModal">取消</button>
+          <button class="btn-confirm" bindtap="onSaveTimeline">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 添加捐赠记录弹窗 -->
+    <view class="modal {{showDonationModal ? 'show' : ''}}" catchtap="stopPropagation">
+      <view class="modal-mask" bindtap="closeDonationModal"></view>
+      <view class="modal-content modal-medium">
+        <view class="modal-header">
+          <text class="modal-title">登记捐赠</text>
+          <text class="modal-close" bindtap="closeDonationModal">✕</text>
+        </view>
+        <scroll-view class="modal-body" scroll-y>
+          <view class="form-group">
+            <view class="form-label">捐赠人</view>
+            <input
+              class="form-input"
+              placeholder="请输入捐赠人姓名"
+              value="{{donationForm.donorName}}"
+              bindinput="onDonationInput"
+              data-field="donorName"
+              maxlength="20"
+            />
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">捐赠金额（元）<text class="required">*</text></view>
+            <input
+              class="form-input"
+              type="digit"
+              placeholder="请输入捐赠金额"
+              value="{{donationForm.amount}}"
+              bindinput="onDonationInput"
+              data-field="amount"
+            />
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">捐赠方式</view>
+            <view class="method-options">
+              <view
+                class="method-option {{donationForm.method === item.id ? 'active' : ''}}"
+                wx:for="{{donationMethods}}"
+                wx:key="id"
+                bindtap="onDonationMethodSelect"
+                data-method="{{item.id}}"
+              >
+                <text class="method-icon">{{item.icon}}</text>
+                <text class="method-name">{{item.name}}</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">匿名捐赠</view>
+            <switch
+              checked="{{donationForm.isAnonymous}}"
+              bindchange="onAnonymousToggle"
+              color="#8B4513"
+            />
+          </view>
+
+          <view class="form-group">
+            <view class="form-label">备注</view>
+            <textarea
+              class="form-textarea"
+              placeholder="备注信息（可选）"
+              value="{{donationForm.remark}}"
+              bindinput="onDonationInput"
+              data-field="remark"
+              maxlength="100"
+              auto-height
+            ></textarea>
+          </view>
+        </scroll-view>
+        <view class="modal-footer">
+          <button class="btn-cancel" bindtap="closeDonationModal">取消</button>
+          <button class="btn-confirm" bindtap="onSaveDonation">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 驳回原因弹窗 -->
+    <view class="modal {{showRejectModal ? 'show' : ''}}" catchtap="stopPropagation">
+      <view class="modal-mask" bindtap="closeRejectModal"></view>
+      <view class="modal-content">
+        <view class="modal-header">
+          <text class="modal-title">驳回留言</text>
+          <text class="modal-close" bindtap="closeRejectModal">✕</text>
+        </view>
+        <view class="modal-body">
+          <view class="form-group">
+            <view class="form-label">驳回原因 <text class="required">*</text></view>
+            <textarea
+              class="form-textarea"
+              placeholder="请输入驳回原因（至少5字）"
+              value="{{rejectReason}}"
+              bindinput="onRejectReasonInput"
+              maxlength="100"
+              auto-height
+            ></textarea>
+          </view>
+        </view>
+        <view class="modal-footer">
+          <button class="btn-cancel" bindtap="closeRejectModal">取消</button>
+          <button class="btn-danger" bindtap="onConfirmReject">确认驳回</button>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- 无权限 -->
+  <view class="no-permission" wx:else>
+    <text class="no-perm-icon">🔒</text>
+    <text class="no-perm-title">无权限访问</text>
+    <text class="no-perm-desc">您需要管理员权限才能访问此页面</text>
+  </view>
+</view>

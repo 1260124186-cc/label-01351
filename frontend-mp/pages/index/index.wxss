@@ -78,104 +78,6 @@
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
-/* 任务提示Banner */
-.task-banner {
-  display: flex;
-  align-items: center;
-  margin: 0 24rpx 20rpx;
-  padding: 24rpx 28rpx;
-  background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
-  border-radius: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(255, 152, 0, 0.15);
-  border: 2rpx solid rgba(255, 152, 0, 0.2);
-}
-
-.banner-icon {
-  font-size: 48rpx;
-  margin-right: 20rpx;
-  flex-shrink: 0;
-}
-
-.banner-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.banner-title {
-  font-size: 28rpx;
-  font-weight: bold;
-  color: #E65100;
-  line-height: 1.4;
-  margin-bottom: 4rpx;
-}
-
-.banner-desc {
-  font-size: 22rpx;
-  color: #8B7355;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.banner-arrow {
-  font-size: 40rpx;
-  color: #FF8F00;
-  margin-left: 12rpx;
-  font-weight: bold;
-}
-
-/* 节日任务Banner */
-.festival-banner {
-  display: flex;
-  align-items: center;
-  margin: 0 24rpx 20rpx;
-  padding: 24rpx 28rpx;
-  background: linear-gradient(135deg, #FFEBEE 0%, #FCE4EC 50%, #F3E5F5 100%);
-  border-radius: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(233, 30, 99, 0.12);
-  border: 2rpx solid rgba(233, 30, 99, 0.2);
-}
-
-.festival-badge {
-  font-size: 48rpx;
-  margin-right: 20rpx;
-  flex-shrink: 0;
-}
-
-.festival-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.festival-title {
-  font-size: 28rpx;
-  font-weight: bold;
-  color: #C2185B;
-  line-height: 1.4;
-  margin-bottom: 4rpx;
-}
-
-.festival-desc {
-  font-size: 22rpx;
-  color: #8B7355;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.festival-arrow {
-  font-size: 40rpx;
-  color: #E91E63;
-  margin-left: 12rpx;
-  font-weight: bold;
-}
-
 .search-history-header {
   display: flex;
   align-items: center;
@@ -314,16 +216,8 @@
   background: linear-gradient(135deg, #9B59B6 0%, #BB8FCE 100%);
 }
 
-.icon-tasks {
-  background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
-}
-
-.icon-achievements {
-  background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
-}
-
-.icon-alliance {
-  background: linear-gradient(135deg, #00838F 0%, #26C6DA 100%);
+.icon-fund {
+  background: linear-gradient(135deg, #E74C3C 0%, #F1948A 100%);
 }
 
 .entry-icon {

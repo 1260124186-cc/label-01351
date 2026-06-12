@@ -1,0 +1,375 @@
+<view class="detail-page">
+  <!-- 加载中 -->
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:elif="{{project}}">
+    <!-- 顶部信息 -->
+    <view class="detail-header">
+      <view class="header-bg"></view>
+      <view class="header-content">
+        <view class="status-tag" style="background-color: {{project.statusInfo.color}}20; color: {{project.statusInfo.color}};">
+          {{project.statusInfo.icon}} {{project.statusInfo.name}}
+        </view>
+        <view class="project-title">{{project.name}}</view>
+        <view class="project-meta">
+          <text class="meta-item">👤 {{project.adminName}}</text>
+          <text class="meta-item">📅 {{project.createTime}}</text>
+        </view>
+
+        <!-- 筹款进度 -->
+        <view class="fund-progress">
+          <view class="progress-stats">
+            <view class="stat-block">
+              <text class="stat-num">¥{{project.raisedAmountDisplay}}</text>
+              <text class="stat-label">已筹金额</text>
+            </view>
+            <view class="stat-block">
+              <text class="stat-num">¥{{project.usedAmountDisplay}}</text>
+              <text class="stat-label">已使用</text>
+            </view>
+            <view class="stat-block">
+              <text class="stat-num">¥{{project.targetAmountDisplay}}</text>
+              <text class="stat-label">目标金额</text>
+            </view>
+          </view>
+          <view class="progress-bar-wrap">
+            <view class="progress-bar">
+              <view class="progress-fill" style="width: {{project.progress}}%;"></view>
+            </view>
+            <text class="progress-percent">{{project.progress}}%</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Tab 切换 -->
+    <view class="tab-bar">
+      <view
+        class="tab-item {{activeTab === item.id ? 'active' : ''}}"
+        wx:for="{{tabs}}"
+        wx:key="id"
+        bindtap="onTabChange"
+        data-id="{{item.id}}"
+      >
+        <text class="tab-icon">{{item.icon}}</text>
+        <text class="tab-name">{{item.name}}</text>
+        <view class="tab-indicator" wx:if="{{activeTab === item.id}}"></view>
+      </view>
+    </view>
+
+    <!-- Tab 内容 -->
+    <scroll-view class="tab-content" scroll-y>
+      <!-- 项目进展/时间线 -->
+      <view class="tab-panel" wx:if="{{activeTab === 'timeline'}}">
+        <!-- 项目描述 -->
+        <view class="section">
+          <view class="section-title">📝 项目介绍</view>
+          <view class="section-content">{{project.description}}</view>
+        </view>
+
+        <!-- 受益说明 -->
+        <view class="section">
+          <view class="section-title">🤝 受益说明</view>
+          <view class="beneficiary-box">
+            <text class="beneficiary-text">{{project.beneficiaryDesc}}</text>
+          </view>
+        </view>
+
+        <!-- 时间线 -->
+        <view class="section">
+          <view class="section-title">📅 项目进展</view>
+          <view class="timeline" wx:if="{{timelineWithType.length > 0}}">
+            <view class="timeline-item" wx:for="{{timelineWithType}}" wx:key="id">
+              <view class="timeline-dot" style="background-color: {{item.typeInfo.color}};"></view>
+              <view class="timeline-line" wx:if="{{index < timelineWithType.length - 1}}"></view>
+              <view class="timeline-content">
+                <view class="timeline-header">
+                  <view class="timeline-type" style="background-color: {{item.typeInfo.color}}20; color: {{item.typeInfo.color}};">
+                    {{item.typeInfo.icon}} {{item.typeInfo.name}}
+                  </view>
+                  <text class="timeline-date">{{item.date}}</text>
+                </view>
+                <view class="timeline-title">{{item.title}}</view>
+                <view class="timeline-desc" wx:if="{{item.content}}">{{item.content}}</view>
+              </view>
+            </view>
+          </view>
+          <view class="empty-timeline" wx:else>
+            <text class="empty-icon">📭</text>
+            <text class="empty-text">暂无项目进展</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 文化成果 -->
+      <view class="tab-panel" wx:if="{{activeTab === 'results'}}">
+        <!-- 关联文章 -->
+        <view class="section">
+          <view class="section-title">📰 关联文章</view>
+          <view class="article-list" wx:if="{{project.relatedArticles && project.relatedArticles.length > 0}}">
+            <view
+              class="article-item"
+              wx:for="{{project.relatedArticles}}"
+              wx:key="id"
+              bindtap="goToArticle"
+              data-id="{{item.id}}"
+            >
+              <view class="article-info">
+                <view class="article-title">{{item.title}}</view>
+                <view class="article-meta">
+                  <text class="meta-author">{{item.authorName}}</text>
+                  <text class="meta-time">{{item.createTime}}</text>
+                </view>
+              </view>
+              <text class="article-arrow">›</text>
+            </view>
+          </view>
+          <view class="empty-section" wx:else>
+            <text class="empty-icon">📄</text>
+            <text class="empty-text">暂无关联文章</text>
+          </view>
+        </view>
+
+        <!-- 关联活动 -->
+        <view class="section">
+          <view class="section-title">🎪 关联活动</view>
+          <view class="activity-list" wx:if="{{project.relatedActivities && project.relatedActivities.length > 0}}">
+            <view
+              class="activity-item"
+              wx:for="{{project.relatedActivities}}"
+              wx:key="id"
+              bindtap="goToActivity"
+              data-id="{{item.id}}"
+            >
+              <view class="activity-info">
+                <view class="activity-title">{{item.title}}</view>
+                <view class="activity-meta">
+                  <text class="meta-location">📍 {{item.location}}</text>
+                  <text class="meta-time">{{item.timeDisplay}}</text>
+                </view>
+              </view>
+              <text class="activity-arrow">›</text>
+            </view>
+          </view>
+          <view class="empty-section" wx:else>
+            <text class="empty-icon">🎪</text>
+            <text class="empty-text">暂无关联活动</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 捐赠公示 -->
+      <view class="tab-panel" wx:if="{{activeTab === 'donations'}}">
+        <!-- 捐赠说明 -->
+        <view class="section">
+          <view class="donate-info-card">
+            <view class="info-icon">💝</view>
+            <view class="info-content">
+              <view class="info-title">公开透明 · 阳光公益</view>
+              <view class="info-desc">所有捐赠均用于指定项目，定期公示使用明细</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 捐赠记录 -->
+        <view class="section">
+          <view class="section-title">💰 捐赠记录</view>
+          <view class="donation-list" wx:if="{{project.donations && project.donations.length > 0}}">
+            <view class="donation-item" wx:for="{{project.donations}}" wx:key="id">
+              <view class="donation-left">
+                <view class="donor-avatar">{{item.isAnonymous ? '🔒' : '👤'}}</view>
+                <view class="donor-info">
+                  <view class="donor-name">{{item.donorName}}</view>
+                  <view class="donation-method">{{item.methodName || item.method}}</view>
+                </view>
+              </view>
+              <view class="donation-right">
+                <view class="donation-amount">+¥{{item.amount.toLocaleString()}}</view>
+                <view class="donation-date">{{item.createTime}}</view>
+              </view>
+            </view>
+          </view>
+          <view class="empty-section" wx:else>
+            <text class="empty-icon">💝</text>
+            <text class="empty-text">暂无捐赠记录</text>
+          </view>
+        </view>
+
+        <!-- 捐赠方式 -->
+        <view class="section">
+          <view class="section-title">🏦 线下捐赠方式</view>
+          <view class="donation-methods">
+            <view class="method-item" wx:for="{{donationMethods}}" wx:key="id">
+              <text class="method-icon">{{item.icon}}</text>
+              <text class="method-name">{{item.name}}</text>
+            </view>
+          </view>
+          <view class="donation-tip">
+            <text class="tip-icon">💡</text>
+            <text class="tip-text">请在转账备注中注明项目名称，捐赠后可联系客服进行公示</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 留言支持 -->
+      <view class="tab-panel" wx:if="{{activeTab === 'comments'}}">
+        <!-- 留言列表 -->
+        <view class="section">
+          <view class="section-title">💬 留言支持 ({{project.commentCount || 0}})</view>
+          <view class="comment-list" wx:if="{{project.comments && project.comments.length > 0}}">
+            <view class="comment-item" wx:for="{{project.comments}}" wx:key="id">
+              <view class="comment-avatar">
+                <text wx:if="{{item.avatar}}">{{item.avatar}}</text>
+                <text wx:else>👤</text>
+              </view>
+              <view class="comment-content">
+                <view class="comment-header">
+                  <text class="comment-user">{{item.userName}}</text>
+                  <text class="comment-time">{{item.createTime}}</text>
+                </view>
+                <view class="comment-text">{{item.content}}</view>
+              </view>
+            </view>
+          </view>
+          <view class="empty-section" wx:else>
+            <text class="empty-icon">💬</text>
+            <text class="empty-text">暂无留言，快来发表第一条留言吧</text>
+          </view>
+        </view>
+
+        <!-- 留言输入 -->
+        <view class="comment-input-section">
+          <view class="input-header">
+            <text class="input-title">✍️ 留下您的支持</text>
+            <text class="input-tip">留言需经审核后展示</text>
+          </view>
+          <view class="input-wrap">
+            <textarea
+              class="comment-textarea"
+              placeholder="写下您对项目的支持与祝福..."
+              placeholder-class="textarea-placeholder"
+              value="{{commentInput}}"
+              bindinput="onCommentInput"
+              maxlength="200"
+              auto-height
+            ></textarea>
+            <view class="input-footer">
+              <text class="word-count">{{commentInput.length || 0}} / 200</text>
+              <button
+                class="btn-submit {{commentInput.length > 0 ? '' : 'disabled'}}"
+                bindtap="onSubmitComment"
+                disabled="{{!commentInput}}"
+              >
+                {{isLoggedIn ? '提交留言' : '登录后留言'}}
+              </button>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 底部操作栏 -->
+    <view class="bottom-bar">
+      <view class="bar-left">
+        <view class="bar-stat">
+          <text class="bar-num">{{project.viewCount || 0}}</text>
+          <text class="bar-label">浏览</text>
+        </view>
+        <view class="bar-stat">
+          <text class="bar-num">{{project.donationCount || 0}}</text>
+          <text class="bar-label">捐赠</text>
+        </view>
+      </view>
+      <view class="bar-right">
+        <button class="btn-donate" bindtap="openDonateModal">
+          <text class="btn-icon">❤️</text>
+          <text class="btn-text">我要捐赠</text>
+        </button>
+      </view>
+    </view>
+
+    <!-- 管理员入口 -->
+    <view class="admin-fab" wx:if="{{isAdmin}}" bindtap="goToAdminEdit">
+      <text class="fab-icon">🛠</text>
+    </view>
+  </block>
+
+  <!-- 错误 -->
+  <view class="error-wrap" wx:elif="{{!loading}}">
+    <text class="error-icon">😕</text>
+    <text class="error-text">项目不存在或已删除</text>
+  </view>
+
+  <!-- 捐赠弹窗 -->
+  <view class="donate-modal {{showDonateModal ? 'show' : ''}}" catchtap="stopPropagation">
+    <view class="modal-mask" bindtap="closeDonateModal"></view>
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">💝 线下捐赠说明</text>
+        <text class="modal-close" bindtap="closeDonateModal">✕</text>
+      </view>
+      <scroll-view class="modal-body" scroll-y>
+        <view class="donate-notice">
+          <text class="notice-icon">📢</text>
+          <text class="notice-text">目前仅支持线下捐赠，捐赠后请联系客服进行公示</text>
+        </view>
+
+        <view class="method-section">
+          <view class="method-card">
+            <view class="method-head">🏦 银行转账</view>
+            <view class="method-detail">
+              <view class="detail-row">
+                <text class="detail-label">户名</text>
+                <text class="detail-value">乡村文化基金会</text>
+              </view>
+              <view class="detail-row">
+                <text class="detail-label">账号</text>
+                <text class="detail-value">6222 **** **** 8888</text>
+              </view>
+              <view class="detail-row">
+                <text class="detail-label">开户行</text>
+                <text class="detail-value">中国工商银行</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="method-card">
+            <view class="method-head">💚 微信转账</view>
+            <view class="method-detail">
+              <view class="detail-row">
+                <text class="detail-label">微信号</text>
+                <text class="detail-value">culture_fund</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="method-card">
+            <view class="method-head">💙 支付宝</view>
+            <view class="method-detail">
+              <view class="detail-row">
+                <text class="detail-label">账号</text>
+                <text class="detail-value">donate@culture.org</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="donate-reminder">
+          <text class="reminder-title">📌 温馨提示</text>
+          <view class="reminder-list">
+            <text class="reminder-item">1. 请在转账备注中注明「{{project.name}}」</text>
+            <text class="reminder-item">2. 捐赠后可联系客服进行公示</text>
+            <text class="reminder-item">3. 所有捐款将全额用于指定项目</text>
+            <text class="reminder-item">4. 资金使用情况将定期公示</text>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="modal-footer">
+        <button class="btn-confirm" bindtap="closeDonateModal">我知道了</button>
+      </view>
+    </view>
+  </view>
+</view>

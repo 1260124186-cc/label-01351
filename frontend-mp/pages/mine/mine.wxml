@@ -163,6 +163,23 @@
       </view>
     </view>
 
+    <!-- 文化基金入口 -->
+    <view class="fund-entry-card" bindtap="goToFundProjects">
+      <view class="fund-entry-left">
+        <view class="fund-icon-wrap">
+          <text class="fund-icon">💝</text>
+        </view>
+        <view class="fund-entry-info">
+          <view class="fund-entry-title">
+            文化公益基金
+            <text class="fund-badge">TRANSPARENT</text>
+          </view>
+          <view class="fund-entry-desc">公益项目 · 捐赠公示 · 透明公开</view>
+        </view>
+      </view>
+      <text class="fund-entry-arrow">›</text>
+    </view>
+
     <!-- 管理后台入口（仅管理员可见） -->
     <view class="admin-entry-card" wx:if="{{isAdmin}}" bindtap="goToAdmin">
       <view class="admin-entry-left">

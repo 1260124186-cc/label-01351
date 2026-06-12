@@ -913,6 +913,92 @@
   justify-content: center;
 }
 
+/* 文化基金入口卡片 */
+.fund-entry-card {
+  display: flex;
+  align-items: center;
+  margin: 0 32rpx 24rpx;
+  padding: 28rpx 32rpx;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 60%, #ffd9d9 100%);
+  border-radius: 24rpx;
+  border: 2rpx solid rgba(255, 107, 107, 0.2);
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 107, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.fund-entry-card::before {
+  content: '';
+  position: absolute;
+  top: -30rpx;
+  right: -30rpx;
+  width: 140rpx;
+  height: 140rpx;
+  background: radial-gradient(circle, rgba(255, 107, 107, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.fund-entry-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.fund-icon-wrap {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 6rpx 16rpx rgba(255, 107, 107, 0.3);
+}
+
+.fund-icon {
+  font-size: 40rpx;
+}
+
+.fund-entry-info {
+  flex: 1;
+  margin-left: 20rpx;
+  min-width: 0;
+}
+
+.fund-entry-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #d32f2f;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 6rpx;
+}
+
+.fund-badge {
+  font-size: 18rpx;
+  color: #ff6b6b;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+  font-weight: 500;
+  letter-spacing: 1rpx;
+}
+
+.fund-entry-desc {
+  font-size: 24rpx;
+  color: #e57373;
+}
+
+.fund-entry-arrow {
+  font-size: 40rpx;
+  color: #ffcdd2;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
 /* 管理后台入口卡片 */
 .admin-entry-card {
   display: flex;

@@ -46,7 +46,10 @@
     "pages/onboarding/onboarding",
     "pages/tasks/tasks",
     "pages/achievements/achievements",
-    "pages/alliance/alliance"
+    "pages/alliance/alliance",
+    "pages/fund-projects/fund-projects",
+    "pages/fund-detail/fund-detail",
+    "pages/admin-fund/admin-fund"
   ],
   "window": {
     "backgroundTextStyle": "dark",

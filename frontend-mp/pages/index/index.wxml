@@ -47,26 +47,6 @@
     </view>
   </view>
 
-  <!-- 新手引导与任务提示 -->
-  <view class="task-banner" wx:if="{{showTaskBanner}}" bindtap="goToOnboarding">
-    <view class="banner-icon">🎯</view>
-    <view class="banner-content">
-      <text class="banner-title">{{taskBannerTitle}}</text>
-      <text class="banner-desc">{{taskBannerDesc}}</text>
-    </view>
-    <view class="banner-arrow">›</view>
-  </view>
-
-  <!-- 节日特别任务提示 -->
-  <view class="festival-banner" wx:if="{{activeFestival}}" bindtap="goToTasks">
-    <view class="festival-badge">🎉</view>
-    <view class="festival-info">
-      <text class="festival-title">{{activeFestival.name}}特别任务</text>
-      <text class="festival-desc">完成任务获得限定勋章：{{activeFestival.badgeName}}</text>
-    </view>
-    <view class="festival-arrow">›</view>
-  </view>
-
   <!-- 金刚区入口 -->
   <view class="quick-entry">
     <view class="entry-item" bindtap="goToMap">
@@ -118,26 +98,12 @@
       <text class="entry-name">我要投稿</text>
       <text class="entry-desc">分享故事</text>
     </view>
-    <view class="entry-item" bindtap="goToTasks">
-      <view class="entry-icon-wrap icon-tasks">
-        <text class="entry-icon">🎯</text>
+    <view class="entry-item" bindtap="goToFundProjects">
+      <view class="entry-icon-wrap icon-fund">
+        <text class="entry-icon">💝</text>
       </view>
-      <text class="entry-name">任务中心</text>
-      <text class="entry-desc">赚积分</text>
-    </view>
-    <view class="entry-item" bindtap="goToAchievements">
-      <view class="entry-icon-wrap icon-achievements">
-        <text class="entry-icon">🏆</text>
-      </view>
-      <text class="entry-name">成就勋章</text>
-      <text class="entry-desc">收藏品</text>
-    </view>
-    <view class="entry-item" bindtap="goToAlliance">
-      <view class="entry-icon-wrap icon-alliance">
-        <text class="entry-icon">🌐</text>
-      </view>
-      <text class="entry-name">文化联盟</text>
-      <text class="entry-desc">内容联邦</text>
+      <text class="entry-name">文化基金</text>
+      <text class="entry-desc">公益透明</text>
     </view>
   </view>
 

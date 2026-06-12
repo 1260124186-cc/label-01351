@@ -1,0 +1,427 @@
+.fund-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+/* 顶部统计 */
+.stats-header {
+  position: relative;
+  padding: 32rpx 32rpx 40rpx;
+}
+
+.stats-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 360rpx;
+  background: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
+  border-radius: 0 0 40rpx 40rpx;
+}
+
+.stats-content {
+  position: relative;
+  z-index: 1;
+}
+
+.stats-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+
+.stats-icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+}
+
+.stats-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #fff;
+}
+
+.stats-row {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20rpx;
+  padding: 32rpx 0;
+  backdrop-filter: blur(10px);
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 8rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.stat-divider {
+  width: 2rpx;
+  height: 60rpx;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.donate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24rpx;
+  height: 88rpx;
+  background: #fff;
+  border-radius: 44rpx;
+  box-shadow: 0 8rpx 24rpx rgba(139, 69, 19, 0.2);
+}
+
+.donate-icon {
+  font-size: 32rpx;
+  margin-right: 12rpx;
+}
+
+.donate-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #8B4513;
+}
+
+/* 搜索栏 */
+.search-bar {
+  display: flex;
+  align-items: center;
+  padding: 0 32rpx 24rpx;
+  gap: 20rpx;
+}
+
+.search-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 72rpx;
+  background: #fff;
+  border-radius: 36rpx;
+  padding: 0 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.search-icon {
+  font-size: 28rpx;
+  margin-right: 12rpx;
+  opacity: 0.5;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.search-placeholder {
+  color: #999;
+  font-size: 28rpx;
+}
+
+.search-clear {
+  font-size: 28rpx;
+  color: #ccc;
+  padding: 8rpx;
+}
+
+.admin-entry {
+  display: flex;
+  align-items: center;
+  padding: 0 24rpx;
+  height: 72rpx;
+  background: #fff;
+  border-radius: 36rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.admin-icon {
+  font-size: 28rpx;
+  margin-right: 8rpx;
+}
+
+.admin-text {
+  font-size: 26rpx;
+  color: #666;
+}
+
+/* 状态筛选 */
+.status-tabs {
+  white-space: nowrap;
+  padding: 0 24rpx 24rpx;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 12rpx 28rpx;
+  margin: 0 8rpx;
+  background: #fff;
+  border-radius: 32rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.status-chip.active {
+  background: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
+  box-shadow: 0 4rpx 12rpx rgba(139, 69, 19, 0.25);
+}
+
+.chip-icon {
+  font-size: 24rpx;
+  margin-right: 8rpx;
+}
+
+.chip-name {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.status-chip.active .chip-name {
+  color: #fff;
+  font-weight: 500;
+}
+
+/* 列表 */
+.list-container {
+  padding: 0 32rpx 32rpx;
+}
+
+.loading-wrap,
+.empty-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 0;
+}
+
+.loading-spinner {
+  width: 48rpx;
+  height: 48rpx;
+  border: 4rpx solid #f0f0f0;
+  border-top-color: #8B4513;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text,
+.empty-desc {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+/* 项目卡片 */
+.project-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24rpx;
+}
+
+.project-name {
+  flex: 1;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  line-height: 1.4;
+  margin-right: 20rpx;
+}
+
+.project-status {
+  flex-shrink: 0;
+  padding: 8rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+/* 进度条 */
+.progress-section {
+  background: #fafafa;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.progress-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.progress-label {
+  font-size: 22rpx;
+  color: #999;
+  margin-bottom: 6rpx;
+}
+
+.progress-value {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.progress-value.target {
+  color: #999;
+}
+
+.progress-value.raised {
+  color: #8B4513;
+}
+
+.progress-value.used {
+  color: #fa8c16;
+}
+
+.progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 12rpx;
+  background: #eee;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8B4513 0%, #CD853F 100%);
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+}
+
+.progress-percent {
+  flex-shrink: 0;
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #8B4513;
+  width: 80rpx;
+  text-align: right;
+}
+
+/* 受益说明 */
+.beneficiary-section {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 24rpx;
+  padding: 20rpx;
+  background: #fff9e6;
+  border-radius: 12rpx;
+  border-left: 6rpx solid #fa8c16;
+}
+
+.beneficiary-icon {
+  font-size: 28rpx;
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+
+.beneficiary-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: #8B6914;
+  line-height: 1.6;
+}
+
+/* 底部 */
+.card-footer {
+  display: flex;
+  align-items: center;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.footer-info {
+  font-size: 24rpx;
+  color: #999;
+  margin-right: 24rpx;
+}
+
+.footer-arrow {
+  margin-left: auto;
+  font-size: 26rpx;
+  color: #8B4513;
+  font-weight: 500;
+}
+
+/* 加载更多 */
+.load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx 0;
+}
+
+.load-spinner {
+  width: 32rpx;
+  height: 32rpx;
+  border: 4rpx solid #f0f0f0;
+  border-top-color: #8B4513;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 12rpx;
+}
+
+.load-text {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.no-more {
+  text-align: center;
+  padding: 32rpx 0;
+}
+
+.no-more-text {
+  font-size: 24rpx;
+  color: #ccc;
+}

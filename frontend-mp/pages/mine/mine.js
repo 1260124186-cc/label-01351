@@ -314,6 +314,12 @@ Page({
     });
   },
 
+  goToFundProjects() {
+    wx.navigateTo({
+      url: '/pages/fund-projects/fund-projects'
+    });
+  },
+
   // 角色调试：输入 role
   onRoleInput(e) {
     this.setData({ roleInput: e.detail.value });

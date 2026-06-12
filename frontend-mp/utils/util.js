@@ -367,5 +367,80 @@ module.exports = {
   SUGGESTED_TAGS,
   base64Encode,
   base64Decode,
-  generateToken
+  generateToken,
+
+  FUND_STATUS: {
+    ongoing: { id: 'ongoing', name: '进行中', color: '#52c41a', icon: '🟢' },
+    achieved: { id: 'achieved', name: '已达成', color: '#1890ff', icon: '🎯' },
+    ended: { id: 'ended', name: '已结束', color: '#999999', icon: '⏹️' }
+  },
+
+  getFundStatusName: (statusId) => {
+    const statusMap = {
+      ongoing: '进行中',
+      achieved: '已达成',
+      ended: '已结束'
+    };
+    return statusMap[statusId] || '未知';
+  },
+
+  getFundStatusInfo: (statusId) => {
+    const statusMap = {
+      ongoing: { id: 'ongoing', name: '进行中', color: '#52c41a', icon: '🟢' },
+      achieved: { id: 'achieved', name: '已达成', color: '#1890ff', icon: '🎯' },
+      ended: { id: 'ended', name: '已结束', color: '#999999', icon: '⏹️' }
+    };
+    return statusMap[statusId] || { id: 'unknown', name: '未知', color: '#999', icon: '❓' };
+  },
+
+  getFundTimelineTypeInfo: (type) => {
+    const typeMap = {
+      milestone: { name: '里程碑', color: '#1890ff', icon: '🎯' },
+      funding: { name: '资金拨付', color: '#52c41a', icon: '💰' },
+      event: { name: '活动', color: '#fa8c16', icon: '📅' },
+      report: { name: '公示', color: '#722ed1', icon: '📋' },
+      other: { name: '其他', color: '#999', icon: '📌' }
+    };
+    return typeMap[type] || typeMap.other;
+  },
+
+  formatAmount: (amount) => {
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return '0 元';
+    }
+    const num = Number(amount);
+    if (num >= 10000) {
+      return (num / 10000).toFixed(1) + ' 万';
+    }
+    return num.toLocaleString() + ' 元';
+  },
+
+  DONATION_METHODS: [
+    { id: 'offline_bank', name: '银行转账', icon: '🏦' },
+    { id: 'offline_wechat', name: '微信转账', icon: '💚' },
+    { id: 'offline_alipay', name: '支付宝', icon: '💙' },
+    { id: 'offline_cash', name: '现金捐赠', icon: '💵' },
+    { id: 'offline_other', name: '其他方式', icon: '📦' }
+  ],
+
+  getDonationMethodName: (methodId) => {
+    const methodMap = {
+      offline_bank: '银行转账',
+      offline_wechat: '微信转账',
+      offline_alipay: '支付宝',
+      offline_cash: '现金捐赠',
+      offline_other: '其他方式'
+    };
+    return methodMap[methodId] || '线下捐赠';
+  },
+
+  getDonationMethods: () => {
+    return [
+      { id: 'offline_bank', name: '银行转账', icon: '🏦' },
+      { id: 'offline_wechat', name: '微信转账', icon: '💚' },
+      { id: 'offline_alipay', name: '支付宝', icon: '💙' },
+      { id: 'offline_cash', name: '现金捐赠', icon: '💵' },
+      { id: 'offline_other', name: '其他方式', icon: '📦' }
+    ];
+  }
 };
