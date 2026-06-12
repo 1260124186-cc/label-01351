@@ -46,11 +46,11 @@
           mode="selector"
           range="{{certificateTypes}}"
           range-key="name"
-          value="{{certificateTypes.findIndex(t => t.id === selectedTypeId)}}"
+          value="{{typeIndex}}"
           bindchange="onTypeChange"
         >
           <view class="picker-display">
-            <text class="picker-value">{{certificateTypes.find(t => t.id === selectedTypeId).name || '请选择'}}</text>
+            <text class="picker-value">{{selectedTypeName}}</text>
             <text class="picker-arrow">›</text>
           </view>
         </picker>
@@ -63,11 +63,11 @@
           mode="selector"
           range="{{issuingUnits}}"
           range-key="name"
-          value="{{issuingUnits.findIndex(u => u.id === selectedUnitId)}}"
+          value="{{unitIndex}}"
           bindchange="onUnitChange"
         >
           <view class="picker-display">
-            <text class="picker-value">{{issuingUnits.find(u => u.id === selectedUnitId).name || '请选择'}}</text>
+            <text class="picker-value">{{selectedUnitName}}</text>
             <text class="picker-arrow">›</text>
           </view>
         </picker>
@@ -112,7 +112,7 @@
 
       <view class="selected-users" wx:if="{{selectedUserIds.length > 0}}">
         <scroll-view scroll-x class="selected-scroll">
-          <view class="selected-user" wx:for="{{users}}" wx:for-item="user" wx:key="id" wx:if="{{selectedUserIds.includes(user.id)}}">
+          <view class="selected-user" wx:for="{{selectedUsersDisplay}}" wx:for-item="user" wx:key="id">
             <text class="selected-name">{{user.nickname}}</text>
           </view>
         </scroll-view>
@@ -135,11 +135,11 @@
         mode="selector"
         range="{{activities}}"
         range-key="title"
-        value="{{activities.findIndex(a => a.id === selectedActivityId)}}"
+        value="{{activityIndex}}"
         bindchange="onActivityChange"
       >
         <view class="picker-display">
-          <text class="picker-value">{{activities.find(a => a.id === selectedActivityId).title || '请选择活动'}}</text>
+          <text class="picker-value">{{selectedActivityTitle}}</text>
           <text class="picker-arrow">›</text>
         </view>
       </picker>
@@ -157,11 +157,11 @@
         mode="selector"
         range="{{articles}}"
         range-key="title"
-        value="{{articles.findIndex(a => a.id === selectedArticleId)}}"
+        value="{{articleIndex}}"
         bindchange="onArticleChange"
       >
         <view class="picker-display">
-          <text class="picker-value">{{articles.find(a => a.id === selectedArticleId).title || '请选择作品'}}</text>
+          <text class="picker-value">{{selectedArticleTitle}}</text>
           <text class="picker-arrow">›</text>
         </view>
       </picker>
@@ -217,7 +217,7 @@
         bindtap="submitIssue"
         disabled="{{submitting || !previewData || previewData.count === 0}}"
       >
-        {{submitting ? '颁发中...' : `确认颁发 ${previewData.count || 0} 张证书`}}
+        {{submitBtnText}}
       </button>
     </view>
   </view>
@@ -249,23 +249,22 @@
 
         <scroll-view class="user-list" scroll-y>
           <view
-            class="user-item {{selectedUserIds.includes(user.id) ? 'selected' : ''}}"
-            wx:for="{{users}}"
+            class="user-item {{user.isSelected ? 'selected' : ''}}"
+            wx:for="{{filteredUsersWithSelected}}"
             wx:for-item="user"
             wx:key="id"
-            wx:if="{{!searchKeyword || user.nickname.includes(searchKeyword) || (user.phone && user.phone.includes(searchKeyword))}}"
             data-user-id="{{user.id}}"
             bindtap="toggleUserSelect"
           >
             <view class="user-avatar">
-              <text>{{user.nickname.charAt(0)}}</text>
+              <text>{{user.firstChar}}</text>
             </view>
             <view class="user-info">
               <text class="user-name">{{user.nickname}}</text>
               <text class="user-phone" wx:if="{{user.phone}}">{{user.phone}}</text>
             </view>
             <view class="user-check">
-              <text wx:if="{{selectedUserIds.includes(user.id)}}">✓</text>
+              <text wx:if="{{user.isSelected}}">✓</text>
             </view>
           </view>
         </scroll-view>

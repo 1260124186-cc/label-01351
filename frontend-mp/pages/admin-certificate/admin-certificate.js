@@ -16,18 +16,28 @@ Page({
 
     certificateTypes: [],
     selectedTypeId: '',
+    typeIndex: 0,
+    selectedTypeName: '',
     issuingUnits: [],
     selectedUnitId: '',
+    unitIndex: 0,
+    selectedUnitName: '',
 
     users: [],
     selectedUserIds: [],
     searchKeyword: '',
+    filteredUsersWithSelected: [],
+    selectedUsersDisplay: [],
 
     activities: [],
     selectedActivityId: '',
+    activityIndex: 0,
+    selectedActivityTitle: '',
 
     articles: [],
     selectedArticleId: '',
+    articleIndex: 0,
+    selectedArticleTitle: '',
 
     title: '',
     reason: '',
@@ -35,6 +45,7 @@ Page({
 
     submitting: false,
     previewData: null,
+    submitBtnText: '确认颁发 0 张证书',
 
     showUserPicker: false,
     showActivityPicker: false,
@@ -74,6 +85,7 @@ Page({
       if (this.data.issuingUnits.length > 0) {
         this.setData({ selectedUnitId: this.data.issuingUnits[0].id });
       }
+      this.updateComputedData();
     } catch (e) {
       console.error('[AdminCertificate] 初始化数据失败:', e);
       wx.showToast({ title: '数据加载失败', icon: 'none' });
@@ -93,12 +105,16 @@ Page({
   },
 
   onTypeChange(e) {
-    this.setData({ selectedTypeId: e.detail.value });
+    const index = parseInt(e.detail.value, 10);
+    const selectedType = this.data.certificateTypes[index];
+    this.setData({ selectedTypeId: selectedType ? selectedType.id : '' });
     this.updatePreview();
   },
 
   onUnitChange(e) {
-    this.setData({ selectedUnitId: e.detail.value });
+    const index = parseInt(e.detail.value, 10);
+    const selectedUnit = this.data.issuingUnits[index];
+    this.setData({ selectedUnitId: selectedUnit ? selectedUnit.id : '' });
     this.updatePreview();
   },
 
@@ -114,6 +130,7 @@ Page({
 
   onSearchInput(e) {
     this.setData({ searchKeyword: e.detail.value });
+    this.updateComputedData();
   },
 
   toggleUserSelect(e) {
@@ -144,12 +161,16 @@ Page({
   },
 
   onActivityChange(e) {
-    this.setData({ selectedActivityId: e.detail.value });
+    const index = parseInt(e.detail.value, 10);
+    const selectedActivity = this.data.activities[index];
+    this.setData({ selectedActivityId: selectedActivity ? selectedActivity.id : '' });
     this.updatePreview();
   },
 
   onArticleChange(e) {
-    this.setData({ selectedArticleId: e.detail.value });
+    const index = parseInt(e.detail.value, 10);
+    const selectedArticle = this.data.articles[index];
+    this.setData({ selectedArticleId: selectedArticle ? selectedArticle.id : '' });
     this.updatePreview();
   },
 
@@ -173,6 +194,63 @@ Page({
 
   confirmUserPicker() {
     this.setData({ showUserPicker: false });
+  },
+
+  updateComputedData() {
+    const {
+      certificateTypes, selectedTypeId,
+      issuingUnits, selectedUnitId,
+      activities, selectedActivityId,
+      articles, selectedArticleId,
+      users, selectedUserIds, searchKeyword,
+      previewData, submitting
+    } = this.data;
+
+    const typeIndex = Math.max(0, certificateTypes.findIndex(t => t.id === selectedTypeId));
+    const selectedTypeName = typeIndex >= 0 && certificateTypes[typeIndex] ? certificateTypes[typeIndex].name : '请选择';
+
+    const unitIndex = Math.max(0, issuingUnits.findIndex(u => u.id === selectedUnitId));
+    const selectedUnitName = unitIndex >= 0 && issuingUnits[unitIndex] ? issuingUnits[unitIndex].name : '请选择';
+
+    const activityIndex = Math.max(0, activities.findIndex(a => a.id === selectedActivityId));
+    const selectedActivityTitle = activityIndex >= 0 && activities[activityIndex] ? activities[activityIndex].title : '请选择活动';
+
+    const articleIndex = Math.max(0, articles.findIndex(a => a.id === selectedArticleId));
+    const selectedArticleTitle = articleIndex >= 0 && articles[articleIndex] ? articles[articleIndex].title : '请选择作品';
+
+    const keyword = searchKeyword ? searchKeyword.toLowerCase() : '';
+    const filteredUsersWithSelected = users
+      .filter(u => {
+        if (!keyword) return true;
+        const nickMatch = u.nickname && u.nickname.toLowerCase().indexOf(keyword) > -1;
+        const phoneMatch = u.phone && u.phone.indexOf(keyword) > -1;
+        return nickMatch || phoneMatch;
+      })
+      .map(u => ({
+        ...u,
+        isSelected: selectedUserIds.indexOf(u.id) > -1,
+        firstChar: u.nickname ? u.nickname.charAt(0) : '?'
+      }));
+
+    const selectedUsersDisplay = users
+      .filter(u => selectedUserIds.indexOf(u.id) > -1);
+
+    const count = previewData ? previewData.count : 0;
+    const submitBtnText = submitting ? '颁发中...' : ('确认颁发 ' + count + ' 张证书');
+
+    this.setData({
+      typeIndex,
+      selectedTypeName,
+      unitIndex,
+      selectedUnitName,
+      activityIndex,
+      selectedActivityTitle,
+      articleIndex,
+      selectedArticleTitle,
+      filteredUsersWithSelected,
+      selectedUsersDisplay,
+      submitBtnText
+    });
   },
 
   updatePreview() {
@@ -221,6 +299,7 @@ Page({
     };
 
     this.setData({ previewData });
+    this.updateComputedData();
   },
 
   async submitIssue() {
@@ -247,6 +326,7 @@ Page({
     const reasonText = reason || previewData.reason;
 
     this.setData({ submitting: true });
+    this.updateComputedData();
 
     try {
       let res;
@@ -297,11 +377,13 @@ Page({
         });
       } else {
         this.setData({ submitting: false });
+        this.updateComputedData();
         wx.showToast({ title: res.message || '颁发失败', icon: 'none' });
       }
     } catch (e) {
       console.error('[AdminCertificate] 颁发失败:', e);
       this.setData({ submitting: false });
+      this.updateComputedData();
       wx.showToast({ title: '颁发失败，请重试', icon: 'none' });
     }
   },
