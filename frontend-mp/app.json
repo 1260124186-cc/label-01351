@@ -49,7 +49,10 @@
     "pages/admin-certificate/admin-certificate",
     "pages/achievements/achievements",
     "pages/achievement-share/achievement-share",
-    "pages/admin-badge/admin-badge"
+    "pages/admin-badge/admin-badge",
+    "pages/onboarding/onboarding",
+    "pages/tasks/tasks",
+    "pages/village-select/village-select"
   ],
   "window": {
     "backgroundTextStyle": "dark",

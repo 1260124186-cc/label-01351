@@ -36,7 +36,7 @@ Page({
           totalSteps: progress.total,
           currentStep: currentStepIndex >= 0 ? currentStepIndex : progress.total - 1,
           progress: progress.progress,
-          showWelcome: progress.completed === false && progress.completed === 0,
+          showWelcome: !progress.isCompleted && progress.completed === 0,
           isCompleted: progress.isCompleted
         });
 
