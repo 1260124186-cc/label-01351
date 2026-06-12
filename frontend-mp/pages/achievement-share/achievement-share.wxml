@@ -1,0 +1,89 @@
+<view class="page-container">
+  <!-- 加载状态 -->
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:elif="{{badge}}">
+    <!-- 成就卡片 -->
+    <view class="achievement-card">
+      <view class="card-header">
+        <text class="card-title">🏆 我的成就</text>
+      </view>
+
+      <view class="card-content">
+        <!-- 勋章图标 -->
+        <view class="badge-icon-wrap">
+          <text class="badge-icon">{{badge.icon || '🏅'}}</text>
+          <view class="badge-glow"></view>
+        </view>
+
+        <!-- 勋章名称 -->
+        <view class="badge-name">{{badge.name}}</view>
+        <view class="badge-rarity" wx:if="{{badge.rarity}}">
+          <text class="rarity-text">{{badge.rarity === 'legendary' ? '传说' : badge.rarity === 'epic' ? '史诗' : badge.rarity === 'rare' ? '稀有' : '普通'}}</text>
+        </view>
+
+        <!-- 勋章描述 -->
+        <view class="badge-desc" wx:if="{{badge.description}}">
+          {{badge.description}}
+        </view>
+
+        <!-- 分割线 -->
+        <view class="divider"></view>
+
+        <!-- 用户信息 -->
+        <view class="user-info">
+          <view class="user-avatar">
+            <text wx:if="{{!userInfo.avatar}}" class="avatar-text">{{userInfo.nickname[0] || '用'}}</text>
+            <image wx:else class="avatar-image" src="{{userInfo.avatar}}" mode="aspectFill" />
+          </view>
+          <view class="user-detail">
+            <view class="user-nickname">{{userInfo.nickname || '匿名用户'}}</view>
+            <view class="user-level" wx:if="{{level}}">
+              <text class="level-icon">{{level.icon || '🌟'}}</text>
+              <text class="level-name">{{level.name}}</text>
+            </view>
+          </view>
+          <view class="user-points">
+            <text class="points-icon">💎</text>
+            <text class="points-value">{{points}}</text>
+            <text class="points-label">积分</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="card-footer">
+        <text class="footer-text">乡村文化库 · 记录与传承</text>
+      </view>
+    </view>
+
+    <!-- 分享按钮 -->
+    <view class="share-section">
+      <button class="btn-share primary" open-type="share">
+        <text class="btn-icon">📤</text>
+        <text class="btn-text">分享给好友</text>
+      </button>
+      <view class="share-tips">
+        <text>点击右上角「...」也可分享到朋友圈</text>
+      </view>
+    </view>
+
+    <!-- 查看更多成就 -->
+    <view class="more-section" bindtap="goToAchievements">
+      <view class="more-left">
+        <text class="more-icon">🏆</text>
+        <text class="more-text">查看所有成就勋章</text>
+      </view>
+      <text class="more-arrow">›</text>
+    </view>
+  </block>
+
+  <!-- 错误状态 -->
+  <view class="error-wrap" wx:else>
+    <text class="error-icon">😕</text>
+    <text class="error-text">加载失败，请重试</text>
+    <button class="btn-back" bindtap="goBack">返回</button>
+  </view>
+</view>

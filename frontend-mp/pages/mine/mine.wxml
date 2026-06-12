@@ -21,6 +21,10 @@
         <view class="user-info">
           <view class="user-name-row">
             <view class="user-name">{{userInfo.nickname}}</view>
+            <view class="user-level-tag" wx:if="{{userLevel}}">
+              <text class="level-icon">{{userLevel.icon || '🌟'}}</text>
+              <text class="level-name">{{userLevel.name}}</text>
+            </view>
             <view class="user-role-tag {{isAdmin ? 'role-admin' : 'role-user'}}">
               {{isAdmin ? '🛡 管理员' : '👤 普通用户'}}
             </view>
@@ -57,26 +61,94 @@
         </view>
       </view>
 
-      <!-- 积分与成就卡片 -->
-      <view class="achievement-card" bindtap="goToAchievements">
-        <view class="achievement-left">
-          <view class="achievement-stat">
-            <text class="achievement-icon">💎</text>
-            <view class="achievement-info">
-              <text class="achievement-value">{{userPoints}}</text>
-              <text class="achievement-label">积分</text>
+      <!-- 等级与积分卡片 -->
+      <view class="level-card" bindtap="goToAchievements">
+        <view class="level-header">
+          <view class="level-info">
+            <text class="level-badge-icon">{{userLevel.icon || '🌟'}}</text>
+            <view class="level-detail">
+              <view class="level-name">{{userLevel.name || '文化记录者'}}</view>
+              <view class="level-desc">
+                <text wx:if="{{levelProgress}}">
+                  距离下一等级还差 {{levelProgress.pointsNeeded || 0}} 积分
+                </text>
+                <text wx:else>继续加油，提升等级</text>
+              </view>
             </view>
           </view>
-          <view class="achievement-divider"></view>
-          <view class="achievement-stat">
-            <text class="achievement-icon">🏅</text>
-            <view class="achievement-info">
-              <text class="achievement-value">{{badgeCount}}/{{totalBadgeCount}}</text>
-              <text class="achievement-label">勋章</text>
+          <view class="level-points">
+            <text class="points-value">{{userPoints}}</text>
+            <text class="points-label">积分</text>
+          </view>
+        </view>
+        <view class="level-progress-bar" wx:if="{{levelProgress}}">
+          <view class="level-progress-fill" style="width: {{levelProgress.percent || 0}}%;"></view>
+        </view>
+        <view class="level-stats">
+          <view class="level-stat-item">
+            <text class="level-stat-value">{{badgeCount}}</text>
+            <text class="level-stat-label">已获勋章</text>
+          </view>
+          <view class="level-stat-item">
+            <text class="level-stat-value">{{totalBadgeCount}}</text>
+            <text class="level-stat-label">全部勋章</text>
+          </view>
+          <view class="level-stat-item">
+            <text class="level-stat-value">{{consecutiveCheckinDays}}</text>
+            <text class="level-stat-label">连续打卡</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 每日打卡卡片 -->
+      <view class="checkin-card">
+        <view class="checkin-left">
+          <view class="checkin-icon-wrap">
+            <text class="checkin-icon">📅</text>
+          </view>
+          <view class="checkin-info">
+            <view class="checkin-title">每日打卡</view>
+            <view class="checkin-desc">
+              <text wx:if="{{hasCheckedInToday}}">今日已打卡 · 连续 {{consecutiveCheckinDays}} 天</text>
+              <text wx:else>今日还未打卡，快去打卡领积分吧</text>
             </view>
           </view>
         </view>
-        <text class="achievement-arrow">›</text>
+        <button
+          class="checkin-btn {{hasCheckedInToday ? 'checked' : ''}}"
+          bindtap="onDailyCheckin"
+          disabled="{{hasCheckedInToday}}"
+        >
+          {{hasCheckedInToday ? '已打卡' : '立即打卡'}}
+        </button>
+      </view>
+
+      <!-- 勋章墙 -->
+      <view class="badge-wall-card" bindtap="goToAchievements">
+        <view class="badge-wall-header">
+          <text class="badge-wall-title">我的勋章</text>
+          <view class="badge-wall-count">
+            <text class="badge-count-num">{{badgeCount}}</text>
+            <text class="badge-count-total">/{{totalBadgeCount}}</text>
+          </view>
+        </view>
+        <view class="badge-wall-grid">
+          <view
+            class="badge-item {{item.unlocked ? 'unlocked' : 'locked'}}"
+            wx:for="{{userBadgeList}}"
+            wx:key="id"
+            wx:if="{{index < 8}}"
+            catchtap="goToAchievementShare"
+            data-badge-id="{{item.id}}"
+          >
+            <text class="badge-icon">{{item.icon || '🏅'}}</text>
+            <text class="badge-name">{{item.name}}</text>
+          </view>
+          <view class="badge-item more-badges" wx:if="{{badgeCount > 8}}" bindtap="goToAchievements">
+            <text class="badge-icon">➕</text>
+            <text class="badge-name">更多</text>
+          </view>
+        </view>
       </view>
 
       <!-- 任务中心快捷卡片 -->

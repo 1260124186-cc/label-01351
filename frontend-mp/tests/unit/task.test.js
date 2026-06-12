@@ -629,16 +629,19 @@ describe('任务系统 - 导出公共API完整性', () => {
     }
   });
 
-  test('勋章配置：普通7枚+节日限定3枚共10枚', () => {
+  test('勋章配置：包含成长、贡献、探索、知识、人气、活动、节日等多种类型', () => {
     const allBadges = taskSystem.getAllBadges();
-    expect(allBadges.length).toBe(10);
+    expect(allBadges.length).toBeGreaterThanOrEqual(15);
 
     const rarityCount = { common: 0, rare: 0, epic: 0, legendary: 0 };
     allBadges.forEach(b => { rarityCount[b.rarity] = (rarityCount[b.rarity] || 0) + 1; });
 
     expect(rarityCount.legendary).toBeGreaterThanOrEqual(4);
-    expect(rarityCount.epic).toBeGreaterThanOrEqual(2);
-    expect(rarityCount.rare).toBeGreaterThanOrEqual(2);
+    expect(rarityCount.epic).toBeGreaterThanOrEqual(3);
+    expect(rarityCount.rare).toBeGreaterThanOrEqual(3);
+
+    const categories = new Set(allBadges.map(b => b.category));
+    expect(categories.size).toBeGreaterThanOrEqual(5);
   });
 
   test('getTaskCenterData聚合所有数据字段完整', async () => {

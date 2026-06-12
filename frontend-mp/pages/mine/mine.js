@@ -52,7 +52,12 @@ Page({
     badgeCount: 0,
     totalBadgeCount: 0,
     claimableCount: 0,
-    sevenDayCurrentDay: 1
+    sevenDayCurrentDay: 1,
+    userLevel: null,
+    levelProgress: null,
+    userBadgeList: [],
+    hasCheckedInToday: false,
+    consecutiveCheckinDays: 0
   },
 
   onLoad() {
@@ -73,25 +78,48 @@ Page({
 
   async loadTaskData() {
     try {
-      const [pointsRes, badgesRes, allBadgesRes, sevenDayRes] = await Promise.all([
+      const [
+        pointsRes,
+        badgesRes,
+        allBadgesRes,
+        sevenDayRes,
+        levelRes,
+        levelProgressRes,
+        checkinRes,
+        consecutiveRes
+      ] = await Promise.all([
         api.getUserPoints(),
         api.getUserBadges(),
         api.getAllBadges(),
-        api.getSevenDayProgress()
+        api.getSevenDayProgress(),
+        api.getUserLevel(),
+        api.getLevelProgress(),
+        api.hasCheckedInToday(),
+        api.getConsecutiveCheckinDays()
       ]);
 
       const userPoints = pointsRes.code === 200 ? (pointsRes.data.points || 0) : 0;
-      const badgeCount = badgesRes.code === 200 ? (badgesRes.data.badges || []).length : 0;
+      const userBadgeList = badgesRes.code === 200 ? (badgesRes.data.badges || []) : [];
+      const badgeCount = userBadgeList.length;
       const totalBadgeCount = allBadgesRes.code === 200 ? (allBadgesRes.data.badges || []).length : 0;
       const claimableCount = sevenDayRes.code === 200 ? (sevenDayRes.data.claimableCount || 0) : 0;
       const sevenDayCurrentDay = sevenDayRes.code === 200 ? (sevenDayRes.data.currentDay || 1) : 1;
+      const userLevel = levelRes.code === 200 ? levelRes.data : null;
+      const levelProgress = levelProgressRes.code === 200 ? levelProgressRes.data : null;
+      const hasCheckedInToday = checkinRes.code === 200 ? checkinRes.data.checked : false;
+      const consecutiveCheckinDays = consecutiveRes.code === 200 ? (consecutiveRes.data.days || 0) : 0;
 
       this.setData({
         userPoints,
         badgeCount,
         totalBadgeCount,
         claimableCount,
-        sevenDayCurrentDay
+        sevenDayCurrentDay,
+        userLevel,
+        levelProgress,
+        userBadgeList,
+        hasCheckedInToday,
+        consecutiveCheckinDays
       });
     } catch (e) {
       console.error('[Mine] 任务数据加载失败:', e);
@@ -458,6 +486,40 @@ Page({
   goToCertificateVerify() {
     wx.navigateTo({
       url: '/pages/certificate-verify/certificate-verify'
+    });
+  },
+
+  async onDailyCheckin() {
+    try {
+      wx.showLoading({ title: '打卡中...' });
+      const res = await api.doDailyCheckin();
+      wx.hideLoading();
+
+      if (res.code === 200) {
+        const pointsGained = res.data.pointsGained || 0;
+        wx.showToast({
+          title: `打卡成功！+${pointsGained}积分`,
+          icon: 'success'
+        });
+        this.loadTaskData();
+      } else {
+        wx.showToast({
+          title: res.message || '打卡失败',
+          icon: 'none'
+        });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('[Mine] 打卡失败:', error);
+      wx.showToast({ title: '网络错误，请重试', icon: 'none' });
+    }
+  },
+
+  goToAchievementShare(e) {
+    const badgeId = e.currentTarget.dataset.badgeId;
+    if (!badgeId) return;
+    wx.navigateTo({
+      url: '/pages/achievement-share/achievement-share?badgeId=' + badgeId
     });
   }
 });

@@ -101,6 +101,13 @@ Page({
         icon: '🏅',
         desc: '批量颁发、活动结业、征集完成、年度评选联动',
         page: '/pages/admin-certificate/admin-certificate'
+      },
+      {
+        id: 'badge',
+        title: '勋章规则配置',
+        icon: '🎖️',
+        desc: '管理勋章规则、活动勋章有效期配置',
+        page: '/pages/admin-badge/admin-badge'
       }
     ],
 

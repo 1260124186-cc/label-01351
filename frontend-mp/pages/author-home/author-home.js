@@ -14,7 +14,12 @@ Page({
     articles: [],
     loading: true,
     isSelf: false,
-    isLoggedIn: false
+    isLoggedIn: false,
+    points: 0,
+    level: null,
+    levelProgress: null,
+    badges: [],
+    badgeCount: 0
   },
 
   onLoad(options) {
@@ -45,7 +50,19 @@ Page({
       const res = await api.getAuthorProfile(this.data.authorId);
 
       if (res.code === 200 && res.data) {
-        const { authorName, authorAvatar, articleCount, likeCount, viewCount, articles } = res.data;
+        const {
+          authorName,
+          authorAvatar,
+          articleCount,
+          likeCount,
+          viewCount,
+          articles,
+          points,
+          level,
+          levelProgress,
+          badges,
+          badgeCount
+        } = res.data;
 
         wx.setNavigationBarTitle({
           title: authorName.length > 10
@@ -60,6 +77,11 @@ Page({
           likeCount,
           viewCount,
           articles,
+          points,
+          level,
+          levelProgress,
+          badges,
+          badgeCount,
           loading: false
         });
       } else {

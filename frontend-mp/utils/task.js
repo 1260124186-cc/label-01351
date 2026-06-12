@@ -169,6 +169,52 @@ const SEVEN_DAY_TASKS = [
   }
 ];
 
+const LEVELS = [
+  {
+    level: 1,
+    name: '文化记录者',
+    icon: '📝',
+    minPoints: 0,
+    maxPoints: 499,
+    description: '初入文化殿堂，开始记录乡村记忆',
+    color: '#8B4513',
+    bgGradient: 'linear-gradient(135deg, #DEB887, #D2B48C)'
+  },
+  {
+    level: 2,
+    name: '传承使者',
+    icon: '🏛️',
+    minPoints: 500,
+    maxPoints: 1999,
+    description: '积极传播文化，成为传承的中坚力量',
+    color: '#B8860B',
+    bgGradient: 'linear-gradient(135deg, #F0E68C, #DAA520)'
+  },
+  {
+    level: 3,
+    name: '银龄文化达人',
+    icon: '👑',
+    minPoints: 2000,
+    maxPoints: Infinity,
+    description: '文化传承的典范，德高望重的文化达人',
+    color: '#DAA520',
+    bgGradient: 'linear-gradient(135deg, #FFD700, #FFA500)'
+  }
+];
+
+const POINTS_RULES = {
+  publish_article: 20,
+  like_received: 1,
+  join_activity: 30,
+  correct_quiz: 5,
+  view_article: 1,
+  favorite_article: 2,
+  comment_article: 3,
+  share_article: 5,
+  volunteer_activity: 100,
+  complete_interview: 80
+};
+
 const BADGES = {
   new_contributor: {
     id: 'new_contributor',
@@ -176,7 +222,18 @@ const BADGES = {
     description: '完成新手引导，首次投稿或参与活动',
     icon: '🌱',
     rarity: 'common',
-    points: 0
+    points: 0,
+    category: 'growth'
+  },
+  first_submission: {
+    id: 'first_submission',
+    name: '首次投稿',
+    description: '发布第一篇文化文章',
+    icon: '📄',
+    rarity: 'common',
+    points: 20,
+    condition: { type: 'published_count', value: 1 },
+    category: 'contribution'
   },
   seven_day_master: {
     id: 'seven_day_master',
@@ -184,7 +241,8 @@ const BADGES = {
     description: '连续完成七日文化任务',
     icon: '🏆',
     rarity: 'rare',
-    points: 100
+    points: 100,
+    category: 'growth'
   },
   article_collector: {
     id: 'article_collector',
@@ -193,7 +251,8 @@ const BADGES = {
     icon: '📚',
     rarity: 'rare',
     points: 50,
-    condition: { type: 'favorite_count', value: 5 }
+    condition: { type: 'favorite_count', value: 5 },
+    category: 'explore'
   },
   quiz_master: {
     id: 'quiz_master',
@@ -202,7 +261,8 @@ const BADGES = {
     icon: '🎯',
     rarity: 'epic',
     points: 100,
-    condition: { type: 'correct_quiz_count', value: 10 }
+    condition: { type: 'correct_quiz_count', value: 10 },
+    category: 'knowledge'
   },
   culture_writer: {
     id: 'culture_writer',
@@ -211,7 +271,18 @@ const BADGES = {
     icon: '✒️',
     rarity: 'epic',
     points: 150,
-    condition: { type: 'published_count', value: 10 }
+    condition: { type: 'published_count', value: 10 },
+    category: 'contribution'
+  },
+  prolific_author: {
+    id: 'prolific_author',
+    name: '高产作家',
+    description: '累计发布30篇文章',
+    icon: '📖',
+    rarity: 'legendary',
+    points: 300,
+    condition: { type: 'published_count', value: 30 },
+    category: 'contribution'
   },
   figure_explorer: {
     id: 'figure_explorer',
@@ -220,7 +291,8 @@ const BADGES = {
     icon: '🔍',
     rarity: 'rare',
     points: 50,
-    condition: { type: 'viewed_figure_count', value: 20 }
+    condition: { type: 'viewed_figure_count', value: 20 },
+    category: 'explore'
   },
   festival_keeper: {
     id: 'festival_keeper',
@@ -229,7 +301,98 @@ const BADGES = {
     icon: '🎊',
     rarity: 'legendary',
     points: 200,
-    condition: { type: 'subscribed_all_festivals', value: true }
+    condition: { type: 'subscribed_all_festivals', value: true },
+    category: 'festival'
+  },
+  hundred_likes: {
+    id: 'hundred_likes',
+    name: '百赞达人',
+    description: '累计获得100个点赞',
+    icon: '👍',
+    rarity: 'rare',
+    points: 50,
+    condition: { type: 'received_likes', value: 100 },
+    category: 'popularity'
+  },
+  thousand_likes: {
+    id: 'thousand_likes',
+    name: '千赞大家',
+    description: '累计获得1000个点赞',
+    icon: '🌟',
+    rarity: 'epic',
+    points: 200,
+    condition: { type: 'received_likes', value: 1000 },
+    category: 'popularity'
+  },
+  interview_complete: {
+    id: 'interview_complete',
+    name: '访谈记录者',
+    description: '完成一次人物访谈投稿',
+    icon: '🎙️',
+    rarity: 'rare',
+    points: 80,
+    condition: { type: 'interview_count', value: 1 },
+    category: 'contribution'
+  },
+  interview_master: {
+    id: 'interview_master',
+    name: '资深访谈人',
+    description: '完成5次人物访谈投稿',
+    icon: '📹',
+    rarity: 'epic',
+    points: 200,
+    condition: { type: 'interview_count', value: 5 },
+    category: 'contribution'
+  },
+  activity_volunteer: {
+    id: 'activity_volunteer',
+    name: '文化志愿者',
+    description: '参与一次文化志愿服务',
+    icon: '🤝',
+    rarity: 'rare',
+    points: 50,
+    condition: { type: 'volunteer_count', value: 1 },
+    category: 'activity'
+  },
+  checkin_7: {
+    id: 'checkin_7',
+    name: '七日打卡',
+    description: '连续打卡7天',
+    icon: '📅',
+    rarity: 'common',
+    points: 30,
+    condition: { type: 'consecutive_checkin', value: 7 },
+    category: 'growth'
+  },
+  checkin_30: {
+    id: 'checkin_30',
+    name: '月度达人',
+    description: '连续打卡30天',
+    icon: '🗓️',
+    rarity: 'epic',
+    points: 150,
+    condition: { type: 'consecutive_checkin', value: 30 },
+    category: 'growth'
+  },
+  qa_helper: {
+    id: 'qa_helper',
+    name: '问答达人',
+    description: '累计参与50次问答',
+    icon: '💡',
+    rarity: 'rare',
+    points: 80,
+    condition: { type: 'correct_quiz_count', value: 50 },
+    category: 'knowledge'
+  },
+  activity_joiner: {
+    id: 'activity_joiner',
+    name: '活动达人',
+    description: '报名参加3次文化活动',
+    icon: '🎉',
+    rarity: 'rare',
+    points: 60,
+    condition: { type: 'joined_activity_count', value: 3 },
+    category: 'activity'
   }
 };
 
@@ -462,6 +625,54 @@ const getUserPoints = () => {
   const userId = getCurrentUserId();
   const allPoints = safeGetStorage(STORAGE_KEYS.USER_POINTS, {});
   return userId ? (allPoints[userId] || 0) : 0;
+};
+
+const getUserLevel = (points) => {
+  const userPoints = points !== undefined ? points : getUserPoints();
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (userPoints >= LEVELS[i].minPoints) {
+      return { ...LEVELS[i] };
+    }
+  }
+  return { ...LEVELS[0] };
+};
+
+const getLevelInfo = (levelNum) => {
+  const level = LEVELS.find(l => l.level === levelNum);
+  return level ? { ...level } : null;
+};
+
+const getAllLevels = () => LEVELS.map(l => ({ ...l }));
+
+const getLevelProgress = (points) => {
+  const userPoints = points !== undefined ? points : getUserPoints();
+  const currentLevel = getUserLevel(userPoints);
+  const nextLevel = LEVELS.find(l => l.level === currentLevel.level + 1);
+
+  if (!nextLevel) {
+    return {
+      currentLevel,
+      nextLevel: null,
+      progressPercent: 100,
+      currentPoints: userPoints,
+      pointsNeeded: 0,
+      pointsToNext: 0
+    };
+  }
+
+  const pointsInLevel = userPoints - currentLevel.minPoints;
+  const pointsForLevel = nextLevel.minPoints - currentLevel.minPoints;
+  const progressPercent = Math.min(Math.round((pointsInLevel / pointsForLevel) * 100), 100);
+  const pointsToNext = nextLevel.minPoints - userPoints;
+
+  return {
+    currentLevel,
+    nextLevel,
+    progressPercent,
+    currentPoints: userPoints,
+    pointsNeeded: nextLevel.minPoints,
+    pointsToNext
+  };
 };
 
 const addUserPoints = (points) => {
@@ -899,6 +1110,52 @@ const claimFestivalReward = (festivalId, taskId) => {
   };
 };
 
+const getReceivedLikesCount = () => {
+  const userId = getCurrentUserId();
+  if (!userId) return 0;
+  const articles = wx.getStorageSync('articles') || [];
+  const userArticles = articles.filter(a => a.authorId === userId);
+  return userArticles.reduce((sum, a) => sum + (a.likeCount || 0), 0);
+};
+
+const getInterviewCount = () => {
+  const userId = getCurrentUserId();
+  if (!userId) return 0;
+  const interviews = wx.getStorageSync('interviews') || [];
+  return interviews.filter(i => i.authorId === userId && i.status === 1).length;
+};
+
+const getVolunteerCount = () => {
+  const stats = getTaskStats();
+  return stats.volunteerActivityCount || 0;
+};
+
+const getConsecutiveCheckinDays = () => {
+  const stats = getTaskStats();
+  const checkinDates = stats.checkin_dates || [];
+  if (checkinDates.length === 0) return 0;
+
+  const today = getTodayStr();
+  const sortedDates = [...checkinDates].sort().reverse();
+
+  let consecutive = 0;
+  let currentDate = new Date(today);
+
+  for (let i = 0; i < sortedDates.length; i++) {
+    const dateStr = sortedDates[i];
+    const checkDate = new Date(dateStr);
+    const diffDays = Math.floor((currentDate.getTime() - checkDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === consecutive) {
+      consecutive++;
+    } else if (diffDays > consecutive) {
+      break;
+    }
+  }
+
+  return consecutive;
+};
+
 const checkBadgeAutoUnlock = () => {
   const unlocked = [];
   const stats = getTaskStats();
@@ -932,6 +1189,21 @@ const checkBadgeAutoUnlock = () => {
         shouldUnlock = allFestivals.every(id => subscribed.includes(id));
         break;
       }
+      case 'received_likes':
+        shouldUnlock = getReceivedLikesCount() >= value;
+        break;
+      case 'interview_count':
+        shouldUnlock = getInterviewCount() >= value;
+        break;
+      case 'volunteer_count':
+        shouldUnlock = getVolunteerCount() >= value;
+        break;
+      case 'consecutive_checkin':
+        shouldUnlock = getConsecutiveCheckinDays() >= value;
+        break;
+      case 'joined_activity_count':
+        shouldUnlock = (stats.joinedActivityCount || 0) >= value;
+        break;
     }
 
     if (shouldUnlock) {
@@ -944,12 +1216,52 @@ const checkBadgeAutoUnlock = () => {
   return unlocked;
 };
 
+const doDailyCheckin = () => {
+  const userId = getCurrentUserId();
+  if (!userId) return { success: false, message: '请先登录' };
+
+  const today = getTodayStr();
+  const stats = getTaskStats();
+  const checkinDates = stats.checkin_dates || [];
+
+  if (checkinDates.includes(today)) {
+    return { success: false, alreadyChecked: true, message: '今日已打卡' };
+  }
+
+  checkinDates.push(today);
+  const newStats = { ...stats, checkin_dates: checkinDates };
+  setTaskStats(newStats);
+
+  const consecutiveDays = getConsecutiveCheckinDays();
+  const rewardPoints = consecutiveDays >= 7 ? 15 : (consecutiveDays >= 3 ? 10 : 5);
+  addUserPoints(rewardPoints);
+
+  const newBadges = checkBadgeAutoUnlock();
+
+  return {
+    success: true,
+    consecutiveDays,
+    rewardPoints,
+    newBadges
+  };
+};
+
+const hasCheckedInToday = () => {
+  const stats = getTaskStats();
+  const checkinDates = stats.checkin_dates || [];
+  return checkinDates.includes(getTodayStr());
+};
+
 const recordAction = (actionType, data = {}) => {
   const statsUpdates = [];
+  let pointsEarned = 0;
+
   switch (actionType) {
     case 'view_article':
       updateTaskStat('viewedArticleCount', 1);
       statsUpdates.push('viewedArticleCount');
+      pointsEarned = POINTS_RULES.view_article;
+      if (pointsEarned) addUserPoints(pointsEarned);
       if (data.keyword && data.festivalId) {
         updateTaskStat('festival_viewed_' + data.festivalId, 1);
       }
@@ -957,6 +1269,8 @@ const recordAction = (actionType, data = {}) => {
     case 'favorite_article':
       updateTaskStat('favoritedArticleCount', 1);
       statsUpdates.push('favoritedArticleCount');
+      pointsEarned = POINTS_RULES.favorite_article;
+      if (pointsEarned) addUserPoints(pointsEarned);
       if (data.festivalId) {
         updateTaskStat('festival_favorite_' + data.festivalId, 1);
       }
@@ -968,12 +1282,18 @@ const recordAction = (actionType, data = {}) => {
         updateTaskStat('festival_like_' + data.festivalId, 1);
       }
       break;
+    case 'receive_like':
+      pointsEarned = POINTS_RULES.like_received;
+      if (pointsEarned) addUserPoints(pointsEarned);
+      break;
     case 'answer_quiz':
       updateTaskStat('answeredQuizCount', 1);
       statsUpdates.push('answeredQuizCount');
       if (data.isCorrect) {
         updateTaskStat('correctQuizCount', 1);
         statsUpdates.push('correctQuizCount');
+        pointsEarned = POINTS_RULES.correct_quiz;
+        if (pointsEarned) addUserPoints(pointsEarned);
       }
       if (data.festivalId) {
         updateTaskStat('festival_quiz_' + data.festivalId, data.isCorrect ? 1 : 0);
@@ -986,9 +1306,17 @@ const recordAction = (actionType, data = {}) => {
     case 'publish_article':
       updateTaskStat('publishedArticleCount', 1);
       statsUpdates.push('publishedArticleCount');
+      pointsEarned = POINTS_RULES.publish_article;
+      if (pointsEarned) addUserPoints(pointsEarned);
       if (data.festivalId) {
         updateTaskStat('festival_publish_' + data.festivalId, 1);
       }
+      break;
+    case 'publish_interview':
+      updateTaskStat('publishedInterviewCount', 1);
+      statsUpdates.push('publishedInterviewCount');
+      pointsEarned = POINTS_RULES.complete_interview;
+      if (pointsEarned) addUserPoints(pointsEarned);
       break;
     case 'subscribe_event':
       updateTaskStat('subscribedEventCount', 1);
@@ -1000,12 +1328,29 @@ const recordAction = (actionType, data = {}) => {
     case 'join_activity':
       updateTaskStat('joinedActivityCount', 1);
       statsUpdates.push('joinedActivityCount');
+      pointsEarned = POINTS_RULES.join_activity;
+      if (pointsEarned) addUserPoints(pointsEarned);
+      break;
+    case 'volunteer_activity':
+      updateTaskStat('volunteerActivityCount', 1);
+      statsUpdates.push('volunteerActivityCount');
+      pointsEarned = POINTS_RULES.volunteer_activity;
+      if (pointsEarned) addUserPoints(pointsEarned);
+      break;
+    case 'comment_article':
+      pointsEarned = POINTS_RULES.comment_article;
+      if (pointsEarned) addUserPoints(pointsEarned);
+      break;
+    case 'share_article':
+      pointsEarned = POINTS_RULES.share_article;
+      if (pointsEarned) addUserPoints(pointsEarned);
       break;
   }
 
   const newBadges = checkBadgeAutoUnlock();
   return {
     statsUpdates,
+    pointsEarned,
     newBadges
   };
 };
@@ -1033,6 +1378,29 @@ const resetUserData = () => {
   });
 };
 
+const getUserPointsById = (userId) => {
+  if (!userId) return 0;
+  const allPoints = safeGetStorage(STORAGE_KEYS.USER_POINTS, {});
+  return allPoints[userId] || 0;
+};
+
+const getUserBadgesById = (userId) => {
+  if (!userId) return [];
+  const allBadges = safeGetStorage(STORAGE_KEYS.USER_BADGES, {});
+  const userBadgeIds = allBadges[userId] || [];
+  return userBadgeIds.map(id => ALL_BADGES[id]).filter(Boolean);
+};
+
+const getUserLevelById = (userId) => {
+  const points = getUserPointsById(userId);
+  return getUserLevel(points);
+};
+
+const getLevelProgressById = (userId) => {
+  const points = getUserPointsById(userId);
+  return getLevelProgress(points);
+};
+
 module.exports = {
   STORAGE_KEYS,
   ONBOARDING_STEPS,
@@ -1040,6 +1408,8 @@ module.exports = {
   BADGES: ALL_BADGES,
   FESTIVAL_BADGES,
   FESTIVAL_TASK_LINES,
+  LEVELS,
+  POINTS_RULES,
   getOnboardingStatus,
   isOnboardingCompleted,
   getCurrentOnboardingStep,
@@ -1057,9 +1427,24 @@ module.exports = {
   getUserBadges,
   awardBadge,
   getAllBadges: () => Object.values(ALL_BADGES),
+  getBadgeById: (id) => ALL_BADGES[id] || null,
   recordAction,
   checkBadgeAutoUnlock,
   resetTaskData: resetUserData,
   resetUserData,
-  getTodayStr
+  getTodayStr,
+  getUserLevel,
+  getLevelInfo,
+  getAllLevels,
+  getLevelProgress,
+  doDailyCheckin,
+  hasCheckedInToday,
+  getConsecutiveCheckinDays,
+  getReceivedLikesCount,
+  getInterviewCount,
+  getVolunteerCount,
+  getUserPointsById,
+  getUserBadgesById,
+  getUserLevelById,
+  getLevelProgressById
 };

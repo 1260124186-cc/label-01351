@@ -1,0 +1,216 @@
+<view class="page-container">
+  <!-- 分类筛选 -->
+  <scroll-view class="category-tabs" scroll-x="true" show-scrollbar="false">
+    <view 
+      class="tab-item {{filterCategory === item.id ? 'active' : ''}}" 
+      wx:for="{{categoryOptions}}" 
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onFilterCategory"
+    >
+      <text class="tab-icon">{{item.icon}}</text>
+      <text class="tab-name">{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 勋章列表 -->
+  <view class="badge-list">
+    <view wx:if="{{loading}}" class="loading-wrap">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <block wx:elif="{{displayBadges.length > 0}}">
+      <view 
+        class="badge-card" 
+        wx:for="{{displayBadges}}" 
+        wx:key="id"
+        data-badge="{{item}}"
+        bindtap="onBadgeTap"
+      >
+        <view class="badge-left">
+          <view class="badge-icon-box">
+            <text class="badge-icon">{{item.icon || '🏅'}}</text>
+          </view>
+        </view>
+        <view class="badge-info">
+          <view class="badge-header">
+            <text class="badge-name">{{item.name}}</text>
+            <view class="badge-tags">
+              <text class="tag rarity-tag" style="color: {{item.rarityInfo.color}};">
+                {{item.rarityInfo.name}}
+              </text>
+              <text class="tag category-tag">
+                {{item.categoryInfo.icon}} {{item.categoryInfo.name}}
+              </text>
+            </view>
+          </view>
+          <view class="badge-desc">{{item.description}}</view>
+          <view class="badge-meta" wx:if="{{item.hasValidity}}">
+            <text class="meta-text">📅 {{item.startDate}} ~ {{item.endDate}}</text>
+          </view>
+        </view>
+        <view class="badge-arrow">›</view>
+      </view>
+    </block>
+
+    <view wx:else class="empty-wrap">
+      <text class="empty-icon">📭</text>
+      <text class="empty-text">暂无勋章</text>
+    </view>
+  </view>
+
+  <!-- 勋章详情弹窗 -->
+  <view class="modal-overlay {{showBadgeDetail ? 'show' : ''}}" bindtap="closeBadgeDetail" wx:if="{{showBadgeDetail}}">
+    <view class="modal-content badge-detail-modal" catchtap="">
+      <!-- 查看模式 -->
+      <block wx:if="{{!isEditing}}">
+        <view class="modal-header">
+          <text class="modal-title">勋章详情</text>
+          <view class="close-btn" bindtap="closeBadgeDetail">✕</view>
+        </view>
+
+        <view class="badge-detail-content">
+          <view class="detail-badge-icon">
+            <text class="icon-text">{{selectedBadge.icon || '🏅'}}</text>
+          </view>
+          <view class="detail-badge-name">{{selectedBadge.name}}</view>
+          <view class="detail-badge-tags">
+            <text class="detail-tag" style="color: {{selectedBadge.rarityInfo.color}};">
+              {{selectedBadge.rarityInfo.name}}
+            </text>
+            <text class="detail-tag">
+              {{selectedBadge.categoryInfo.icon}} {{selectedBadge.categoryInfo.name}}
+            </text>
+          </view>
+          <view class="detail-section">
+            <view class="section-label">勋章描述</view>
+            <view class="section-content">{{selectedBadge.description}}</view>
+          </view>
+          <view class="detail-section" wx:if="{{selectedBadge.condition}}">
+            <view class="section-label">解锁条件</view>
+            <view class="section-content">{{selectedBadge.condition}}</view>
+          </view>
+          <view class="detail-section" wx:if="{{selectedBadge.hasValidity}}">
+            <view class="section-label">有效期</view>
+            <view class="section-content">{{selectedBadge.startDate}} ~ {{selectedBadge.endDate}}</view>
+          </view>
+        </view>
+
+        <view class="modal-footer">
+          <button class="btn-secondary" bindtap="closeBadgeDetail">关闭</button>
+          <button class="btn-primary" bindtap="startEdit">编辑</button>
+        </view>
+      </block>
+
+      <!-- 编辑模式 -->
+      <block wx:else>
+        <view class="modal-header">
+          <text class="modal-title">编辑勋章</text>
+          <view class="close-btn" bindtap="cancelEdit">✕</view>
+        </view>
+
+        <scroll-view class="edit-form" scroll-y="true">
+          <view class="form-item">
+            <view class="form-label">勋章名称</view>
+            <input 
+              class="form-input" 
+              placeholder="请输入勋章名称" 
+              value="{{editForm.name}}" 
+              data-field="name"
+              bindinput="onEditInput"
+            />
+          </view>
+
+          <view class="form-item">
+            <view class="form-label">勋章图标</view>
+            <input 
+              class="form-input" 
+              placeholder="请输入emoji图标" 
+              value="{{editForm.icon}}" 
+              data-field="icon"
+              bindinput="onEditInput"
+            />
+          </view>
+
+          <view class="form-item">
+            <view class="form-label">勋章描述</view>
+            <textarea 
+              class="form-textarea" 
+              placeholder="请输入勋章描述" 
+              value="{{editForm.description}}" 
+              data-field="description"
+              bindinput="onEditInput"
+              auto-height
+            />
+          </view>
+
+          <view class="form-item">
+            <view class="form-label">稀有度</view>
+            <view class="rarity-options">
+              <view 
+                class="rarity-option {{editForm.rarity === key ? 'active' : ''}}"
+                wx:for="{{rarityConfig}}"
+                wx:for-index="key"
+                wx:for-item="config"
+                wx:key="key"
+                data-rarity="{{key}}"
+                bindtap="onRaritySelect"
+                style="border-color: {{config.color}}; color: {{config.color}};"
+              >
+                {{config.name}}
+              </view>
+            </view>
+          </view>
+
+          <view class="form-item">
+            <view class="form-label">分类</view>
+            <view class="category-options">
+              <view 
+                class="category-option {{editForm.category === key ? 'active' : ''}}"
+                wx:for="{{categoryConfig}}"
+                wx:for-index="key"
+                wx:for-item="config"
+                wx:key="key"
+                data-category="{{key}}"
+                bindtap="onCategorySelect"
+              >
+                <text class="opt-icon">{{config.icon}}</text>
+                <text class="opt-name">{{config.name}}</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="form-item" wx:if="{{editForm.category === 'activity' || editForm.category === 'festival'}}">
+            <view class="form-label">有效期（活动勋章）</view>
+            <view class="date-picker-row">
+              <picker mode="date" value="{{editForm.startDate}}" data-field="startDate" bindchange="onDateChange">
+                <view class="date-picker-box">
+                  <text>{{editForm.startDate || '开始日期'}}</text>
+                </view>
+              </picker>
+              <text class="date-separator">至</text>
+              <picker mode="date" value="{{editForm.endDate}}" data-field="endDate" bindchange="onDateChange">
+                <view class="date-picker-box">
+                  <text>{{editForm.endDate || '结束日期'}}</text>
+                </view>
+              </picker>
+            </view>
+          </view>
+
+          <view class="form-item">
+            <view class="form-label">状态</view>
+            <view class="toggle-switch {{editForm.isActive ? 'active' : ''}}" bindtap="toggleActive">
+              <view class="toggle-dot"></view>
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="modal-footer">
+          <button class="btn-secondary" bindtap="cancelEdit">取消</button>
+          <button class="btn-primary" bindtap="saveEdit">保存</button>
+        </view>
+      </block>
+    </view>
+  </view>
+</view>

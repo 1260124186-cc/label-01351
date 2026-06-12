@@ -16,9 +16,17 @@
         <view class="author-info">
           <view class="author-name-row">
             <view class="author-name">{{authorName}}</view>
+            <view class="author-level-tag" wx:if="{{level}}">
+              <text class="level-icon">{{level.icon || '🌟'}}</text>
+              <text class="level-name">{{level.name}}</text>
+            </view>
           </view>
           <view class="author-tip" wx:if="{{isSelf}}">
             <text class="tip-text">这是你的主页</text>
+          </view>
+          <view class="author-points" wx:if="{{points > 0}}">
+            <text class="points-icon">💎</text>
+            <text class="points-text">{{points}} 积分</text>
           </view>
         </view>
       </view>
@@ -38,6 +46,42 @@
         <view class="stat-item">
           <text class="stat-value">{{viewCount}}</text>
           <text class="stat-label">阅读</text>
+        </view>
+      </view>
+
+      <!-- 等级进度 -->
+      <view class="author-level-section" wx:if="{{level}}">
+        <view class="level-header">
+          <text class="level-title">等级：{{level.name}}</text>
+          <text class="level-points">{{points}} 积分</text>
+        </view>
+        <view class="level-progress-bar">
+          <view class="level-progress-fill" style="width: {{levelProgress.progressPercent || 0}}%;"></view>
+        </view>
+        <view class="level-progress-text" wx:if="{{levelProgress.nextLevel}}">
+          距离 {{levelProgress.nextLevel.name}} 还差 {{levelProgress.pointsToNext || 0}} 积分
+        </view>
+        <view class="level-progress-text" wx:else>
+          已达到最高等级
+        </view>
+      </view>
+
+      <!-- 勋章展示 -->
+      <view class="author-badges-section" wx:if="{{badges.length > 0}}">
+        <view class="badges-header">
+          <text class="badges-title">获得勋章</text>
+          <text class="badges-count">{{badgeCount}} 枚</text>
+        </view>
+        <view class="badges-grid">
+          <view
+            class="badge-item"
+            wx:for="{{badges}}"
+            wx:key="id"
+            wx:if="{{index < 6}}"
+          >
+            <text class="badge-icon">{{item.icon || '🏅'}}</text>
+            <text class="badge-name">{{item.name}}</text>
+          </view>
         </view>
       </view>
 

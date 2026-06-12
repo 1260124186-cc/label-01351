@@ -46,7 +46,10 @@
     "pages/my-certificates/my-certificates",
     "pages/certificate-detail/certificate-detail",
     "pages/certificate-verify/certificate-verify",
-    "pages/admin-certificate/admin-certificate"
+    "pages/admin-certificate/admin-certificate",
+    "pages/achievements/achievements",
+    "pages/achievement-share/achievement-share",
+    "pages/admin-badge/admin-badge"
   ],
   "window": {
     "backgroundTextStyle": "dark",
