@@ -3,6 +3,7 @@
 
 const api = require('../../utils/api');
 const util = require('../../utils/util');
+const dialect = require('../../utils/dialect-dictionary');
 
 Page({
   data: {
@@ -24,13 +25,14 @@ Page({
     showReplyInput: false,
     showReportModal: false,
     reportReason: '',
-    reportDescription: ''
+    reportDescription: '',
+    contentSegments: [],
+    showDialectAnnotation: true,
+    showDialectModal: false,
+    currentDialectWord: null,
+    t: {}
   },
 
-  /**
-   * 页面加载时获取文章ID并加载详情（开放浏览，无需登录）
-   * @param {Object} options - 页面参数，包含文章ID
-   */
   onLoad(options) {
     const { id } = options;
     if (id) {
@@ -42,7 +44,64 @@ Page({
   onShow() {
     const app = getApp();
     const isLoggedIn = app.getLoginStatus();
-    this.setData({ isLoggedIn });
+    const t = {
+      loading: app.t('common.loading'),
+      viewCount: app.t('common.viewCount'),
+      likeCount: app.t('common.likeCount'),
+      commentCount: app.t('common.commentCount'),
+      report: app.t('common.report'),
+      summary: app.t('article.summary'),
+      tags: app.t('article.tags'),
+      comments: app.t('article.comments'),
+      emptyComments: app.t('article.emptyComments'),
+      writeComment: app.t('article.writeComment'),
+      showDialectAnnotation: app.t('dialect.showAnnotation'),
+      hideDialectAnnotation: app.t('dialect.hideAnnotation'),
+      dialectTitle: app.t('dialect.title'),
+      dialectPinyin: app.t('dialect.pinyin'),
+      dialectPhonetic: app.t('dialect.phonetic'),
+      dialectCategory: app.t('dialect.category'),
+      dialectRegion: app.t('dialect.region'),
+      dialectMeaning: app.t('dialect.meaning'),
+      dialectExample: app.t('dialect.example'),
+      dialectRelated: app.t('dialect.relatedWords'),
+      reportTitle: app.t('article.reportTitle'),
+      selectReportReason: app.t('article.selectReportReason'),
+      reportIllegal: app.t('article.reportIllegal'),
+      reportFalse: app.t('article.reportFalse'),
+      reportInfringement: app.t('article.reportInfringement'),
+      reportOther: app.t('article.reportOther'),
+      reportDescPlaceholder: app.t('article.reportDescPlaceholder'),
+      cancel: app.t('common.cancel'),
+      submit: app.t('common.submit'),
+      reply: app.t('article.reply'),
+      cancelReply: app.t('article.cancelReply'),
+      send: '发送',
+      liked: app.t('common.liked'),
+      favorited: app.t('common.favorited'),
+      favorite: app.t('common.favorite'),
+      loginRequired: app.t('common.loginRequired'),
+      login: app.t('mine.login'),
+      commentTooShort: app.t('article.commentTooShort'),
+      commentTooLong: app.t('article.commentTooLong'),
+      commentSuccess: app.t('article.commentSuccess'),
+      confirmDeleteComment: app.t('article.confirmDeleteComment'),
+      deleteSuccess: app.t('article.deleteSuccess'),
+      likeSuccess: app.t('article.likeSuccess'),
+      likeCanceled: app.t('article.likeCanceled'),
+      favoriteSuccess: app.t('article.favoriteSuccess'),
+      favoriteCanceled: app.t('article.favoriteCanceled'),
+      reportSuccess: app.t('article.reportSuccess'),
+      loadingMore: app.t('common.loadingMore'),
+      noMore: app.t('common.noMore'),
+      goHome: app.t('article.goHome'),
+      notFound: app.t('article.notFound')
+    };
+    this.setData({
+      isLoggedIn,
+      showDialectAnnotation: app.getDialectAnnotation(),
+      t
+    });
 
     if (this.data.articleId && !this.data.article) {
       this.loadArticleDetail(this.data.articleId);
@@ -54,10 +113,6 @@ Page({
     }
   },
 
-  /**
-   * 加载文章详情
-   * @param {string} id - 文章ID
-   */
   async loadArticleDetail(id) {
     this.setData({ loading: true });
 
@@ -73,8 +128,11 @@ Page({
           tags: res.data.tags || []
         };
 
+        const contentSegments = dialect.parseContentWithDialect(article.content);
+
         this.setData({
           article,
+          contentSegments,
           loading: false
         });
 
@@ -118,6 +176,35 @@ Page({
         icon: 'none'
       });
     }
+  },
+
+  onTapDialectWord(e) {
+    const word = e.currentTarget.dataset.word;
+    if (!word) return;
+    const info = dialect.findDialectWord(word);
+    if (info) {
+      this.setData({
+        showDialectModal: true,
+        currentDialectWord: info
+      });
+    }
+  },
+
+  onCloseDialectModal() {
+    this.setData({
+      showDialectModal: false,
+      currentDialectWord: null
+    });
+  },
+
+  onToggleDialectAnnotation() {
+    const app = getApp();
+    const newValue = app.toggleDialectAnnotation();
+    this.setData({ showDialectAnnotation: newValue });
+    wx.showToast({
+      title: newValue ? '已显示方言注释' : '已隐藏方言注释',
+      icon: 'none'
+    });
   },
 
   async checkFavoriteStatus(id) {

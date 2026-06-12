@@ -1,5 +1,6 @@
 const app = getApp();
 const api = require('../../utils/api');
+const i18n = require('../../utils/i18n');
 
 Page({
   data: {
@@ -8,7 +9,13 @@ Page({
     baseUrl: 'http://localhost:3000',
     baseUrlInput: '',
     showBaseUrlEdit: false,
-    cacheSize: '0KB'
+    cacheSize: '0KB',
+    language: 'zh-CN',
+    languageOptions: [],
+    languageName: '简体中文',
+    showDialectAnnotation: true,
+    showLanguagePicker: false,
+    t: {}
   },
 
   onLoad() {
@@ -22,10 +29,66 @@ Page({
 
   loadSettings() {
     const globalData = app.globalData;
+    const language = app.getLanguage();
+    const t = {
+      clearCache: app.t('settings.clearCache'),
+      restoreDefault: app.t('settings.restoreDefault'),
+      devMode: app.t('settings.devMode'),
+      remoteDataSource: app.t('settings.remoteDataSource'),
+      serverUrl: app.t('settings.serverUrl'),
+      saved: app.t('settings.saved'),
+      aboutUs: app.t('settings.aboutUs'),
+      userAgreement: app.t('settings.userAgreement'),
+      privacyPolicy: app.t('settings.privacyPolicy'),
+      version: app.t('settings.version'),
+      general: app.t('settings.general'),
+      language: app.t('settings.language'),
+      dialect: app.t('dialect.title'),
+      showDialectAnnotation: app.t('dialect.showAnnotation'),
+      hideDialectAnnotation: app.t('dialect.hideAnnotation'),
+      about: app.t('settings.about')
+    };
     this.setData({
       useRemote: globalData.useRemote,
       baseUrl: globalData.baseUrl,
-      baseUrlInput: globalData.baseUrl
+      baseUrlInput: globalData.baseUrl,
+      language,
+      languageOptions: i18n.getLangOptions(),
+      languageName: i18n.getLangName(language),
+      showDialectAnnotation: app.getDialectAnnotation(),
+      t
+    });
+  },
+
+  onTapLanguage() {
+    this.setData({ showLanguagePicker: true });
+  },
+
+  onCloseLanguagePicker() {
+    this.setData({ showLanguagePicker: false });
+  },
+
+  onSelectLanguage(e) {
+    const lang = e.currentTarget.dataset.lang;
+    if (!lang) return;
+    app.switchLanguage(lang);
+    this.setData({
+      showLanguagePicker: false
+    });
+    this.loadSettings();
+    wx.showToast({
+      title: lang === 'zh-TW' ? '已切換為繁體中文' : '已切换为简体中文',
+      icon: 'success'
+    });
+  },
+
+  onToggleDialectAnnotation(e) {
+    const show = e.detail.value;
+    app.toggleDialectAnnotation(show);
+    this.setData({ showDialectAnnotation: show });
+    wx.showToast({
+      title: show ? app.t('dialect.showAnnotation') : app.t('dialect.hideAnnotation'),
+      icon: 'none'
     });
   },
 

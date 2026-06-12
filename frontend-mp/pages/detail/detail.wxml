@@ -3,7 +3,7 @@
   <!-- 加载状态 -->
   <view class="loading-wrap" wx:if="{{loading}}">
     <view class="loading-spinner"></view>
-    <text class="loading-text">加载中...</text>
+    <text class="loading-text">{{t.loading}}</text>
   </view>
 
   <!-- 文章内容 -->
@@ -32,7 +32,7 @@
 
     <!-- 摘要 -->
     <view class="article-summary" wx:if="{{article.summary}}">
-      <text class="summary-label">摘要：</text>
+      <text class="summary-label">{{t.summary}}</text>
       <text class="summary-text">{{article.summary}}</text>
     </view>
 
@@ -49,32 +49,49 @@
     </view>
 
     <!-- 文章正文 -->
-    <view class="article-content">{{article.content}}</view>
+    <view class="article-toolbar">
+      <view class="dialect-toggle" bindtap="onToggleDialectAnnotation">
+        <text class="dialect-icon">📖</text>
+        <text class="dialect-text">{{showDialectAnnotation ? t.hideDialectAnnotation : t.showDialectAnnotation}}</text>
+      </view>
+    </view>
+    <view class="article-content">
+      <block wx:for="{{contentSegments}}" wx:key="index">
+        <text wx:if="{{item.type === 'text'}}">{{item.content}}</text>
+        <text
+          wx:elif="{{item.type === 'dialect' && showDialectAnnotation}}"
+          class="dialect-word"
+          bindtap="onTapDialectWord"
+          data-word="{{item.word || item.content}}"
+        >{{item.content}}</text>
+        <text wx:else>{{item.content}}</text>
+      </block>
+    </view>
 
     <!-- 文章统计 -->
     <view class="article-stats-section">
       <view class="stat-item">
         <text class="stat-icon">👁</text>
-        <text class="stat-value">{{article.viewCount}} 阅读</text>
+        <text class="stat-value">{{article.viewCount}} {{t.viewCount}}</text>
       </view>
       <view class="stat-item">
         <text class="stat-icon">👍</text>
-        <text class="stat-value">{{article.likeCount}} 点赞</text>
+        <text class="stat-value">{{article.likeCount}} {{t.likeCount}}</text>
       </view>
       <view class="stat-item">
         <text class="stat-icon">💬</text>
-        <text class="stat-value">{{article.commentCount || 0}} 评论</text>
+        <text class="stat-value">{{article.commentCount || 0}} {{t.commentCount}}</text>
       </view>
       <view class="stat-item report-action" bindtap="onReportTap">
         <text class="stat-icon">🚨</text>
-        <text class="stat-value">举报</text>
+        <text class="stat-value">{{t.report}}</text>
       </view>
     </view>
 
       <!-- 评论区 -->
       <view class="comment-section">
         <view class="comment-header">
-          <text class="comment-title">评论 ({{article.commentCount || 0}})</text>
+          <text class="comment-title">{{t.comments}} ({{article.commentCount || 0}})</text>
         </view>
 
         <!-- 评论列表 -->
@@ -149,16 +166,16 @@
         <!-- 空评论状态 -->
         <view class="empty-comments" wx:else>
           <text class="empty-icon">💭</text>
-          <text class="empty-text">还没有评论，快来抢沙发吧~</text>
+          <text class="empty-text">{{t.emptyComments}}</text>
         </view>
 
         <!-- 加载更多 -->
         <view class="load-more" wx:if="{{commentLoading}}">
           <view class="loading-spinner small"></view>
-          <text class="load-more-text">加载中...</text>
+          <text class="load-more-text">{{t.loadingMore}}</text>
         </view>
         <view class="load-more no-more" wx:elif="{{!commentHasMore && comments.length > 0}}">
-          <text class="no-more-text">没有更多评论了</text>
+          <text class="no-more-text">{{t.noMore}}</text>
         </view>
       </view>
 
@@ -169,8 +186,8 @@
   <!-- 错误状态 -->
   <view class="error-wrap" wx:else>
     <text class="error-icon">😕</text>
-    <text class="error-text">文章不存在或已删除</text>
-    <button class="btn-back" bindtap="goBack">返回首页</button>
+    <text class="error-text">{{t.notFound}}</text>
+    <button class="btn-back" bindtap="goBack">{{t.goHome}}</button>
   </view>
 
   <!-- 举报弹窗 -->
@@ -178,7 +195,7 @@
     <view class="report-mask" bindtap="onCloseReport"></view>
     <view class="report-content">
       <view class="report-header">
-        <text class="report-title">举报内容</text>
+        <text class="report-title">{{t.reportTitle}}</text>
         <view class="report-close" bindtap="onCloseReport">✕</view>
       </view>
       <view class="report-body">
@@ -187,31 +204,31 @@
             <view class="option-radio">
               <view class="radio-inner"></view>
             </view>
-            <text class="option-text">违法违规</text>
+            <text class="option-text">{{t.reportIllegal}}</text>
           </view>
           <view class="report-option {{reportReason === 'false' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="false">
             <view class="option-radio">
               <view class="radio-inner"></view>
             </view>
-            <text class="option-text">虚假信息</text>
+            <text class="option-text">{{t.reportFalse}}</text>
           </view>
           <view class="report-option {{reportReason === 'infringement' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="infringement">
             <view class="option-radio">
               <view class="radio-inner"></view>
             </view>
-            <text class="option-text">侵权</text>
+            <text class="option-text">{{t.reportInfringement}}</text>
           </view>
           <view class="report-option {{reportReason === 'other' ? 'selected' : ''}}" bindtap="onSelectReportReason" data-reason="other">
             <view class="option-radio">
               <view class="radio-inner"></view>
             </view>
-            <text class="option-text">其他</text>
+            <text class="option-text">{{t.reportOther}}</text>
           </view>
         </view>
         <view class="report-desc-wrap">
           <textarea
             class="report-desc"
-            placeholder="补充说明（选填）"
+            placeholder="{{t.reportDescPlaceholder}}"
             value="{{reportDescription}}"
             bindinput="onReportDescInput"
             maxlength="200"
@@ -220,8 +237,52 @@
         </view>
       </view>
       <view class="report-footer">
-        <button class="btn-report-cancel" bindtap="onCloseReport">取消</button>
-        <button class="btn-report-submit" bindtap="onSubmitReport" disabled="{{!reportReason}}">提交举报</button>
+        <button class="btn-report-cancel" bindtap="onCloseReport">{{t.cancel}}</button>
+        <button class="btn-report-submit" bindtap="onSubmitReport" disabled="{{!reportReason}}">{{t.submit}}</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 方言词释义弹窗 -->
+  <view class="dialect-modal {{showDialectModal ? 'show' : ''}}">
+    <view class="dialect-mask" bindtap="onCloseDialectModal"></view>
+    <view class="dialect-content" wx:if="{{currentDialectWord}}">
+      <view class="dialect-header">
+        <view class="dialect-title-wrap">
+          <text class="dialect-word-title">{{currentDialectWord.word}}</text>
+          <text class="dialect-pinyin" wx:if="{{currentDialectWord.pinyin}}">（{{currentDialectWord.pinyin}}）</text>
+        </view>
+        <view class="dialect-close" bindtap="onCloseDialectModal">✕</view>
+      </view>
+      <view class="dialect-body">
+        <view class="dialect-meta">
+          <view class="meta-tag" wx:if="{{currentDialectWord.category}}">
+            <text class="tag-icon">🏷️</text>
+            <text class="tag-text">{{currentDialectWord.category}}</text>
+          </view>
+          <view class="meta-tag" wx:if="{{currentDialectWord.region}}">
+            <text class="tag-icon">📍</text>
+            <text class="tag-text">{{currentDialectWord.region}}</text>
+          </view>
+          <view class="meta-tag" wx:if="{{currentDialectWord.phonetic}}">
+            <text class="tag-icon">🔤</text>
+            <text class="tag-text">{{currentDialectWord.phonetic}}</text>
+          </view>
+        </view>
+        <view class="dialect-section">
+          <text class="section-label">{{t.dialectMeaning}}</text>
+          <text class="section-content">{{currentDialectWord.meaning}}</text>
+        </view>
+        <view class="dialect-section" wx:if="{{currentDialectWord.example}}">
+          <text class="section-label">{{t.dialectExample}}</text>
+          <text class="section-content example">"{{currentDialectWord.example}}"</text>
+        </view>
+        <view class="dialect-section" wx:if="{{currentDialectWord.relatedWords && currentDialectWord.relatedWords.length > 0}}">
+          <text class="section-label">{{t.dialectRelated}}</text>
+          <view class="related-words">
+            <text class="related-word-item" wx:for="{{currentDialectWord.relatedWords}}" wx:key="*this">{{item}}</text>
+          </view>
+        </view>
       </view>
     </view>
   </view>
@@ -235,19 +296,19 @@
       </view>
       <view class="action-icon-item {{favorited ? 'active' : ''}}" bindtap="onFavorite">
         <text class="icon-emoji">{{favorited ? '⭐' : '☆'}}</text>
-        <text class="icon-label">{{favorited ? '已收藏' : '收藏'}}</text>
+        <text class="icon-label">{{favorited ? t.favorited : t.favorite}}</text>
       </view>
     </view>
     <view class="comment-input-area">
       <view class="reply-info" wx:if="{{showReplyInput}}">
-        <text class="reply-to-text">回复 {{replyToUserName}}</text>
+        <text class="reply-to-text">{{t.replyTo}} {{replyToUserName}}</text>
         <view class="cancel-reply" bindtap="onCancelReply">✕</view>
       </view>
       <view class="input-and-btn">
         <view class="input-wrap">
           <input
             class="comment-input"
-            placeholder="{{showReplyInput ? '回复 ' + replyToUserName + '...' : '写下你的评论（2-500字）'}}"
+            placeholder="{{showReplyInput ? t.reply + ' ' + replyToUserName + '...' : t.writeComment}}"
             value="{{commentContent}}"
             bindinput="onCommentInput"
             maxlength="500"
@@ -256,7 +317,7 @@
           />
           <view class="char-count">{{commentContent.length}}/500</view>
         </view>
-        <button class="btn-send" bindtap="onSubmitComment" disabled="{{!commentContent.trim()}}">发送</button>
+        <button class="btn-send" bindtap="onSubmitComment" disabled="{{!commentContent.trim()}}">{{t.send}}</button>
       </view>
     </view>
   </view>
@@ -265,8 +326,8 @@
   <view class="bottom-action-bar login-guide-bar" wx:if="{{article && !isLoggedIn}}">
     <view class="login-guide-content">
       <text class="guide-icon">🔒</text>
-      <text class="guide-text">登录后点赞 / 收藏 / 评论</text>
+      <text class="guide-text">{{t.loginRequired}}</text>
     </view>
-    <button class="btn-guide-login" bindtap="goToLogin">去登录</button>
+    <button class="btn-guide-login" bindtap="goToLogin">{{t.login}}</button>
   </view>
 </view>

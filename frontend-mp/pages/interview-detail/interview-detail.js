@@ -3,6 +3,7 @@
 
 const api = require('../../utils/api');
 const interviewData = require('../../utils/interview-data');
+const dialect = require('../../utils/dialect-dictionary');
 
 Page({
   data: {
@@ -15,6 +16,9 @@ Page({
     likeCount: 0,
     craftNames: [],
     regionName: '',
+    regionPinyin: '',
+    intervieweePinyin: '',
+    interviewLocationPinyin: '',
     contentParagraphs: []
   },
 
@@ -43,14 +47,25 @@ Page({
 
         const region = interviewData.REGIONS.find(r => r.id === interview.region);
         const regionName = region ? region.name : '';
+        const regionInfo = dialect.getPlaceNamePinyin(regionName);
+        const regionPinyin = regionInfo.pinyin || '';
+
+        const nameInfo = dialect.getInterviewNamePinyin(interview.intervieweeName);
+        const intervieweePinyin = nameInfo.pinyin || '';
+
+        const locationInfo = dialect.getPlaceNamePinyin(interview.interviewLocation);
+        const interviewLocationPinyin = locationInfo.pinyin || '';
 
         const contentParagraphs = interview.content
           .split('\n\n')
           .filter(p => p.trim())
           .map(p => {
             const [speaker, ...textParts] = p.split('：');
+            const speakerName = speaker ? speaker.trim() : '';
+            const speakerPinyinInfo = dialect.getInterviewNamePinyin(speakerName);
             return {
-              speaker: speaker ? speaker.trim() : '',
+              speaker: speakerName,
+              speakerPinyin: speakerPinyinInfo.pinyin || '',
               text: textParts.join('：').trim()
             };
           });
@@ -64,6 +79,9 @@ Page({
           interview,
           craftNames,
           regionName,
+          regionPinyin,
+          intervieweePinyin,
+          interviewLocationPinyin,
           contentParagraphs,
           collections,
           likeCount: interview.likeCount || 0

@@ -10,7 +10,10 @@
     
     <view class="profile-info">
       <view class="profile-name-row">
-        <text class="profile-name">{{interview.intervieweeName}}</text>
+        <view class="name-with-pinyin">
+          <text class="profile-name">{{interview.intervieweeName}}</text>
+          <text class="name-pinyin" wx:if="{{intervieweePinyin}}">（{{intervieweePinyin}}）</text>
+        </view>
         <view class="age-tag-large">
           <text class="age-icon">🎂</text>
           <text class="age-text">{{interview.age}}岁</text>
@@ -22,7 +25,10 @@
       </view>
 
       <view class="profile-region">
-        <text>📍 {{regionName}}</text>
+        <view class="region-with-pinyin">
+          <text>📍 {{regionName}}</text>
+          <text class="region-pinyin" wx:if="{{regionPinyin}}">（{{regionPinyin}}）</text>
+        </view>
         <text class="separator">·</text>
         <text>📅 {{interview.birthYear}}年生</text>
       </view>
@@ -48,7 +54,10 @@
       </view>
       <view class="info-item">
         <text class="info-label">采访地点</text>
-        <text class="info-value">{{interview.interviewLocation}}</text>
+        <view class="value-with-pinyin">
+          <text class="info-value">{{interview.interviewLocation}}</text>
+          <text class="value-pinyin" wx:if="{{interviewLocationPinyin}}">（{{interviewLocationPinyin}}）</text>
+        </view>
       </view>
       <view class="info-item">
         <text class="info-label">采访者</text>
@@ -83,7 +92,8 @@
         wx:key="index"
       >
         <view class="speaker-tag {{item.speaker === '采访者' ? 'interviewer' : 'interviewee'}}">
-          {{item.speaker}}
+          <text>{{item.speaker}}</text>
+          <text class="speaker-pinyin" wx:if="{{item.speakerPinyin}}">（{{item.speakerPinyin}}）</text>
         </view>
         <view class="dialogue-text">{{item.text}}</view>
       </view>

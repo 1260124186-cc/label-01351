@@ -56,6 +56,19 @@
   color: #FFFFFF;
 }
 
+.name-with-pinyin {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.name-pinyin {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-style: italic;
+}
+
 .age-tag-large {
   display: flex;
   align-items: center;
@@ -81,6 +94,18 @@
   font-size: 24rpx;
   color: rgba(255, 255, 255, 0.8);
   margin-bottom: 16rpx;
+}
+
+.region-with-pinyin {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6rpx;
+}
+
+.region-pinyin {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.85);
+  font-style: italic;
 }
 
 .separator {
@@ -152,6 +177,19 @@
   font-weight: 500;
 }
 
+.value-with-pinyin {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4rpx;
+}
+
+.value-pinyin {
+  font-size: 22rpx;
+  color: var(--color-text-light);
+  font-style: italic;
+}
+
 /* 访谈摘要 */
 .summary-card {
   background: linear-gradient(135deg, #FFF8DC 0%, #FFEFD5 100%);
@@ -195,6 +233,14 @@
 .speaker-tag.interviewee {
   background-color: rgba(139, 69, 19, 0.15);
   color: #8B4513;
+}
+
+.speaker-pinyin {
+  font-size: 20rpx;
+  font-style: italic;
+  font-weight: 400;
+  opacity: 0.8;
+  margin-left: 4rpx;
 }
 
 .dialogue-text {

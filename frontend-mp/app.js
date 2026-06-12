@@ -4,6 +4,8 @@ const util = require('./utils/util');
 const figureData = require('./utils/figure-data');
 const quizData = require('./utils/quiz-data');
 const taskSystem = require('./utils/task');
+const i18n = require('./utils/i18n');
+const dialect = require('./utils/dialect-dictionary');
 
 App({
   globalData: {
@@ -13,16 +15,65 @@ App({
     baseUrl: 'http://localhost:3000',
     useRemote: false,
     isFirstLaunch: false,
-    newBadges: []
+    newBadges: [],
+    language: 'zh-CN',
+    showDialectAnnotation: true
   },
 
   onLaunch() {
+    this.initI18n();
     this.initApiConfig();
     this.checkLoginStatus();
     this.ensureFallbackLogin();
     this.initMockData();
     this.checkFirstLaunch();
     this.maybeShowOnboarding();
+  },
+
+  initI18n() {
+    const lang = i18n.initI18n();
+    this.globalData.language = lang;
+    const showAnnotation = wx.getStorageSync('showDialectAnnotation');
+    this.globalData.showDialectAnnotation = showAnnotation === '' ? true : showAnnotation;
+    console.log('[App] i18n 初始化完成，当前语言:', lang);
+  },
+
+  switchLanguage(lang) {
+    const newLang = i18n.setLang(lang);
+    this.globalData.language = newLang;
+    console.log('[App] 语言已切换为:', newLang);
+    return newLang;
+  },
+
+  getLanguage() {
+    return this.globalData.language;
+  },
+
+  t(key, params) {
+    return i18n.t(key, params);
+  },
+
+  translateText(text) {
+    return i18n.translateText(text);
+  },
+
+  toggleDialectAnnotation(show) {
+    const value = show !== undefined ? show : !this.globalData.showDialectAnnotation;
+    this.globalData.showDialectAnnotation = value;
+    wx.setStorageSync('showDialectAnnotation', value);
+    return value;
+  },
+
+  getDialectAnnotation() {
+    return this.globalData.showDialectAnnotation;
+  },
+
+  findDialectWord(word) {
+    return dialect.findDialectWord(word);
+  },
+
+  parseContentWithDialect(text) {
+    return dialect.parseContentWithDialect(text);
   },
 
   maybeShowOnboarding() {
@@ -249,7 +300,7 @@ App({
         {
           id: 'article_001',
           title: '记忆中的农耕岁月',
-          content: '在我的记忆里，每年春耕时节，父亲总是天不亮就起床，扛着锄头走向田间。那时候没有机械化，全靠人力和牛力。父亲说，种地要看天时，要懂得节气。',
+          content: '在我的记忆里，每年春耕时节，父亲总是天不亮就起床，扛着锄头走向田间。那时候没有机械化，全靠人力和牛力。父亲说，种地要看天时，要懂得节气。村里的老把式们常聚在老槐树下，抽着旱烟，唠着当年的收成。那些"晌午"时分的闲谈，如今想来都是那么亲切。',
           category: 'farming',
           authorId: 'user_001',
           authorName: '张大爷',
@@ -261,7 +312,7 @@ App({
         {
           id: 'article_002',
           title: '外婆的织布手艺',
-          content: '外婆今年八十五岁了，她的织布手艺在村里是出了名的。从我记事起，外婆家的堂屋里就摆着一台老式织布机，那是外公年轻时亲手做的。',
+          content: '外婆今年八十五岁了，她的织布手艺在村里是出了名的。从我记事起，外婆家的堂屋里就摆着一台老式织布机，那是外公年轻时亲手做的。外婆常说，织布最要紧的就是"经心"，每一根线都不能马虎。她坐在织布机前，脚踩踏板，手递梭子，那"咯吱咯吱"的声音，是我童年最熟悉的旋律。',
           category: 'craft',
           authorId: 'user_002',
           authorName: '李阿姨',
@@ -273,7 +324,7 @@ App({
         {
           id: 'article_003',
           title: '村口老槐树的故事',
-          content: '我们村口有一棵老槐树，听村里最年长的王爷爷说，这棵树少说也有三百年了。树干粗得要三个大人才能合抱，树冠像一把巨大的绿伞。',
+          content: '我们村口有一棵老槐树，听村里最年长的王爷爷说，这棵树少说也有三百年了。树干粗得要三个大人才能合抱，树冠像一把巨大的绿伞。夏天的时候，村里人都喜欢在树下"歇晌"，男人们抽着烟袋锅子聊天，女人们纳鞋底、话家常，小孩子们在树底下捉迷藏。那棵老槐树，就是全村人的"乡愁"。',
           category: 'memory',
           authorId: 'user_003',
           authorName: '王老师',
@@ -285,7 +336,7 @@ App({
         {
           id: 'article_004',
           title: '端午节的老习俗',
-          content: '在我们村，端午节是一年中最热闹的节日之一。从五月初一开始，家家户户就忙活起来了。首先是包粽子，奶奶会提前一天把糯米泡好。',
+          content: '在我们村，端午节是一年中最热闹的节日之一。从五月初一开始，家家户户就忙活起来了。首先是包粽子，奶奶会提前一天把糯米泡好。五月初五一大早，大人们就去采艾草、割菖蒲，挂在门上说是能驱邪避灾。中午要喝雄黄酒，小孩子不能喝酒，就在额头上点个"王"字。这些老习俗，一辈辈传下来，承载着多少人的记忆啊。',
           category: 'folklore',
           authorId: 'user_004',
           authorName: '陈奶奶',
@@ -297,7 +348,7 @@ App({
         {
           id: 'article_005',
           title: '爷爷的二十四节气歌',
-          content: '爷爷是村里有名的"老把式"，种了一辈子地，对节气了如指掌。他常念叨的二十四节气歌，我到现在还记得。',
+          content: '爷爷是村里有名的"老把式"，种了一辈子地，对节气了如指掌。他常念叨的二十四节气歌，我到现在还记得。"打春阳气转，雨水沿河边，惊蛰乌鸦叫，春分地皮干……"爷爷说，种地不看节气，等于瞎胡闹。什么节气种什么庄稼，那都是老祖宗传下来的经验。现在想想，这就是中国人最朴素的智慧。',
           category: 'farming',
           authorId: 'user_005',
           authorName: '刘大伯',
@@ -434,6 +485,8 @@ App({
         {
           id: 'encyclopedia_001',
           title: '二十四节气',
+          pinyin: 'èr shí sì jié qì',
+          phonetic: 'Twenty-Four Solar Terms',
           cover: '',
           summary: '二十四节气是中国古代订立的一种用来指导农事和日常生活的补充历法，是中华民族劳动人民长期经验的积累和智慧的结晶。',
           content: '二十四节气，是干支历中表示自然节律变化以及确立"十二月建"的特定节令。它最初是依据斗转星移制定，北斗七星循环旋转，斗柄绕东、南、西、北旋转一圈，为一周期，谓之一"岁"（摄提），每一旋转周期始于立春、终于大寒。\n\n现行的"二十四节气"是依据太阳在回归黄道上的位置制定，即把太阳周年运动轨迹划分为24等份，每15°为1等份，每1等份为一个节气，始于立春，终于大寒。\n\n"二十四节气"是中华民族悠久历史文化的重要组成部分，凝聚着中华文明的历史文化精华。2016年11月30日，二十四节气被正式列入联合国教科文组织人类非物质文化遗产代表作名录。',
@@ -462,6 +515,8 @@ App({
         {
           id: 'encyclopedia_002',
           title: '榫卯',
+          pinyin: 'sǔn mǎo',
+          phonetic: 'Mortise and Tenon Joint',
           cover: '',
           summary: '榫卯是古代中国建筑、家具及其它器械的主要结构方式，是在两个构件上采用凹凸部位相结合的一种连接方式。凸出部分叫榫（或榫头），凹进部分叫卯（或榫眼、榫槽）。',
           content: '榫卯结构是中国古建筑以木材、砖瓦为主要建筑材料，以木构架结构为主要的结构方式，由立柱、横梁、顺檩等主要构件建造而成，各个构件之间的结点以榫卯相吻合，构成富有弹性的框架。\n\n榫卯是极为精巧的发明，这种构件连接方式，使得中国传统的木结构成为超越了当代建筑排架、框架或者刚架的特殊柔性结构体，不但可以承受较大的荷载，而且允许产生一定的变形，在地震荷载下通过变形抵消一定的地震能量，减小结构的地震响应。\n\n榫卯工艺广泛应用于建筑和家具制作中，如北京故宫、山西应县木塔等都是典型的榫卯结构建筑，历经千年而不倒，充分展示了这一古老工艺的智慧。',
@@ -487,6 +542,8 @@ App({
         {
           id: 'encyclopedia_003',
           title: '端午节',
+          pinyin: 'duān wǔ jié',
+          phonetic: 'Dragon Boat Festival',
           cover: '',
           summary: '端午节，又称端阳节、龙舟节、重午节、龙节、正阳节、天中节等，是中国民间的传统节日，与春节、清明节、中秋节并称为中国四大传统节日。',
           content: '端午节，本是南方吴越先民创立用于拜祭龙祖、祈福辟邪的节日。因传说战国时期的楚国诗人屈原在五月五日跳汨罗江自尽，后来人们亦将端午节作为纪念屈原的节日；也有纪念伍子胥、曹娥及介子推等说法。\n\n端午节的习俗甚多，全国各地因地域文化不同而又存在着习俗内容或细节上的差异。主要习俗有：扒龙舟、祭龙、采草药、挂艾草与菖蒲、拜神祭祖、洗草药水、打午时水、浸龙舟水、食粽、放纸鸢、睇龙船、拴五色丝线、薰苍术、佩香囊等等。\n\n扒龙舟活动在中国南方沿海一带十分盛行，传出国外后深受各国人民喜爱并形成了国际比赛。端午食粽之习俗，自古以来在中国各地盛行不衰，已成了中华民族影响最大、覆盖面最广的民间饮食习俗之一。',
@@ -512,6 +569,8 @@ App({
         {
           id: 'encyclopedia_004',
           title: '土布纺织',
+          pinyin: 'tǔ bù fǎng zhī',
+          phonetic: 'Handwoven Native Cloth',
           cover: '',
           summary: '土布纺织是中国传统手工技艺之一，又称"老粗布"、"家织布"，是劳动人民以纯棉为原料，用原始的纺车、木织布机一梭一梭精心编织而成。',
           content: '中国土布纺织技艺历史悠久，距今已有七千多年的历史。在新石器时代，中国就已经出现了原始的纺织工具。到了商周时期，纺织技术有了较大发展，出现了专门的纺织作坊。\n\n土布纺织工艺复杂，从采棉纺线到上机织布，要经过轧花、弹花、纺线、打线、浆染、沌线、落线、经线、刷线、作综、闯杼、掏综、吊机子、栓布、织布、了机等大小72道工序。\n\n土布的图案丰富多彩，从传统的"双喜"、"福"字到现代的几何图案、花卉图案，种类繁多。土布具有柔软舒适、透气吸汗、冬暖夏凉、不起静电、抗辐射等特点，深受人们喜爱。\n\n2008年，土布纺织技艺被列入国家级非物质文化遗产名录，这一古老的传统技艺得到了更好的保护和传承。',
@@ -537,6 +596,8 @@ App({
         {
           id: 'encyclopedia_005',
           title: '剪纸艺术',
+          pinyin: 'jiǎn zhǐ yì shù',
+          phonetic: 'Paper-cutting Art',
           cover: '',
           summary: '剪纸是中国最古老的民间艺术之一，是一种镂空艺术，其在视觉上给人以透空的感觉和艺术享受。剪纸的载体可以是纸张、金银箔、树皮、树叶、布、皮革。',
           content: '剪纸艺术是中国民间传统艺术中的瑰宝，距今已有三千多年的历史。早在新石器时代，我们的祖先就产生了用材料进行雕刻、镂空的审美意识。\n\n剪纸的制作方法主要有两种：一种是用剪刀剪，一种是用刻刀刻。剪纸的题材广泛，内容丰富，有人物、花鸟、山水、吉祥图案等。从表现形式上看，剪纸可分为单色剪纸、彩色剪纸、套色剪纸、填色剪纸、分色剪纸、衬色剪纸、勾绘剪纸等多种类型。\n\n剪纸艺术在中国分布很广，各地的剪纸风格各异。北方剪纸粗犷豪放、简练淳朴，南方剪纸则细腻精巧、玲珑剔透。著名的剪纸产地有陕西、山东、江苏、广东、浙江等地。\n\n2006年，剪纸艺术被列入第一批国家级非物质文化遗产名录。2009年，中国剪纸项目入选"人类非物质文化遗产代表作名录"。',
@@ -562,6 +623,8 @@ App({
         {
           id: 'encyclopedia_006',
           title: '春节',
+          pinyin: 'chūn jié',
+          phonetic: 'Spring Festival / Chinese New Year',
           cover: '',
           summary: '春节，即中国农历新年，俗称新春、新岁、岁旦等，口头上又称过年、过大年。春节历史悠久，由上古时代岁首祈岁祭祀演变而来。',
           content: '春节是中华民族最隆重的传统佳节，它不仅集中体现了中华民族的思想信仰、理想愿望、生活娱乐和文化心理，而且还是祈福攘灾、饮食和娱乐活动的狂欢式展示。\n\n春节的起源蕴含着深邃的文化内涵，在传承发展中承载了丰厚的历史文化底蕴。在春节期间，全国各地均有举行各种庆贺新春活动，带有浓郁的各地域特色。这些活动以除旧布新、驱邪攘灾、拜神祭祖、纳福祈年为主要内容，形式丰富多彩，凝聚着中华传统文化精华。\n\n春节与清明节、端午节、中秋节并称为中国四大传统节日。春节民俗经国务院批准列入第一批国家级非物质文化遗产名录。',

@@ -1,13 +1,38 @@
 <view class="page-container">
   <view class="section">
     <view class="section-header">
-      <text class="section-title">通用设置</text>
+      <text class="section-title">{{t.general}}</text>
+    </view>
+
+    <view class="setting-item" bindtap="onTapLanguage">
+      <view class="setting-left">
+        <text class="setting-icon">🌐</text>
+        <text class="setting-label">{{t.language}}</text>
+      </view>
+      <view class="setting-right">
+        <text class="setting-value">{{languageName}}</text>
+        <text class="setting-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="setting-item">
+      <view class="setting-left">
+        <text class="setting-icon">📖</text>
+        <text class="setting-label">{{t.dialect}}</text>
+      </view>
+      <view class="setting-right">
+        <switch
+          checked="{{showDialectAnnotation}}"
+          bindchange="onToggleDialectAnnotation"
+          color="#8B4513"
+        />
+      </view>
     </view>
 
     <view class="setting-item" bindtap="onClearCache">
       <view class="setting-left">
         <text class="setting-icon">🗑️</text>
-        <text class="setting-label">清除缓存</text>
+        <text class="setting-label">{{t.clearCache}}</text>
       </view>
       <view class="setting-right">
         <text class="setting-value">{{cacheSize}}</text>
@@ -18,7 +43,7 @@
     <view class="setting-item" bindtap="onRestoreDefaultData">
       <view class="setting-left">
         <text class="setting-icon">🔄</text>
-        <text class="setting-label">恢复默认数据</text>
+        <text class="setting-label">{{t.restoreDefault}}</text>
       </view>
       <view class="setting-right">
         <text class="setting-arrow">›</text>
@@ -28,13 +53,13 @@
 
   <view class="section">
     <view class="section-header">
-      <text class="section-title">开发模式</text>
+      <text class="section-title">{{t.devMode}}</text>
     </view>
 
     <view class="setting-item">
       <view class="setting-left">
         <text class="setting-icon">🔌</text>
-        <text class="setting-label">远程数据源</text>
+        <text class="setting-label">{{t.remoteDataSource}}</text>
       </view>
       <view class="setting-right">
         <switch
@@ -48,7 +73,7 @@
     <view class="setting-item" bindtap="onToggleBaseUrlEdit">
       <view class="setting-left">
         <text class="setting-icon">🌐</text>
-        <text class="setting-label">服务地址</text>
+        <text class="setting-label">{{t.serverUrl}}</text>
       </view>
       <view class="setting-right">
         <text class="setting-value">{{baseUrl}}</text>
@@ -69,13 +94,13 @@
 
   <view class="section">
     <view class="section-header">
-      <text class="section-title">关于</text>
+      <text class="section-title">{{t.about}}</text>
     </view>
 
     <view class="setting-item" bindtap="goToAbout">
       <view class="setting-left">
         <text class="setting-icon">ℹ️</text>
-        <text class="setting-label">关于我们</text>
+        <text class="setting-label">{{t.aboutUs}}</text>
       </view>
       <view class="setting-right">
         <text class="setting-arrow">›</text>
@@ -85,7 +110,7 @@
     <view class="setting-item" bindtap="goToUserAgreement">
       <view class="setting-left">
         <text class="setting-icon">📄</text>
-        <text class="setting-label">用户协议</text>
+        <text class="setting-label">{{t.userAgreement}}</text>
       </view>
       <view class="setting-right">
         <text class="setting-arrow">›</text>
@@ -95,7 +120,7 @@
     <view class="setting-item" bindtap="goToPrivacyPolicy">
       <view class="setting-left">
         <text class="setting-icon">🔒</text>
-        <text class="setting-label">隐私政策</text>
+        <text class="setting-label">{{t.privacyPolicy}}</text>
       </view>
       <view class="setting-right">
         <text class="setting-arrow">›</text>
@@ -105,7 +130,7 @@
     <view class="setting-item">
       <view class="setting-left">
         <text class="setting-icon">📌</text>
-        <text class="setting-label">版本号</text>
+        <text class="setting-label">{{t.version}}</text>
       </view>
       <view class="setting-right">
         <text class="setting-value">v{{version}}</text>
@@ -115,5 +140,27 @@
 
   <view class="footer">
     <text class="footer-text">乡村文化库 · 传承乡村记忆</text>
+  </view>
+
+  <view class="language-picker {{showLanguagePicker ? 'show' : ''}}">
+    <view class="picker-mask" bindtap="onCloseLanguagePicker"></view>
+    <view class="picker-content">
+      <view class="picker-header">
+        <text class="picker-title">{{t.language}}</text>
+        <view class="picker-close" bindtap="onCloseLanguagePicker">✕</view>
+      </view>
+      <view class="picker-body">
+        <view
+          class="picker-item {{language === item.value ? 'selected' : ''}}"
+          wx:for="{{languageOptions}}"
+          wx:key="value"
+          bindtap="onSelectLanguage"
+          data-lang="{{item.value}}"
+        >
+          <text class="item-text">{{item.name}}</text>
+          <text class="item-check" wx:if="{{language === item.value}}">✓</text>
+        </view>
+      </view>
+    </view>
   </view>
 </view>

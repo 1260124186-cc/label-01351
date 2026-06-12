@@ -1,7 +1,7 @@
 <view class="page-container">
   <view class="loading-wrap" wx:if="{{loading}}">
     <view class="loading-spinner"></view>
-    <text class="loading-text">加载中...</text>
+    <text class="loading-text">{{t.loading}}</text>
   </view>
 
   <block wx:elif="{{entry}}">
@@ -15,7 +15,14 @@
           <text class="stat-item">👍 {{entry.likeCount}}</text>
         </view>
       </view>
-      <view class="entry-title">{{entry.title}}</view>
+      <view class="entry-title-wrap">
+        <view class="entry-title">{{entry.title}}</view>
+        <view class="entry-bilingual" wx:if="{{titlePinyin || titlePhonetic}}">
+          <text class="bilingual-pinyin" wx:if="{{titlePinyin}}">{{titlePinyin}}</text>
+          <text class="bilingual-sep" wx:if="{{titlePinyin && titlePhonetic}}"> / </text>
+          <text class="bilingual-phonetic" wx:if="{{titlePhonetic}}">{{titlePhonetic}}</text>
+        </view>
+      </view>
       <view class="entry-summary">{{entry.summary}}</view>
       <view class="entry-tags" wx:if="{{entry.tags && entry.tags.length > 0}}">
         <view class="tag-item" wx:for="{{entry.tags}}" wx:key="*this">
@@ -30,11 +37,11 @@
 
     <view class="catalog-section" wx:if="{{entry.catalog && entry.catalog.length > 0}}">
       <view class="catalog-header" bindtap="toggleCatalog">
-        <text class="catalog-title">📑 目录</text>
-        <text class="catalog-toggle">{{catalogExpanded ? '收起 ▲' : '展开 ▼'}}</text>
+        <text class="catalog-title">{{t.catalog}}</text>
+        <text class="catalog-toggle">{{catalogExpanded ? t.collapse : t.expand}}</text>
       </view>
       <view class="catalog-content" wx:if="{{catalogExpanded}}">
-        <view 
+        <view
           class="catalog-item level-{{item.level}}"
           wx:for="{{entry.catalog}}"
           wx:key="id"
@@ -48,33 +55,33 @@
     </view>
 
     <view class="tab-bar">
-      <view 
+      <view
         class="tab-item {{activeTab === 'content' ? 'active' : ''}}"
         bindtap="switchTab"
         data-tab="content"
       >
-        词条内容
+        {{t.contentTab}}
       </view>
-      <view 
+      <view
         class="tab-item {{activeTab === 'articles' ? 'active' : ''}}"
         bindtap="switchTab"
         data-tab="articles"
       >
-        相关文章
+        {{t.articlesTab}}
       </view>
-      <view 
+      <view
         class="tab-item {{activeTab === 'topics' ? 'active' : ''}}"
         bindtap="switchTab"
         data-tab="topics"
       >
-        相关专题
+        {{t.topicsTab}}
       </view>
     </view>
 
     <view class="tab-content">
       <block wx:if="{{activeTab === 'content'}}">
         <view class="content-card">
-          <view class="section-title">词条内容</view>
+          <view class="section-title">{{t.contentTab}}</view>
           <view class="content-text">
             <text wx:for="{{contentParagraphs}}" wx:key="*this">{{item}}</text>
           </view>
@@ -83,7 +90,7 @@
 
       <block wx:elif="{{activeTab === 'articles'}}">
         <view wx:if="{{entry.relatedArticles && entry.relatedArticles.length > 0}}">
-          <view 
+          <view
             class="article-card"
             wx:for="{{entry.relatedArticles}}"
             wx:key="id"
@@ -112,13 +119,13 @@
         </view>
         <view class="empty-wrap" wx:else>
           <text class="empty-icon">📝</text>
-          <text class="empty-text">暂无相关文章</text>
+          <text class="empty-text">{{t.noRelatedArticles}}</text>
         </view>
       </block>
 
       <block wx:elif="{{activeTab === 'topics'}}">
         <view wx:if="{{entry.relatedTopics && entry.relatedTopics.length > 0}}">
-          <view 
+          <view
             class="topic-card"
             wx:for="{{entry.relatedTopics}}"
             wx:key="id"
@@ -136,7 +143,7 @@
         </view>
         <view class="empty-wrap" wx:else>
           <text class="empty-icon">🔗</text>
-          <text class="empty-text">暂无相关专题</text>
+          <text class="empty-text">{{t.noRelatedTopics}}</text>
         </view>
       </block>
     </view>
@@ -144,21 +151,21 @@
 
   <view class="empty-wrap" wx:else>
     <text class="empty-icon">📖</text>
-    <text class="empty-text">词条不存在</text>
+    <text class="empty-text">{{t.notFound}}</text>
   </view>
 
   <view class="bottom-bar" wx:if="{{entry}}">
     <view class="action-item" bindtap="onFavorite">
       <text class="action-icon">⭐</text>
-      <text class="action-text">收藏</text>
+      <text class="action-text">{{t.favorite}}</text>
     </view>
     <view class="action-item" bindtap="onLike">
       <text class="action-icon">👍</text>
-      <text class="action-text">点赞</text>
+      <text class="action-text">{{t.like}}</text>
     </view>
     <button class="share-btn" open-type="share">
       <text class="share-icon">📤</text>
-      <text class="share-text">分享</text>
+      <text class="share-text">{{t.share}}</text>
     </button>
   </view>
 </view>

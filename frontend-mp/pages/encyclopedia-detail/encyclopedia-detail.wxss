@@ -80,12 +80,43 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
+.entry-title-wrap {
+  margin-bottom: 16rpx;
+}
+
 .entry-title {
   font-size: 40rpx;
   font-weight: bold;
   color: #FFFFFF;
   line-height: 1.4;
-  margin-bottom: 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.entry-bilingual {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  opacity: 0.95;
+}
+
+.bilingual-pinyin {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.95);
+  font-style: italic;
+}
+
+.bilingual-sep {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 8rpx;
+}
+
+.bilingual-phonetic {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.15);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
 }
 
 .entry-summary {

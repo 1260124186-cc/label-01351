@@ -1,4 +1,5 @@
 const api = require('../../utils/api');
+const dialect = require('../../utils/dialect-dictionary');
 
 Page({
   data: {
@@ -8,7 +9,10 @@ Page({
     loading: true,
     isLoggedIn: false,
     activeTab: 'content',
-    catalogExpanded: true
+    catalogExpanded: true,
+    titlePinyin: '',
+    titlePhonetic: '',
+    t: {}
   },
 
   onLoad(options) {
@@ -21,7 +25,27 @@ Page({
   onShow() {
     const app = getApp();
     const isLoggedIn = app.getLoginStatus();
-    this.setData({ isLoggedIn });
+    const t = {
+      loading: app.t('common.loading'),
+      title: app.t('encyclopedia.title'),
+      notFound: app.t('encyclopedia.notFound'),
+      catalog: app.t('encyclopedia.catalog'),
+      expand: app.t('encyclopedia.expand'),
+      collapse: app.t('encyclopedia.collapse'),
+      contentTab: app.t('encyclopedia.contentTab'),
+      articlesTab: app.t('encyclopedia.articlesTab'),
+      topicsTab: app.t('encyclopedia.topicsTab'),
+      noRelatedArticles: app.t('encyclopedia.noRelatedArticles'),
+      noRelatedTopics: app.t('encyclopedia.noRelatedTopics'),
+      developing: app.t('encyclopedia.developing'),
+      pinyin: app.t('dialect.pinyin'),
+      phonetic: app.t('dialect.phonetic'),
+      favorite: app.t('common.favorite'),
+      like: app.t('common.likeCount'),
+      share: app.t('common.share'),
+      loginRequired: app.t('common.loginRequired')
+    };
+    this.setData({ isLoggedIn, t });
 
     if (this.data.entryId && !this.data.entry) {
       this.loadEntryDetail(this.data.entryId);
@@ -38,15 +62,27 @@ Page({
         const entry = res.data;
         const contentParagraphs = (entry.content || '').split('\n\n').filter(p => p.trim());
 
-        wx.setNavigationBarTitle({
-          title: entry.title.length > 12
-            ? entry.title.substring(0, 12) + '...'
-            : entry.title
-        });
+        let titlePinyin = entry.pinyin || '';
+        let titlePhonetic = entry.phonetic || '';
+
+        if (!titlePinyin || !titlePhonetic) {
+          const dialectInfo = dialect.findDialectWord(entry.title);
+          if (dialectInfo) {
+            titlePinyin = titlePinyin || dialectInfo.pinyin || '';
+            titlePhonetic = titlePhonetic || dialectInfo.phonetic || '';
+          }
+        }
+
+        const navTitle = entry.title.length > 12
+          ? entry.title.substring(0, 12) + '...'
+          : entry.title;
+        wx.setNavigationBarTitle({ title: navTitle });
 
         this.setData({
           entry,
           contentParagraphs,
+          titlePinyin,
+          titlePhonetic,
           loading: false
         });
       } else {
