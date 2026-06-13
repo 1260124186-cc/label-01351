@@ -101,7 +101,7 @@ Page({
     const village = app.setCurrentVillage(villageId);
     if (village) {
       wx.showToast({
-        title: `已切换到${village.name`,
+        title: `已切换到${village.name}`,
         icon: 'success'
       });
       this.setData({
