@@ -1,0 +1,137 @@
+<view class="page-container">
+  <view class="header-banner">
+    <view class="banner-content">
+      <text class="banner-title">传统工艺·分步教程</text>
+      <text class="banner-desc">跟着传承人，一步一步学会传统手艺</text>
+    </view>
+  </view>
+
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input
+        class="search-input"
+        placeholder="搜索工艺教程"
+        placeholder-class="search-placeholder"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+        confirm-type="search"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+  </view>
+
+  <scroll-view class="category-scroll" scroll-x enable-flex>
+    <view
+      class="category-item {{currentCategory === item.id ? 'active' : ''}}"
+      wx:for="{{categories}}"
+      wx:key="id"
+      bindtap="onCategoryChange"
+      data-id="{{item.id}}"
+    >
+      <text class="category-icon">{{item.icon}}</text>
+      <text class="category-name">{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="filter-bar">
+    <view class="filter-left">
+      <scroll-view class="difficulty-scroll" scroll-x enable-flex>
+        <view
+          class="difficulty-item {{currentDifficulty === item.id ? 'active' : ''}}"
+          wx:for="{{difficulties}}"
+          wx:key="id"
+          bindtap="onDifficultyChange"
+          data-id="{{item.id}}"
+        >
+          <text wx:if="{{item.icon}}">{{item.icon}}</text>
+          <text>{{item.name}}</text>
+        </view>
+      </scroll-view>
+    </view>
+    <view class="filter-right">
+      <view class="sort-btn" bindtap="toggleSortMenu">
+        <text>排序</text>
+        <text class="sort-arrow">{{showSortMenu ? '▲' : '▼'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="sort-dropdown" wx:if="{{showSortMenu}}">
+    <view
+      class="sort-item {{sortType === item.id ? 'active' : ''}}"
+      wx:for="{{sortOptions}}"
+      wx:key="id"
+      bindtap="onSortChange"
+      data-id="{{item.id}}"
+    >
+      {{item.name}}
+    </view>
+  </view>
+
+  <view class="tutorial-list">
+    <view class="loading-wrap" wx:if="{{loading && tutorialList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view class="empty-wrap" wx:elif="{{!loading && tutorialList.length === 0}}">
+      <text class="empty-icon">🧶</text>
+      <text class="empty-text">暂无相关工艺教程</text>
+      <text class="empty-hint">试试切换分类或难度</text>
+    </view>
+
+    <view
+      class="tutorial-card"
+      wx:for="{{tutorialList}}"
+      wx:key="id"
+      bindtap="goToDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="card-header">
+        <view class="card-meta">
+          <view class="meta-badge category-badge">
+            <text>{{item.categoryIcon}} {{item.categoryName}}</text>
+          </view>
+          <view class="meta-badge difficulty-badge" wx:if="{{item.difficultyInfo}}">
+            <text>{{item.difficultyInfo.icon}} {{item.difficultyInfo.name}}</text>
+          </view>
+        </view>
+        <view class="card-stats">
+          <text class="stat-item">👁 {{item.viewCount}}</text>
+          <text class="stat-item">👍 {{item.likeCount}}</text>
+        </view>
+      </view>
+      <view class="card-title">{{item.title}}</view>
+      <view class="card-summary">{{item.summary}}</view>
+      <view class="card-info-row">
+        <view class="info-item" wx:if="{{item.timeRequiredText}}">
+          <text class="info-icon">⏱️</text>
+          <text class="info-text">{{item.timeRequiredText}}</text>
+        </view>
+        <view class="info-item" wx:if="{{item.tools && item.tools.length > 0}}">
+          <text class="info-icon">🔧</text>
+          <text class="info-text">{{item.tools.length}}种工具</text>
+        </view>
+        <view class="info-item">
+          <text class="info-icon">✅</text>
+          <text class="info-text">{{item.checkInCount}}人做过</text>
+        </view>
+      </view>
+      <view class="card-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+        <text class="tag-item" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">#{{tag}}</text>
+      </view>
+    </view>
+
+    <view class="load-more" wx:if="{{tutorialList.length > 0}}">
+      <text wx:if="{{loadingMore}}">加载中...</text>
+      <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+      <text wx:else bindtap="loadMore">点击加载更多</text>
+    </view>
+  </view>
+
+  <view class="fab-btn" bindtap="goToCreate">
+    <text class="fab-icon">+</text>
+  </view>
+</view>

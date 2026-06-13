@@ -1,0 +1,250 @@
+<view class="page-container">
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:elif="{{detail}}">
+    <view class="detail-hero">
+      <view class="hero-header">
+        <view class="hero-meta">
+          <view class="meta-badge category-badge">{{detail.categoryIcon}} {{detail.categoryName}}</view>
+          <view class="meta-badge difficulty-badge" wx:if="{{detail.difficultyInfo}}">{{detail.difficultyInfo.icon}} {{detail.difficultyInfo.name}}</view>
+        </view>
+        <view class="hero-stats">
+          <text class="stat-item">👁 {{detail.viewCount}}</text>
+          <text class="stat-item">👍 {{detail.likeCount}}</text>
+          <text class="stat-item">✅ {{detail.checkInCount}}</text>
+        </view>
+      </view>
+      <view class="hero-title">{{detail.title}}</view>
+      <view class="hero-summary">{{detail.summary}}</view>
+      <view class="hero-info-row">
+        <view class="info-item" wx:if="{{detail.timeRequiredText}}">
+          <text class="info-icon">⏱️</text>
+          <text>{{detail.timeRequiredText}}</text>
+        </view>
+        <view class="info-item" wx:if="{{detail.tools && detail.tools.length > 0}}">
+          <text class="info-icon">🔧</text>
+          <text>{{detail.tools.join('、')}}</text>
+        </view>
+      </view>
+      <view class="hero-tags" wx:if="{{detail.tags && detail.tags.length > 0}}">
+        <text class="tag-item" wx:for="{{detail.tags}}" wx:key="*this">#{{item}}</text>
+      </view>
+    </view>
+
+    <view class="tab-bar">
+      <view class="tab-item {{activeTab === 'intro' ? 'active' : ''}}" bindtap="switchTab" data-tab="intro">
+        <text class="tab-icon">📖</text>
+        <text class="tab-name">简介</text>
+      </view>
+      <view class="tab-item {{activeTab === 'materials' ? 'active' : ''}}" bindtap="switchTab" data-tab="materials">
+        <text class="tab-icon">📋</text>
+        <text class="tab-name">材料</text>
+      </view>
+      <view class="tab-item {{activeTab === 'steps' ? 'active' : ''}}" bindtap="switchTab" data-tab="steps">
+        <text class="tab-icon">👣</text>
+        <text class="tab-name">步骤</text>
+      </view>
+      <view class="tab-item {{activeTab === 'mistakes' ? 'active' : ''}}" bindtap="switchTab" data-tab="mistakes">
+        <text class="tab-icon">⚠️</text>
+        <text class="tab-name">误区</text>
+      </view>
+      <view class="tab-item {{activeTab === 'reviews' ? 'active' : ''}}" bindtap="switchTab" data-tab="reviews">
+        <text class="tab-icon">💬</text>
+        <text class="tab-name">心得</text>
+      </view>
+    </view>
+
+    <view class="tab-content">
+      <block wx:if="{{activeTab === 'intro'}}">
+        <view class="section-card">
+          <view class="section-title">📖 教程简介</view>
+          <view class="section-body">{{detail.introduction}}</view>
+        </view>
+
+        <view class="section-card" wx:if="{{detail.furtherReading && detail.furtherReading.length > 0}}">
+          <view class="section-title">📚 延伸阅读</view>
+          <view class="reading-list">
+            <view class="reading-item" wx:for="{{detail.furtherReading}}" wx:key="title">
+              <view class="reading-header">
+                <text class="reading-type">{{item.type === 'book' ? '📕' : item.type === 'video' ? '🎬' : item.type === 'encyclopedia' ? '📖' : '📄'}}</text>
+                <text class="reading-title">{{item.title}}</text>
+              </view>
+              <view class="reading-desc" wx:if="{{item.desc}}">{{item.desc}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="section-card" wx:if="{{detail.relatedFigure || detail.relatedLandmark || detail.relatedEncyclopedia}}">
+          <view class="section-title">🔗 关联内容</view>
+          <view class="relation-list">
+            <view class="relation-item" wx:if="{{detail.relatedFigure}}" bindtap="goToFigure" data-id="{{detail.relatedFigure.id}}">
+              <text class="relation-icon">👤</text>
+              <view class="relation-info">
+                <text class="relation-name">{{detail.relatedFigure.name}}</text>
+                <text class="relation-desc">传承人 · {{detail.relatedFigure.identityInfo.name}}</text>
+              </view>
+              <text class="relation-arrow">›</text>
+            </view>
+            <view class="relation-item" wx:if="{{detail.relatedLandmark}}" bindtap="goToLandmark" data-id="{{detail.relatedLandmark.id}}">
+              <text class="relation-icon">🏛️</text>
+              <view class="relation-info">
+                <text class="relation-name">{{detail.relatedLandmark.name}}</text>
+                <text class="relation-desc">作坊 · {{detail.relatedLandmark.address}}</text>
+              </view>
+              <text class="relation-arrow">›</text>
+            </view>
+            <view class="relation-item" wx:if="{{detail.relatedEncyclopedia}}" bindtap="goToEncyclopedia" data-id="{{detail.relatedEncyclopedia.id}}">
+              <text class="relation-icon">📖</text>
+              <view class="relation-info">
+                <text class="relation-name">{{detail.relatedEncyclopedia.title}}</text>
+                <text class="relation-desc">百科词条</text>
+              </view>
+              <text class="relation-arrow">›</text>
+            </view>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'materials'}}">
+        <view class="section-card">
+          <view class="section-title">📋 材料清单</view>
+          <view class="material-list">
+            <view class="material-item" wx:for="{{detail.materials}}" wx:key="name">
+              <view class="material-header">
+                <text class="material-name">{{item.name}}</text>
+                <text class="material-quantity">{{item.quantity}}</text>
+              </view>
+              <view class="material-spec" wx:if="{{item.spec}}">规格：{{item.spec}}</view>
+              <view class="material-note" wx:if="{{item.note}}">💡 {{item.note}}</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="section-card" wx:if="{{detail.tools && detail.tools.length > 0}}">
+          <view class="section-title">🔧 所需工具</view>
+          <view class="tool-tags">
+            <text class="tool-tag" wx:for="{{detail.tools}}" wx:key="*this">{{item}}</text>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'steps'}}">
+        <view class="process-list">
+          <view class="process-item" wx:for="{{detail.steps}}" wx:key="step">
+            <view class="process-step">
+              <view class="step-num">{{item.step}}</view>
+              <view class="step-line" wx:if="{{index < detail.steps.length - 1}}"></view>
+            </view>
+            <view class="process-info">
+              <view class="step-title">{{item.title}}</view>
+              <view class="step-keypoint" wx:if="{{item.keyPoint}}">
+                <text class="keypoint-label">要点</text>
+                <text class="keypoint-text">{{item.keyPoint}}</text>
+              </view>
+              <view class="step-caution" wx:if="{{item.caution}}">
+                <text class="caution-label">⚠️ 注意</text>
+                <text class="caution-text">{{item.caution}}</text>
+              </view>
+              <view class="step-duration" wx:if="{{item.duration}}">
+                <text>⏱️ 预计{{item.duration < 60 ? item.duration + '分钟' : Math.floor(item.duration / 60) + '小时' + (item.duration % 60 > 0 ? item.duration % 60 + '分钟' : '')}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'mistakes'}}">
+        <view class="mistake-list">
+          <view class="mistake-item" wx:for="{{detail.commonMistakes}}" wx:key="title">
+            <view class="mistake-header">
+              <text class="mistake-icon">🚫</text>
+              <text class="mistake-title">{{item.title}}</text>
+            </view>
+            <view class="mistake-desc">{{item.desc}}</view>
+          </view>
+          <view class="empty-mistakes" wx:if="{{!detail.commonMistakes || detail.commonMistakes.length === 0}}">
+            <text class="empty-text">暂无常见误区记录</text>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'reviews'}}">
+        <view class="review-header-bar">
+          <text class="review-count">心得短评 ({{detail.reviews ? detail.reviews.length : 0}})</text>
+          <view class="review-add-btn" bindtap="toggleReviewInput">
+            <text>{{showReviewInput ? '收起' : '写心得'}}</text>
+          </view>
+        </view>
+
+        <view class="review-input-card" wx:if="{{showReviewInput}}">
+          <view class="rating-row">
+            <text class="rating-label">评分</text>
+            <view class="rating-stars">
+              <text
+                class="star {{reviewRating >= item ? 'active' : ''}}"
+                wx:for="{{[1,2,3,4,5]}}"
+                wx:key="*this"
+                wx:for-item="item"
+                bindtap="onRatingChange"
+                data-rating="{{item}}"
+              >★</text>
+            </view>
+          </view>
+          <textarea
+            class="review-textarea"
+            placeholder="分享你的制作心得..."
+            value="{{reviewContent}}"
+            bindinput="onReviewInput"
+            maxlength="200"
+          />
+          <view class="review-submit-row">
+            <text class="char-count">{{reviewContent.length}}/200</text>
+            <view class="submit-btn" bindtap="submitReview">发表</view>
+          </view>
+        </view>
+
+        <view class="review-list">
+          <view class="review-item" wx:for="{{detail.reviews}}" wx:key="id">
+            <view class="review-user">
+              <view class="user-avatar">{{item.nickname[0] || '匿'}}</view>
+              <view class="user-info">
+                <text class="user-name">{{item.nickname || '匿名用户'}}</text>
+                <text class="review-time">{{item.createTime}}</text>
+              </view>
+              <view class="review-rating">
+                <text class="star active" wx:for="{{item.rating}}" wx:key="*this" wx:for-item="s">★</text>
+              </view>
+            </view>
+            <view class="review-content">{{item.content}}</view>
+          </view>
+          <view class="empty-reviews" wx:if="{{!detail.reviews || detail.reviews.length === 0}}">
+            <text class="empty-text">暂无心得，快来第一个分享吧！</text>
+          </view>
+        </view>
+      </block>
+    </view>
+  </block>
+
+  <view class="empty-wrap" wx:else>
+    <text class="empty-icon">🧶</text>
+    <text class="empty-text">教程不存在</text>
+  </view>
+
+  <view class="bottom-bar" wx:if="{{detail}}">
+    <view class="action-item" bindtap="onLike">
+      <text class="action-icon">{{isLike ? '❤️' : '🤍'}}</text>
+      <text class="action-text">{{isLike ? '已赞' : '点赞'}}</text>
+    </view>
+    <view class="action-item checkin-btn {{hasCheckedIn ? 'checked' : ''}}" bindtap="onCheckIn">
+      <text class="action-icon">{{hasCheckedIn ? '✅' : '打卡'}}</text>
+      <text class="action-text">{{hasCheckedIn ? '已做过' : '我做过'}}</text>
+    </view>
+    <button class="share-btn" open-type="share">
+      <text class="share-icon">📤</text>
+      <text class="share-text">分享</text>
+    </button>
+  </view>
+</view>

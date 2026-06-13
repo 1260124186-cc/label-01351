@@ -61,7 +61,10 @@
     "pages/opera-favorites/opera-favorites",
     "pages/opera-submit/opera-submit",
     "pages/etiquette/etiquette",
-    "pages/etiquette-detail/etiquette-detail"
+    "pages/etiquette-detail/etiquette-detail",
+    "pages/craft-tutorial/craft-tutorial",
+    "pages/craft-tutorial-detail/craft-tutorial-detail",
+    "pages/craft-tutorial-create/craft-tutorial-create"
   ],
   "window": {
     "backgroundTextStyle": "dark",

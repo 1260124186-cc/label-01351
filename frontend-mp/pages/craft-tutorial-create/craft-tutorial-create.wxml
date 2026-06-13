@@ -1,0 +1,177 @@
+<view class="page-container">
+  <view class="form-section">
+    <view class="section-label">教程标题 *</view>
+    <input class="form-input" placeholder="输入教程标题" value="{{form.title}}" bindinput="onTitleInput" maxlength="50" />
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">工艺分类 *</view>
+    <view class="category-grid">
+      <view
+        class="category-chip {{form.category === item.id ? 'active' : ''}}"
+        wx:for="{{categories}}"
+        wx:key="id"
+        bindtap="onCategoryChange"
+        data-id="{{item.id}}"
+      >
+        {{item.icon}} {{item.name}}
+      </view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">难度等级</view>
+    <view class="difficulty-row">
+      <view
+        class="difficulty-chip {{form.difficulty === item.id ? 'active' : ''}}"
+        wx:for="{{difficulties}}"
+        wx:key="id"
+        bindtap="onDifficultyChange"
+        data-id="{{item.id}}"
+      >
+        {{item.icon}} {{item.name}}
+      </view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">预计耗时（分钟）</view>
+    <input class="form-input" type="number" placeholder="如：180表示3小时" value="{{form.timeRequired}}" bindinput="onTimeRequiredInput" />
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">所需工具</view>
+    <view class="selected-tools" wx:if="{{form.tools.length > 0}}">
+      <text class="selected-tool" wx:for="{{form.tools}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="tool-toggle" bindtap="toggleToolPicker">
+      <text>{{showToolPicker ? '收起工具列表' : '选择工具'}}</text>
+    </view>
+    <view class="tool-grid" wx:if="{{showToolPicker}}">
+      <view
+        class="tool-chip {{form.tools.indexOf(item) > -1 ? 'active' : ''}}"
+        wx:for="{{toolOptions}}"
+        wx:key="*this"
+        bindtap="onToolToggle"
+        data-tool="{{item}}"
+      >
+        {{item}}
+      </view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">教程简介 *</view>
+    <textarea class="form-textarea" placeholder="简要描述教程内容" value="{{form.summary}}" bindinput="onSummaryInput" maxlength="200" />
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">详细介绍 *</view>
+    <textarea class="form-textarea tall" placeholder="详细介绍工艺背景、学习目标等" value="{{form.introduction}}" bindinput="onIntroductionInput" maxlength="2000" />
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">材料清单</view>
+    <view class="list-items">
+      <view class="list-item" wx:for="{{form.materials}}" wx:key="name">
+        <view class="item-main">
+          <text class="item-name">{{item.name}}</text>
+          <text class="item-spec" wx:if="{{item.spec}}">（{{item.spec}}）</text>
+          <text class="item-qty">{{item.quantity}}</text>
+        </view>
+        <text class="item-note" wx:if="{{item.note}}">💡 {{item.note}}</text>
+        <view class="item-remove" bindtap="removeMaterial" data-index="{{index}}">✕</view>
+      </view>
+    </view>
+    <view class="add-form">
+      <input class="add-input" placeholder="材料名称" value="{{newMaterial.name}}" bindinput="onMaterialNameInput" />
+      <input class="add-input short" placeholder="规格" value="{{newMaterial.spec}}" bindinput="onMaterialSpecInput" />
+      <input class="add-input short" placeholder="数量" value="{{newMaterial.quantity}}" bindinput="onMaterialQtyInput" />
+      <input class="add-input" placeholder="备注（选填）" value="{{newMaterial.note}}" bindinput="onMaterialNoteInput" />
+      <view class="add-btn" bindtap="addMaterial">+ 添加材料</view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">分步操作 *</view>
+    <view class="list-items">
+      <view class="list-item step-item" wx:for="{{form.steps}}" wx:key="title">
+        <view class="step-badge">步骤{{index + 1}}</view>
+        <view class="item-main">
+          <text class="item-name">{{item.title}}</text>
+        </view>
+        <text class="item-note" wx:if="{{item.keyPoint}}">要点：{{item.keyPoint}}</text>
+        <text class="item-note caution-note" wx:if="{{item.caution}}">注意：{{item.caution}}</text>
+        <view class="item-remove" bindtap="removeStep" data-index="{{index}}">✕</view>
+      </view>
+    </view>
+    <view class="add-form">
+      <input class="add-input" placeholder="步骤标题 *" value="{{newStep.title}}" bindinput="onStepTitleInput" />
+      <textarea class="add-textarea" placeholder="要点说明" value="{{newStep.keyPoint}}" bindinput="onStepKeyPointInput" maxlength="500" />
+      <textarea class="add-textarea" placeholder="注意事项" value="{{newStep.caution}}" bindinput="onStepCautionInput" maxlength="300" />
+      <input class="add-input short" type="number" placeholder="预计耗时(分钟)" value="{{newStep.duration}}" bindinput="onStepDurationInput" />
+      <view class="add-btn" bindtap="addStep">+ 添加步骤</view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">常见误区</view>
+    <view class="list-items">
+      <view class="list-item" wx:for="{{form.commonMistakes}}" wx:key="title">
+        <view class="item-main">
+          <text class="item-name">🚫 {{item.title}}</text>
+        </view>
+        <text class="item-note" wx:if="{{item.desc}}">{{item.desc}}</text>
+        <view class="item-remove" bindtap="removeMistake" data-index="{{index}}">✕</view>
+      </view>
+    </view>
+    <view class="add-form">
+      <input class="add-input" placeholder="误区标题" value="{{newMistake.title}}" bindinput="onMistakeTitleInput" />
+      <textarea class="add-textarea" placeholder="误区说明" value="{{newMistake.desc}}" bindinput="onMistakeDescInput" maxlength="500" />
+      <view class="add-btn" bindtap="addMistake">+ 添加误区</view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">延伸阅读</view>
+    <view class="list-items">
+      <view class="list-item" wx:for="{{form.furtherReading}}" wx:key="title">
+        <view class="item-main">
+          <text class="item-name">{{item.type === 'book' ? '📕' : item.type === 'video' ? '🎬' : '📖'}} {{item.title}}</text>
+        </view>
+        <text class="item-note" wx:if="{{item.desc}}">{{item.desc}}</text>
+        <view class="item-remove" bindtap="removeReading" data-index="{{index}}">✕</view>
+      </view>
+    </view>
+    <view class="add-form">
+      <input class="add-input" placeholder="阅读标题" value="{{newReading.title}}" bindinput="onReadingTitleInput" />
+      <view class="reading-type-row">
+        <view class="type-chip {{newReading.type === 'book' ? 'active' : ''}}" bindtap="onReadingTypeChange" data-type="book">📕 书籍</view>
+        <view class="type-chip {{newReading.type === 'video' ? 'active' : ''}}" bindtap="onReadingTypeChange" data-type="video">🎬 视频</view>
+        <view class="type-chip {{newReading.type === 'encyclopedia' ? 'active' : ''}}" bindtap="onReadingTypeChange" data-type="encyclopedia">📖 百科</view>
+      </view>
+      <input class="add-input" placeholder="描述（选填）" value="{{newReading.desc}}" bindinput="onReadingDescInput" />
+      <view class="add-btn" bindtap="addReading">+ 添加阅读</view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">标签</view>
+    <view class="tag-row">
+      <view class="tag-item" wx:for="{{form.tags}}" wx:key="*this">
+        <text>{{item}}</text>
+        <text class="tag-remove" bindtap="removeTag" data-index="{{index}}">✕</text>
+      </view>
+    </view>
+    <view class="tag-input-row">
+      <input class="add-input" placeholder="输入标签" value="{{tagInput}}" bindinput="onTagInput" confirm-type="done" bindconfirm="addTag" maxlength="10" />
+      <view class="add-btn small" bindtap="addTag">+</view>
+    </view>
+  </view>
+
+  <view class="submit-area">
+    <view class="submit-btn {{submitting ? 'disabled' : ''}}" bindtap="onSubmit">
+      {{submitting ? '提交中...' : '创建教程'}}
+    </view>
+  </view>
+</view>

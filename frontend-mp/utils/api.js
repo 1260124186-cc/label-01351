@@ -11,6 +11,7 @@ const certificateData = require('./certificate-data');
 const taskSystem = require('./task');
 const operaData = require('./opera-data');
 const villageData = require('./village-data');
+const craftTutorialData = require('./craft-tutorial-data');
 
 const config = {
   useRemote: false,
@@ -6242,6 +6243,434 @@ const storageApi = {
       data: { list: pagedList, total: total, page: page, pageSize: pageSize, hasMore: start + pageSize < total },
       message: 'success'
     };
+  },
+
+  getCraftTutorialCategories: async () => {
+    await delay(200);
+    craftTutorialData.initCraftTutorialData();
+    var categories = craftTutorialData.getCategoryList();
+    return { code: 200, data: categories, message: 'success' };
+  },
+
+  getCraftTutorialDifficulties: async () => {
+    await delay(100);
+    return { code: 200, data: craftTutorialData.getDifficultyList(), message: 'success' };
+  },
+
+  getCraftTutorialTimeRanges: async () => {
+    await delay(100);
+    return { code: 200, data: craftTutorialData.TIME_RANGES, message: 'success' };
+  },
+
+  getCraftTutorialList: async (params) => {
+    await delay(500);
+    craftTutorialData.initCraftTutorialData();
+    var category = (params && params.category) || 'all';
+    var difficulty = (params && params.difficulty) || 'all';
+    var timeRange = (params && params.timeRange) || 'all';
+    var page = (params && params.page) || 1;
+    var pageSize = (params && params.pageSize) || 10;
+    var keyword = (params && params.keyword) || '';
+    var sort = (params && params.sort) || 'latest';
+
+    var tutorials = wx.getStorageSync('craftTutorials') || [];
+    tutorials = tutorials.filter(function(item) { return item.status === 1; });
+    tutorials = craftTutorialData.filterTutorials(tutorials, { category: category, difficulty: difficulty, timeRange: timeRange, keyword: keyword });
+
+    if (sort === 'views') {
+      tutorials.sort(function(a, b) { return (b.viewCount || 0) - (a.viewCount || 0); });
+    } else if (sort === 'likes') {
+      tutorials.sort(function(a, b) { return (b.likeCount || 0) - (a.likeCount || 0); });
+    } else if (sort === 'checkins') {
+      tutorials.sort(function(a, b) { return (b.checkInCount || 0) - (a.checkInCount || 0); });
+    } else {
+      tutorials.sort(function(a, b) { return new Date(b.createTime) - new Date(a.createTime); });
+    }
+
+    var total = tutorials.length;
+    var start = (page - 1) * pageSize;
+    var list = tutorials.slice(start, start + pageSize).map(function(item) {
+      return Object.assign({}, item, {
+        categoryName: craftTutorialData.getCategoryInfo(item.category) ? craftTutorialData.getCategoryInfo(item.category).name : '',
+        categoryIcon: craftTutorialData.getCategoryInfo(item.category) ? craftTutorialData.getCategoryInfo(item.category).icon : '',
+        difficultyInfo: craftTutorialData.getDifficultyInfo(item.difficulty),
+        timeRequiredText: craftTutorialData.formatTimeRequired(item.timeRequired)
+      });
+    });
+
+    return {
+      code: 200,
+      data: { list: list, total: total, page: page, pageSize: pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getCraftTutorialDetail: async (id) => {
+    await delay(300);
+    craftTutorialData.initCraftTutorialData();
+    if (!id) {
+      return { code: 400, data: null, message: '教程ID不能为空' };
+    }
+    var tutorials = wx.getStorageSync('craftTutorials') || [];
+    var tutorial = tutorials.find(function(item) { return item.id === id; });
+    if (!tutorial) {
+      return { code: 404, data: null, message: '教程不存在' };
+    }
+
+    tutorial.viewCount = (tutorial.viewCount || 0) + 1;
+    wx.setStorageSync('craftTutorials', tutorials);
+
+    var userId = getCurrentUserId();
+    var checkins = wx.getStorageSync('tutorialCheckins') || {};
+    var tutorialCheckins = checkins[id] || [];
+    var hasCheckedIn = userId ? tutorialCheckins.some(function(c) { return c.userId === userId; }) : false;
+
+    var reviews = wx.getStorageSync('tutorialReviews') || {};
+    var tutorialReviews = reviews[id] || [];
+
+    var relatedFigure = null;
+    if (tutorial.relatedFigureId) {
+      var figures = wx.getStorageSync('figures') || [];
+      var figure = figures.find(function(f) { return f.id === tutorial.relatedFigureId; });
+      if (figure) {
+        relatedFigure = { id: figure.id, name: figure.name, avatar: figure.avatar, identity: figure.identity, identityInfo: figureData.getIdentityInfo(figure.identity) };
+      }
+    }
+
+    var relatedLandmark = null;
+    if (tutorial.relatedLandmarkId) {
+      var landmarks = wx.getStorageSync('landmarks') || [];
+      var landmark = landmarks.find(function(l) { return l.id === tutorial.relatedLandmarkId; });
+      if (landmark) {
+        relatedLandmark = { id: landmark.id, name: landmark.name, category: landmark.category, address: landmark.address };
+      }
+    }
+
+    var relatedEncyclopedia = null;
+    if (tutorial.relatedEncyclopediaId) {
+      var encyclopedias = wx.getStorageSync('encyclopedia') || [];
+      var encyclopedia = encyclopedias.find(function(e) { return e.id === tutorial.relatedEncyclopediaId; });
+      if (encyclopedia) {
+        relatedEncyclopedia = { id: encyclopedia.id, title: encyclopedia.title, category: encyclopedia.category };
+      }
+    }
+
+    var result = Object.assign({}, tutorial, {
+      categoryName: craftTutorialData.getCategoryInfo(tutorial.category) ? craftTutorialData.getCategoryInfo(tutorial.category).name : '',
+      categoryIcon: craftTutorialData.getCategoryInfo(tutorial.category) ? craftTutorialData.getCategoryInfo(tutorial.category).icon : '',
+      difficultyInfo: craftTutorialData.getDifficultyInfo(tutorial.difficulty),
+      timeRequiredText: craftTutorialData.formatTimeRequired(tutorial.timeRequired),
+      hasCheckedIn: hasCheckedIn,
+      reviews: tutorialReviews,
+      reviewCount: tutorialReviews.length,
+      relatedFigure: relatedFigure,
+      relatedLandmark: relatedLandmark,
+      relatedEncyclopedia: relatedEncyclopedia
+    });
+
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  createCraftTutorial: async (data) => {
+    await delay(800);
+    var authError = requireLogin();
+    if (authError) return authError;
+
+    var userInfo = wx.getStorageSync('userInfo');
+    if (userInfo.role !== 'admin' && userInfo.role !== 'certified') {
+      return { code: 403, data: null, message: '仅管理员或认证用户可创建教程' };
+    }
+
+    if (!data.title || !data.title.trim()) {
+      return { code: 400, data: null, message: '教程标题不能为空' };
+    }
+    if (!data.category) {
+      return { code: 400, data: null, message: '请选择工艺分类' };
+    }
+    if (!data.difficulty) {
+      return { code: 400, data: null, message: '请选择难度等级' };
+    }
+    if (!data.summary || !data.summary.trim()) {
+      return { code: 400, data: null, message: '请填写教程简介' };
+    }
+    if (!data.introduction || !data.introduction.trim()) {
+      return { code: 400, data: null, message: '请填写教程详细介绍' };
+    }
+    if (!data.steps || !Array.isArray(data.steps) || data.steps.length === 0) {
+      return { code: 400, data: null, message: '请至少添加一个操作步骤' };
+    }
+
+    var sensitiveCheck = util.checkSensitiveWords(data.title + ' ' + data.summary + ' ' + data.introduction);
+    if (sensitiveCheck.hasSensitive) {
+      return {
+        code: 400,
+        data: { matchedWords: sensitiveCheck.matchedWords },
+        message: '内容包含敏感词：' + sensitiveCheck.matchedWords.join('、') + '，请修改后重试'
+      };
+    }
+
+    craftTutorialData.initCraftTutorialData();
+    var tutorials = wx.getStorageSync('craftTutorials') || [];
+
+    var newTutorial = {
+      id: util.generateId('craft_tutorial'),
+      title: data.title.trim(),
+      category: data.category,
+      difficulty: data.difficulty,
+      timeRequired: data.timeRequired || 0,
+      tools: data.tools || [],
+      summary: data.summary.trim(),
+      introduction: data.introduction.trim(),
+      materials: data.materials || [],
+      steps: data.steps.map(function(s, i) {
+        return Object.assign({}, s, { step: i + 1 });
+      }),
+      commonMistakes: data.commonMistakes || [],
+      furtherReading: data.furtherReading || [],
+      relatedFigureId: data.relatedFigureId || '',
+      relatedLandmarkId: data.relatedLandmarkId || '',
+      relatedEncyclopediaId: data.relatedEncyclopediaId || '',
+      sourceArticleId: data.sourceArticleId || '',
+      tags: data.tags || [],
+      viewCount: 0,
+      likeCount: 0,
+      checkInCount: 0,
+      reviewCount: 0,
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      status: 1
+    };
+
+    tutorials.unshift(newTutorial);
+    wx.setStorageSync('craftTutorials', tutorials);
+
+    return { code: 200, data: newTutorial, message: '教程创建成功' };
+  },
+
+  convertArticleToTutorial: async (articleId) => {
+    await delay(500);
+    var authError = requireLogin();
+    if (authError) return authError;
+
+    var userInfo = wx.getStorageSync('userInfo');
+    if (userInfo.role !== 'admin' && userInfo.role !== 'certified') {
+      return { code: 403, data: null, message: '仅管理员或认证用户可转换教程' };
+    }
+
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+
+    var articles = wx.getStorageSync('articles') || [];
+    var article = articles.find(function(a) { return a.id === articleId && a.status === 1; });
+    if (!article) {
+      return { code: 404, data: null, message: '文章不存在' };
+    }
+
+    if (article.likeCount < 50) {
+      return { code: 400, data: null, message: '仅支持转换50赞以上的文章' };
+    }
+
+    var template = craftTutorialData.convertArticleToTutorial(article);
+    return { code: 200, data: template, message: '转换成功，请补充教程详情' };
+  },
+
+  checkInCraftTutorial: async (id) => {
+    await delay(300);
+    var authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '教程ID不能为空' };
+    }
+
+    var userId = getCurrentUserId();
+    var checkins = wx.getStorageSync('tutorialCheckins') || {};
+    var tutorialCheckins = checkins[id] || [];
+    var alreadyChecked = tutorialCheckins.some(function(c) { return c.userId === userId; });
+    if (alreadyChecked) {
+      return { code: 200, data: { hasCheckedIn: true }, message: '已经打卡过了' };
+    }
+
+    var userInfo = wx.getStorageSync('userInfo');
+    tutorialCheckins.push({
+      userId: userId,
+      nickname: userInfo ? userInfo.nickname : '',
+      avatar: userInfo ? userInfo.avatar : '',
+      checkInTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
+    });
+    checkins[id] = tutorialCheckins;
+    wx.setStorageSync('tutorialCheckins', checkins);
+
+    var tutorials = wx.getStorageSync('craftTutorials') || [];
+    var tutorial = tutorials.find(function(t) { return t.id === id; });
+    if (tutorial) {
+      tutorial.checkInCount = (tutorial.checkInCount || 0) + 1;
+      wx.setStorageSync('craftTutorials', tutorials);
+    }
+
+    return { code: 200, data: { hasCheckedIn: true, checkInCount: tutorial ? tutorial.checkInCount : 0 }, message: '打卡成功' };
+  },
+
+  checkCraftTutorialCheckIn: async (id) => {
+    await delay(100);
+    var authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '教程ID不能为空' };
+    }
+
+    var userId = getCurrentUserId();
+    var checkins = wx.getStorageSync('tutorialCheckins') || {};
+    var tutorialCheckins = checkins[id] || [];
+    var hasCheckedIn = tutorialCheckins.some(function(c) { return c.userId === userId; });
+
+    return { code: 200, data: { hasCheckedIn: hasCheckedIn }, message: 'success' };
+  },
+
+  addCraftTutorialReview: async (id, data) => {
+    await delay(300);
+    var authError = requireLogin();
+    if (authError) return authError;
+
+    if (!id) {
+      return { code: 400, data: null, message: '教程ID不能为空' };
+    }
+    if (!data || !data.content || !data.content.trim()) {
+      return { code: 400, data: null, message: '心得内容不能为空' };
+    }
+    if (data.content.trim().length > 200) {
+      return { code: 400, data: null, message: '心得不超过200字' };
+    }
+
+    var userId = getCurrentUserId();
+    var userInfo = wx.getStorageSync('userInfo');
+    var reviews = wx.getStorageSync('tutorialReviews') || {};
+    var tutorialReviews = reviews[id] || [];
+
+    var newReview = {
+      id: util.generateId('tutorial_review'),
+      userId: userId,
+      nickname: userInfo ? userInfo.nickname : '',
+      avatar: userInfo ? userInfo.avatar : '',
+      content: data.content.trim(),
+      rating: data.rating || 5,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
+    };
+
+    tutorialReviews.unshift(newReview);
+    reviews[id] = tutorialReviews;
+    wx.setStorageSync('tutorialReviews', reviews);
+
+    return { code: 200, data: newReview, message: '发表心得成功' };
+  },
+
+  getCraftTutorialReviews: async (id, params) => {
+    await delay(300);
+    if (!id) {
+      return { code: 400, data: null, message: '教程ID不能为空' };
+    }
+    var page = (params && params.page) || 1;
+    var pageSize = (params && params.pageSize) || 10;
+    var reviews = wx.getStorageSync('tutorialReviews') || {};
+    var tutorialReviews = reviews[id] || [];
+    var total = tutorialReviews.length;
+    var start = (page - 1) * pageSize;
+    var list = tutorialReviews.slice(start, start + pageSize);
+
+    return {
+      code: 200,
+      data: { list: list, total: total, page: page, pageSize: pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getCraftTutorialCheckins: async (id, params) => {
+    await delay(300);
+    if (!id) {
+      return { code: 400, data: null, message: '教程ID不能为空' };
+    }
+    var page = (params && params.page) || 1;
+    var pageSize = (params && params.pageSize) || 20;
+    var checkins = wx.getStorageSync('tutorialCheckins') || {};
+    var tutorialCheckins = checkins[id] || [];
+    var total = tutorialCheckins.length;
+    var start = (page - 1) * pageSize;
+    var list = tutorialCheckins.slice(start, start + pageSize);
+
+    return {
+      code: 200,
+      data: { list: list, total: total, page: page, pageSize: pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  likeCraftTutorial: async (id) => {
+    await delay(200);
+    var authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '教程ID不能为空' };
+    }
+    var userId = getCurrentUserId();
+    var tutorials = wx.getStorageSync('craftTutorials') || [];
+    var tutorial = tutorials.find(function(t) { return t.id === id; });
+    if (!tutorial) {
+      return { code: 404, data: null, message: '教程不存在' };
+    }
+    var likes = wx.getStorageSync('tutorialLikes') || {};
+    var userLikes = likes[userId] || [];
+    if (userLikes.includes(id)) {
+      return { code: 200, data: { isLike: true, likeCount: tutorial.likeCount }, message: '已点赞' };
+    }
+    tutorial.likeCount = (tutorial.likeCount || 0) + 1;
+    wx.setStorageSync('craftTutorials', tutorials);
+    userLikes.push(id);
+    likes[userId] = userLikes;
+    wx.setStorageSync('tutorialLikes', likes);
+    return { code: 200, data: { isLike: true, likeCount: tutorial.likeCount }, message: '点赞成功' };
+  },
+
+  unlikeCraftTutorial: async (id) => {
+    await delay(200);
+    var authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '教程ID不能为空' };
+    }
+    var userId = getCurrentUserId();
+    var tutorials = wx.getStorageSync('craftTutorials') || [];
+    var tutorial = tutorials.find(function(t) { return t.id === id; });
+    if (!tutorial) {
+      return { code: 404, data: null, message: '教程不存在' };
+    }
+    tutorial.likeCount = Math.max((tutorial.likeCount || 0) - 1, 0);
+    wx.setStorageSync('craftTutorials', tutorials);
+    var likes = wx.getStorageSync('tutorialLikes') || {};
+    var userLikes = likes[userId] || [];
+    var index = userLikes.indexOf(id);
+    if (index > -1) {
+      userLikes.splice(index, 1);
+      likes[userId] = userLikes;
+      wx.setStorageSync('tutorialLikes', likes);
+    }
+    return { code: 200, data: { isLike: false, likeCount: tutorial.likeCount }, message: '已取消点赞' };
+  },
+
+  checkCraftTutorialLike: async (id) => {
+    await delay(100);
+    var authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '教程ID不能为空' };
+    }
+    var userId = getCurrentUserId();
+    var likes = wx.getStorageSync('tutorialLikes') || {};
+    var userLikes = likes[userId] || [];
+    var isLike = userLikes.includes(id);
+    return { code: 200, data: { isLike: isLike }, message: 'success' };
   }
 };
 
