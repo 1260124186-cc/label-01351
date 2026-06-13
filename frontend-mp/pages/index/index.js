@@ -73,6 +73,12 @@ Page({
     });
   },
 
+  goToEtiquette() {
+    wx.navigateTo({
+      url: '/pages/etiquette/etiquette'
+    });
+  },
+
   goToPublish() {
     wx.navigateTo({
       url: '/pages/publish/publish'

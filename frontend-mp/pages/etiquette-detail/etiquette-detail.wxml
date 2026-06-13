@@ -1,0 +1,163 @@
+<view class="page-container">
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:elif="{{detail}}">
+    <view class="detail-hero">
+      <view class="hero-header">
+        <view class="hero-scene">
+          <text class="scene-icon">{{detail.scene === 'wedding' ? '💒' : detail.scene === 'funeral' ? '🕯️' : detail.scene === 'birthday' ? '🎂' : detail.scene === 'festival' ? '🎊' : '🏠'}}</text>
+          <text class="scene-text">{{detail.scene === 'wedding' ? '婚礼' : detail.scene === 'funeral' ? '丧葬' : detail.scene === 'birthday' ? '寿宴' : detail.scene === 'festival' ? '节日待客' : '走亲访友'}}</text>
+        </view>
+        <view class="hero-stats">
+          <text class="stat-item">👁 {{detail.viewCount}}</text>
+          <text class="stat-item">👍 {{detail.likeCount}}</text>
+        </view>
+      </view>
+      <view class="hero-title">{{detail.title}}</view>
+      <view class="hero-summary">{{detail.summary}}</view>
+      <view class="hero-tags" wx:if="{{detail.tags && detail.tags.length > 0}}">
+        <text class="tag-item" wx:for="{{detail.tags}}" wx:key="*this">#{{item}}</text>
+      </view>
+    </view>
+
+    <view class="tab-bar">
+      <view
+        class="tab-item {{activeTab === 'process' ? 'active' : ''}}"
+        bindtap="switchTab"
+        data-tab="process"
+      >
+        <text class="tab-icon">📋</text>
+        <text class="tab-name">流程概述</text>
+      </view>
+      <view
+        class="tab-item {{activeTab === 'taboos' ? 'active' : ''}}"
+        bindtap="switchTab"
+        data-tab="taboos"
+      >
+        <text class="tab-icon">⚠️</text>
+        <text class="tab-name">禁忌讲究</text>
+      </view>
+      <view
+        class="tab-item {{activeTab === 'regions' ? 'active' : ''}}"
+        bindtap="switchTab"
+        data-tab="regions"
+      >
+        <text class="tab-icon">🗺️</text>
+        <text class="tab-name">地域差异</text>
+      </view>
+      <view
+        class="tab-item {{activeTab === 'modern' ? 'active' : ''}}"
+        bindtap="switchTab"
+        data-tab="modern"
+      >
+        <text class="tab-icon">💡</text>
+        <text class="tab-name">现代建议</text>
+      </view>
+    </view>
+
+    <view class="tab-content">
+      <block wx:if="{{activeTab === 'process'}}">
+        <view class="process-list">
+          <view
+            class="process-item"
+            wx:for="{{detail.process}}"
+            wx:key="step"
+          >
+            <view class="process-step">
+              <view class="step-num">{{item.step}}</view>
+              <view class="step-line" wx:if="{{index < detail.process.length - 1}}"></view>
+            </view>
+            <view class="process-info">
+              <view class="step-title">{{item.title}}</view>
+              <view class="step-desc">{{item.desc}}</view>
+            </view>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'taboos'}}">
+        <view class="taboo-list">
+          <view
+            class="taboo-item"
+            wx:for="{{detail.taboos}}"
+            wx:key="title"
+          >
+            <view class="taboo-header">
+              <text class="taboo-icon">🚫</text>
+              <text class="taboo-title">{{item.title}}</text>
+            </view>
+            <view class="taboo-desc">{{item.desc}}</view>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'regions'}}">
+        <view class="region-filter-bar">
+          <scroll-view class="region-filter-scroll" scroll-x enable-flex>
+            <view
+              class="region-filter-item {{currentRegion === item.id ? 'active' : ''}}"
+              wx:for="{{regionOptions}}"
+              wx:key="id"
+              bindtap="onRegionFilter"
+              data-id="{{item.id}}"
+            >
+              {{item.name}}
+            </view>
+          </scroll-view>
+        </view>
+
+        <view class="region-list">
+          <view
+            class="region-card"
+            wx:for="{{filteredRegionDiffs}}"
+            wx:key="province"
+          >
+            <view class="region-card-header">
+              <text class="region-badge">{{item.region}}</text>
+              <text class="region-province">{{item.province}}</text>
+            </view>
+            <view class="region-content">{{item.content}}</view>
+          </view>
+          <view class="empty-region" wx:if="{{filteredRegionDiffs.length === 0}}">
+            <text class="empty-region-text">该地区暂无特色记录</text>
+          </view>
+        </view>
+      </block>
+
+      <block wx:elif="{{activeTab === 'modern'}}">
+        <view class="modern-list">
+          <view
+            class="modern-item"
+            wx:for="{{detail.modernTips}}"
+            wx:key="title"
+          >
+            <view class="modern-header">
+              <text class="modern-icon">💡</text>
+              <text class="modern-title">{{item.title}}</text>
+            </view>
+            <view class="modern-desc">{{item.desc}}</view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </block>
+
+  <view class="empty-wrap" wx:else>
+    <text class="empty-icon">📜</text>
+    <text class="empty-text">礼仪指南不存在</text>
+  </view>
+
+  <view class="bottom-bar" wx:if="{{detail}}">
+    <view class="action-item" bindtap="onFavorite">
+      <text class="action-icon">{{isFavorite ? '⭐' : '☆'}}</text>
+      <text class="action-text">{{isFavorite ? '已收藏' : '收藏'}}</text>
+    </view>
+    <button class="share-btn" open-type="share">
+      <text class="share-icon">📤</text>
+      <text class="share-text">分享</text>
+    </button>
+  </view>
+</view>

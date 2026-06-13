@@ -127,6 +127,13 @@
       <text class="entry-name">知识问答</text>
       <text class="entry-desc">以赛促学</text>
     </view>
+    <view class="entry-item" bindtap="goToEtiquette">
+      <view class="entry-icon-wrap icon-etiquette">
+        <text class="entry-icon">📜</text>
+      </view>
+      <text class="entry-name">礼仪指南</text>
+      <text class="entry-desc">红白民俗</text>
+    </view>
   </view>
 
   <!-- 分类标签 -->

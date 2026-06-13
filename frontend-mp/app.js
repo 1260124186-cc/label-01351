@@ -8,6 +8,7 @@ const i18n = require('./utils/i18n');
 const dialect = require('./utils/dialect-dictionary');
 const villageData = require('./utils/village-data');
 const operaData = require('./utils/opera-data');
+const etiquetteData = require('./utils/etiquette-data');
 
 App({
   globalData: {
@@ -384,6 +385,7 @@ App({
     figureData.initFigureData();
     villageData.initVillageData();
     operaData.initOperaData();
+    etiquetteData.initEtiquetteData();
 
     const articles = wx.getStorageSync('articles');
     if (!articles || articles.length === 0) {

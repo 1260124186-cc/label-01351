@@ -6063,6 +6063,185 @@ const storageApi = {
       ],
       message: 'success'
     };
+  },
+
+  getEtiquetteList: async (params = {}) => {
+    await delay(500);
+    const { scene = 'all', region = 'all', page = 1, pageSize = 10, keyword = '' } = params;
+    let list = wx.getStorageSync('etiquette') || [];
+    list = list.filter(item => item.status === 1);
+
+    if (scene && scene !== 'all') {
+      list = list.filter(item => item.scene === scene);
+    }
+    if (region && region !== 'all') {
+      list = list.filter(item =>
+        Array.isArray(item.regionalDiffs) &&
+        item.regionalDiffs.some(function(rd) { return rd.region === region || rd.province === region; })
+      );
+    }
+    if (keyword && keyword.trim()) {
+      var kw = keyword.toLowerCase().trim();
+      list = list.filter(function(item) {
+        return item.title.toLowerCase().includes(kw) ||
+          item.summary.toLowerCase().includes(kw) ||
+          (Array.isArray(item.tags) && item.tags.some(function(t) { return t.toLowerCase().includes(kw); }));
+      });
+    }
+    list.sort(function(a, b) { return (b.viewCount || 0) - (a.viewCount || 0); });
+    var total = list.length;
+    var start = (page - 1) * pageSize;
+    var pagedList = list.slice(start, start + pageSize);
+
+    var userId = getCurrentUserId();
+    var favs = wx.getStorageSync('etiquetteFavorites') || {};
+    var userFavs = favs[userId] || {};
+    pagedList = pagedList.map(function(item) {
+      return Object.assign({}, item, { isFavorite: !!userFavs[item.id] });
+    });
+
+    return {
+      code: 200,
+      data: { list: pagedList, total: total, page: page, pageSize: pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getEtiquetteDetail: async (id) => {
+    await delay(300);
+    if (!id) {
+      return { code: 400, data: null, message: '礼仪ID不能为空' };
+    }
+    var list = wx.getStorageSync('etiquette') || [];
+    var item = list.find(function(e) { return e.id === id; });
+    if (!item) {
+      return { code: 404, data: null, message: '礼仪指南不存在' };
+    }
+
+    item.viewCount = (item.viewCount || 0) + 1;
+    wx.setStorageSync('etiquette', list);
+
+    var userId = getCurrentUserId();
+    var favs = wx.getStorageSync('etiquetteFavorites') || {};
+    var userFavs = favs[userId] || {};
+
+    var result = Object.assign({}, item, { isFavorite: !!userFavs[id] });
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  getEtiquetteScenes: async () => {
+    await delay(100);
+    var etiquetteData = require('./etiquette-data');
+    var scenes = etiquetteData.getSceneList();
+    return { code: 200, data: scenes, message: 'success' };
+  },
+
+  getEtiquetteRegions: async () => {
+    await delay(100);
+    var etiquetteData = require('./etiquette-data');
+    var regions = etiquetteData.getRegionList();
+    return { code: 200, data: regions, message: 'success' };
+  },
+
+  getEtiquetteRecommendRegion: async () => {
+    await delay(200);
+    var etiquetteData = require('./etiquette-data');
+    var userInfo = wx.getStorageSync('userInfo');
+    var location = (userInfo && userInfo.location) || '';
+    var region = etiquetteData.findRegionByProvince(location);
+    return {
+      code: 200,
+      data: { location: location, region: region ? { id: region.id, name: region.name } : null },
+      message: 'success'
+    };
+  },
+
+  favoriteEtiquette: async (id) => {
+    await delay(200);
+    var authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '礼仪ID不能为空' };
+    }
+    var userId = getCurrentUserId();
+    var favorites = wx.getStorageSync('etiquetteFavorites') || {};
+    if (!favorites[userId]) {
+      favorites[userId] = {};
+    }
+    if (favorites[userId][id]) {
+      return { code: 200, data: { isFavorite: true }, message: '已收藏' };
+    }
+    favorites[userId][id] = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+    wx.setStorageSync('etiquetteFavorites', favorites);
+    return { code: 200, data: { isFavorite: true }, message: '收藏成功' };
+  },
+
+  unfavoriteEtiquette: async (id) => {
+    await delay(200);
+    var authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '礼仪ID不能为空' };
+    }
+    var userId = getCurrentUserId();
+    var favorites = wx.getStorageSync('etiquetteFavorites') || {};
+    if (favorites[userId] && favorites[userId][id]) {
+      delete favorites[userId][id];
+      wx.setStorageSync('etiquetteFavorites', favorites);
+    }
+    return { code: 200, data: { isFavorite: false }, message: '已取消收藏' };
+  },
+
+  checkEtiquetteFavorite: async (id) => {
+    await delay(100);
+    var authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '礼仪ID不能为空' };
+    }
+    var userId = getCurrentUserId();
+    var favorites = wx.getStorageSync('etiquetteFavorites') || {};
+    var isFavorite = !!(favorites[userId] && favorites[userId][id]);
+    return { code: 200, data: { isFavorite: isFavorite }, message: 'success' };
+  },
+
+  getEtiquetteFavorites: async (params = {}) => {
+    await delay(500);
+    var authError = requireLogin();
+    if (authError) return authError;
+    var scene = params.scene || 'all';
+    var page = params.page || 1;
+    var pageSize = params.pageSize || 10;
+    var userId = getCurrentUserId();
+    var favorites = wx.getStorageSync('etiquetteFavorites') || {};
+    var userFavs = favorites[userId] || {};
+    var favIds = Object.keys(userFavs);
+    if (favIds.length === 0) {
+      return {
+        code: 200,
+        data: { list: [], total: 0, page: page, pageSize: pageSize, hasMore: false },
+        message: 'success'
+      };
+    }
+    var allEtiquette = wx.getStorageSync('etiquette') || [];
+    var list = allEtiquette.filter(function(item) {
+      return favIds.indexOf(item.id) > -1 && item.status === 1;
+    });
+    if (scene && scene !== 'all') {
+      list = list.filter(function(item) { return item.scene === scene; });
+    }
+    list = list.map(function(item) {
+      return Object.assign({}, item, { isFavorite: true, favoriteTime: userFavs[item.id] });
+    });
+    list.sort(function(a, b) { return new Date(b.favoriteTime) - new Date(a.favoriteTime); });
+    var total = list.length;
+    var start = (page - 1) * pageSize;
+    var pagedList = list.slice(start, start + pageSize);
+    return {
+      code: 200,
+      data: { list: pagedList, total: total, page: page, pageSize: pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
   }
 };
 

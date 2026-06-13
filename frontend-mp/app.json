@@ -59,7 +59,9 @@
     "pages/conversations/conversations",
     "pages/chat/chat",
     "pages/opera-favorites/opera-favorites",
-    "pages/opera-submit/opera-submit"
+    "pages/opera-submit/opera-submit",
+    "pages/etiquette/etiquette",
+    "pages/etiquette-detail/etiquette-detail"
   ],
   "window": {
     "backgroundTextStyle": "dark",

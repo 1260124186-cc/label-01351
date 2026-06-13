@@ -1,0 +1,134 @@
+<view class="page-container">
+  <view class="header-banner">
+    <view class="banner-content">
+      <text class="banner-title">红白礼仪·乡风民俗</text>
+      <text class="banner-desc">传承千年的礼仪智慧，从红白喜事到待客之道</text>
+    </view>
+    <view class="banner-location" wx:if="{{locationText}}" bindtap="useRecommendRegion">
+      <text class="location-icon">📍</text>
+      <text class="location-text">{{locationText}}</text>
+      <text class="location-action" wx:if="{{recommendRegion}}">查看本地</text>
+    </view>
+  </view>
+
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input
+        class="search-input"
+        placeholder="搜索礼仪指南"
+        placeholder-class="search-placeholder"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+        confirm-type="search"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+  </view>
+
+  <scroll-view class="scene-scroll" scroll-x enable-flex>
+    <view
+      class="scene-item {{currentScene === item.id ? 'active' : ''}}"
+      wx:for="{{scenes}}"
+      wx:key="id"
+      bindtap="onSceneChange"
+      data-id="{{item.id}}"
+    >
+      <text class="scene-icon">{{item.icon}}</text>
+      <text class="scene-name">{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="filter-bar">
+    <view class="filter-left">
+      <view class="region-filter" bindtap="toggleRegionPicker">
+        <text class="filter-icon">🗺️</text>
+        <text class="filter-text">{{currentRegion === 'all' ? '全部地区' : currentRegion}}</text>
+        <text class="filter-arrow">{{showRegionPicker ? '▲' : '▼'}}</text>
+      </view>
+    </view>
+    <view class="filter-right">
+      <view class="recommend-btn" wx:if="{{recommendRegion && currentRegion !== recommendRegion.id}}" bindtap="useRecommendRegion">
+        <text class="recommend-icon">📍</text>
+        <text class="recommend-text">{{recommendRegion.name}}版</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="region-dropdown" wx:if="{{showRegionPicker}}">
+    <view class="region-grid">
+      <view
+        class="region-item {{currentRegion === item.id ? 'active' : ''}}"
+        wx:for="{{regions}}"
+        wx:key="id"
+        bindtap="onRegionChange"
+        data-id="{{item.id}}"
+      >
+        <text class="region-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="etiquette-list">
+    <view class="loading-wrap" wx:if="{{loading && etiquetteList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view class="empty-wrap" wx:elif="{{!loading && etiquetteList.length === 0}}">
+      <text class="empty-icon">📜</text>
+      <text class="empty-text">暂无相关礼仪指南</text>
+      <text class="empty-hint">试试切换场景或地区</text>
+    </view>
+
+    <view
+      class="etiquette-card"
+      wx:for="{{etiquetteList}}"
+      wx:key="id"
+    >
+      <view class="card-main" bindtap="goToDetail" data-id="{{item.id}}">
+        <view class="card-header">
+          <view class="card-scene">
+            <text class="scene-tag-icon">{{item.sceneIcon}}</text>
+            <text class="scene-tag-text">{{item.sceneName}}</text>
+          </view>
+          <view class="card-stats">
+            <text class="stat-item">👁 {{item.viewCount}}</text>
+            <text class="stat-item">👍 {{item.likeCount}}</text>
+          </view>
+        </view>
+        <view class="card-title">{{item.title}}</view>
+        <view class="card-summary">{{item.summary}}</view>
+        <view class="card-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+          <text class="tag-item" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">#{{tag}}</text>
+        </view>
+        <view class="card-footer">
+          <view class="card-sections">
+            <text class="section-badge">📋 流程</text>
+            <text class="section-badge">⚠️ 禁忌</text>
+            <text class="section-badge">🗺️ 地域</text>
+            <text class="section-badge">💡 现代</text>
+          </view>
+        </view>
+      </view>
+      <view class="card-actions">
+        <view
+          class="fav-btn {{item.isFavorite ? 'faved' : ''}}"
+          bindtap="onFavorite"
+          data-id="{{item.id}}"
+          data-fav="{{item.isFavorite}}"
+        >
+          <text class="fav-icon">{{item.isFavorite ? '⭐' : '☆'}}</text>
+          <text class="fav-text">{{item.isFavorite ? '已收藏' : '收藏'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="load-more" wx:if="{{etiquetteList.length > 0}}">
+      <text wx:if="{{loadingMore}}">加载中...</text>
+      <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+      <text wx:else bindtap="loadMore">点击加载更多</text>
+    </view>
+  </view>
+</view>
