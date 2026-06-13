@@ -440,69 +440,102 @@
 /* 文章卡片 */
 .article-card {
   background-color: #FFFFFF;
-  border-radius: 16rpx;
-  padding: 28rpx;
+  border-radius: 24rpx;
+  padding: 32rpx;
   margin-bottom: 24rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8rpx 32rpx rgba(139, 69, 19, 0.08);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.article-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 16rpx rgba(139, 69, 19, 0.12);
+}
+
+.article-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8rpx;
+  height: 100%;
+  background: linear-gradient(180deg, #8B4513, #CD853F);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.article-card:active::before {
+  opacity: 1;
 }
 
 .article-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16rpx;
+  margin-bottom: 20rpx;
 }
 
 .article-category {
   display: inline-flex;
-  padding: 6rpx 16rpx;
-  border-radius: 6rpx;
+  align-items: center;
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
   font-size: 22rpx;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 1rpx;
 }
 
 .tag-folklore {
-  background-color: rgba(139, 69, 19, 0.1);
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.12) 0%, rgba(205, 133, 63, 0.08) 100%);
   color: #8B4513;
+  border: 1rpx solid rgba(139, 69, 19, 0.2);
 }
 
 .tag-farming {
-  background-color: rgba(34, 139, 34, 0.1);
+  background: linear-gradient(135deg, rgba(34, 139, 34, 0.12) 0%, rgba(50, 205, 50, 0.08) 100%);
   color: #228B22;
+  border: 1rpx solid rgba(34, 139, 34, 0.2);
 }
 
 .tag-craft {
-  background-color: rgba(70, 130, 180, 0.1);
+  background: linear-gradient(135deg, rgba(70, 130, 180, 0.12) 0%, rgba(100, 149, 237, 0.08) 100%);
   color: #4682B4;
+  border: 1rpx solid rgba(70, 130, 180, 0.2);
 }
 
 .tag-memory {
-  background-color: rgba(218, 165, 32, 0.1);
+  background: linear-gradient(135deg, rgba(218, 165, 32, 0.12) 0%, rgba(255, 215, 0, 0.08) 100%);
   color: #B8860B;
+  border: 1rpx solid rgba(218, 165, 32, 0.2);
 }
 
 .article-date {
   font-size: 24rpx;
-  color: var(--color-text-light);
+  color: #AAAAAA;
+  font-weight: 500;
 }
 
 .article-title {
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: bold;
-  color: var(--color-text);
-  line-height: 1.4;
-  margin-bottom: 12rpx;
+  color: #333333;
+  line-height: 1.5;
+  margin-bottom: 16rpx;
+  letter-spacing: 1rpx;
 }
 
 .article-content {
   font-size: 26rpx;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
+  color: #666666;
+  line-height: 1.8;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
-  margin-bottom: 16rpx;
+  margin-bottom: 20rpx;
+  letter-spacing: 0.5rpx;
 }
 
 /* 卡片标签 */
@@ -510,23 +543,24 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12rpx;
-  margin-bottom: 20rpx;
+  margin-bottom: 24rpx;
 }
 
 .card-tag-item {
   display: inline-flex;
   align-items: center;
-  padding: 6rpx 16rpx;
-  background-color: rgba(34, 139, 34, 0.06);
-  border-radius: 20rpx;
+  padding: 8rpx 20rpx;
+  background: linear-gradient(135deg, rgba(34, 139, 34, 0.08) 0%, rgba(50, 205, 50, 0.04) 100%);
+  border-radius: 24rpx;
   font-size: 22rpx;
-  color: var(--color-secondary);
+  color: #228B22;
   font-weight: 500;
+  border: 1rpx solid rgba(34, 139, 34, 0.15);
   transition: all 0.2s;
 }
 
 .card-tag-item:active {
-  background-color: rgba(34, 139, 34, 0.15);
+  background: linear-gradient(135deg, rgba(34, 139, 34, 0.15) 0%, rgba(50, 205, 50, 0.1) 100%);
   transform: scale(0.96);
 }
 
@@ -534,8 +568,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 16rpx;
-  border-top: 1rpx solid var(--color-border);
+  padding-top: 20rpx;
+  border-top: 2rpx solid #F5F0E8;
 }
 
 .article-author {
@@ -545,12 +579,13 @@
 
 .author-icon {
   font-size: 28rpx;
-  margin-right: 8rpx;
+  margin-right: 10rpx;
 }
 
 .author-name {
-  font-size: 24rpx;
-  color: var(--color-text-secondary);
+  font-size: 26rpx;
+  color: #8B4513;
+  font-weight: 500;
 }
 
 .article-stats {
@@ -561,17 +596,18 @@
 .stat-item {
   display: flex;
   align-items: center;
-  margin-left: 24rpx;
+  margin-left: 28rpx;
 }
 
 .stat-icon {
-  font-size: 24rpx;
-  margin-right: 6rpx;
+  font-size: 26rpx;
+  margin-right: 8rpx;
 }
 
 .stat-value {
   font-size: 24rpx;
-  color: var(--color-text-light);
+  color: #999999;
+  font-weight: 500;
 }
 
 /* 加载更多 */

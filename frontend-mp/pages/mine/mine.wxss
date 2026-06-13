@@ -9,11 +9,22 @@
 /* 用户卡片 */
 .user-card {
   position: relative;
-  margin: 32rpx;
+  margin: 24rpx;
   background-color: #FFFFFF;
   border-radius: 32rpx;
   overflow: hidden;
-  box-shadow: 0 12rpx 40rpx rgba(139, 69, 19, 0.12);
+  box-shadow: 0 16rpx 48rpx rgba(139, 69, 19, 0.12);
+}
+
+.user-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8rpx;
+  background: linear-gradient(90deg, #8B4513, #CD853F, #DAA520, #CD853F, #8B4513);
+  z-index: 1;
 }
 
 .user-bg {
@@ -1403,4 +1414,447 @@
   background: #CCCCCC;
   color: #FFFFFF;
   box-shadow: none;
+}
+
+/* 用户等级标签 */
+.user-level-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 16rpx;
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.18) 0%, rgba(255, 152, 0, 0.12) 100%);
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(255, 152, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.level-icon {
+  font-size: 22rpx;
+  margin-right: 6rpx;
+}
+
+.level-name {
+  font-size: 22rpx;
+  color: #E65100;
+  font-weight: 600;
+}
+
+/* 等级积分卡片 */
+.level-card {
+  margin: 0 24rpx 20rpx;
+  padding: 28rpx 28rpx 24rpx;
+  background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 50%, #FFE082 100%);
+  border-radius: 28rpx;
+  border: 2rpx solid rgba(255, 152, 0, 0.25);
+  box-shadow: 0 12rpx 36rpx rgba(255, 152, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.level-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 6rpx 20rpx rgba(255, 152, 0, 0.2);
+}
+
+.level-card::before {
+  content: '';
+  position: absolute;
+  top: -50rpx;
+  right: -50rpx;
+  width: 200rpx;
+  height: 200rpx;
+  background: radial-gradient(circle, rgba(255, 193, 7, 0.35) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.level-card::after {
+  content: '';
+  position: absolute;
+  bottom: -30rpx;
+  left: -30rpx;
+  width: 120rpx;
+  height: 120rpx;
+  background: radial-gradient(circle, rgba(255, 87, 34, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.level-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.level-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.level-badge-icon {
+  font-size: 52rpx;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4rpx 8rpx rgba(255, 152, 0, 0.3));
+}
+
+.level-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+.level-detail .level-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #E65100;
+  margin-bottom: 8rpx;
+  display: block;
+  letter-spacing: 1rpx;
+}
+
+.level-desc {
+  font-size: 22rpx;
+  color: #8B6914;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.level-points {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14rpx 24rpx;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 20rpx;
+  flex-shrink: 0;
+  box-shadow: 0 4rpx 12rpx rgba(255, 152, 0, 0.15);
+  border: 1rpx solid rgba(255, 255, 255, 0.8);
+}
+
+.points-value {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #FF6F00;
+  line-height: 1;
+  letter-spacing: 1rpx;
+}
+
+.points-label {
+  font-size: 20rpx;
+  color: #8B6914;
+  margin-top: 6rpx;
+  font-weight: 500;
+}
+
+.level-progress-bar {
+  margin-top: 24rpx;
+  height: 14rpx;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 7rpx;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  box-shadow: inset 0 2rpx 4rpx rgba(0, 0, 0, 0.06);
+}
+
+.level-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FF9800 0%, #FFC107 50%, #FFD54F 100%);
+  border-radius: 7rpx;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.level-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), transparent);
+  border-radius: 7rpx 7rpx 0 0;
+}
+
+.level-stats {
+  display: flex;
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid rgba(255, 152, 0, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.level-stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.level-stat-value {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #E65100;
+  line-height: 1;
+  margin-bottom: 8rpx;
+  letter-spacing: 1rpx;
+}
+
+.level-stat-label {
+  font-size: 22rpx;
+  color: #8B6914;
+  font-weight: 500;
+}
+
+/* 每日打卡卡片 */
+.checkin-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 24rpx 20rpx;
+  padding: 28rpx 32rpx;
+  background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 50%, #A5D6A7 100%);
+  border-radius: 28rpx;
+  border: 2rpx solid rgba(76, 175, 80, 0.25);
+  box-shadow: 0 12rpx 36rpx rgba(76, 175, 80, 0.15);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.checkin-card:active {
+  transform: scale(0.98);
+}
+
+.checkin-card::before {
+  content: '';
+  position: absolute;
+  top: -40rpx;
+  left: -40rpx;
+  width: 160rpx;
+  height: 160rpx;
+  background: radial-gradient(circle, rgba(76, 175, 80, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.checkin-card::after {
+  content: '';
+  position: absolute;
+  bottom: -20rpx;
+  right: -20rpx;
+  width: 100rpx;
+  height: 100rpx;
+  background: radial-gradient(circle, rgba(46, 125, 50, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.checkin-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.checkin-icon-wrap {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 6rpx 20rpx rgba(76, 175, 80, 0.35);
+}
+
+.checkin-icon {
+  font-size: 44rpx;
+}
+
+.checkin-info {
+  flex: 1;
+  margin-left: 20rpx;
+  min-width: 0;
+}
+
+.checkin-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #2E7D32;
+  margin-bottom: 8rpx;
+  letter-spacing: 1rpx;
+}
+
+.checkin-desc {
+  font-size: 22rpx;
+  color: #558B2F;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.checkin-btn {
+  height: 76rpx;
+  padding: 0 40rpx;
+  background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 38rpx;
+  border: none;
+  flex-shrink: 0;
+  box-shadow: 0 6rpx 20rpx rgba(76, 175, 80, 0.4);
+  position: relative;
+  z-index: 1;
+  letter-spacing: 1rpx;
+}
+
+.checkin-btn.checked {
+  background: linear-gradient(135deg, #9E9E9E 0%, #757575 100%);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+  color: #FFFFFF;
+}
+
+/* 勋章墙卡片 */
+.badge-wall-card {
+  margin: 0 24rpx 20rpx;
+  padding: 28rpx 28rpx 24rpx;
+  background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 50%, #CE93D8 100%);
+  border-radius: 28rpx;
+  border: 2rpx solid rgba(156, 39, 176, 0.25);
+  box-shadow: 0 12rpx 36rpx rgba(156, 39, 176, 0.15);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.badge-wall-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 6rpx 20rpx rgba(156, 39, 176, 0.2);
+}
+
+.badge-wall-card::before {
+  content: '';
+  position: absolute;
+  top: -60rpx;
+  right: -60rpx;
+  width: 200rpx;
+  height: 200rpx;
+  background: radial-gradient(circle, rgba(156, 39, 176, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.badge-wall-card::after {
+  content: '';
+  position: absolute;
+  bottom: -30rpx;
+  left: -30rpx;
+  width: 140rpx;
+  height: 140rpx;
+  background: radial-gradient(circle, rgba(233, 30, 99, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.badge-wall-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.badge-wall-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #6A1B9A;
+  letter-spacing: 1rpx;
+}
+
+.badge-wall-count {
+  display: flex;
+  align-items: baseline;
+  padding: 8rpx 16rpx;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.8);
+}
+
+.badge-count-num {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #8E24AA;
+  letter-spacing: 1rpx;
+}
+
+.badge-count-total {
+  font-size: 22rpx;
+  color: #AB47BC;
+  margin-left: 4rpx;
+}
+
+.badge-wall-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.badge-item {
+  width: calc((100% - 48rpx) / 4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 8rpx;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 20rpx;
+  transition: all 0.25s ease;
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
+}
+
+.badge-item:active {
+  transform: scale(0.92);
+}
+
+.badge-item.unlocked {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6rpx 16rpx rgba(156, 39, 176, 0.2);
+  border: 1rpx solid rgba(255, 255, 255, 0.9);
+}
+
+.badge-item.locked {
+  opacity: 0.5;
+  filter: grayscale(70%);
+}
+
+.badge-item.more-badges {
+  background: rgba(255, 255, 255, 0.35);
+  border: 2rpx dashed rgba(156, 39, 176, 0.35);
+}
+
+.badge-icon {
+  font-size: 48rpx;
+  margin-bottom: 10rpx;
+  filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.1));
+}
+
+.badge-name {
+  font-size: 20rpx;
+  color: #6A1B9A;
+  text-align: center;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+/* 聊天图标样式 */
+.icon-chat {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #42A5F5 0%, #1E88E5 100%);
 }
