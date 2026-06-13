@@ -10,6 +10,7 @@ const calendarData = require('./calendar-data');
 const certificateData = require('./certificate-data');
 const taskSystem = require('./task');
 const operaData = require('./opera-data');
+const villageData = require('./village-data');
 
 const config = {
   useRemote: false,
@@ -2278,6 +2279,22 @@ const storageApi = {
       genreInfo: operaData.getGenreInfo(item.genre),
       genreName: operaData.getGenreName(item.genre)
     }));
+    return { code: 200, data: list, message: 'success' };
+  },
+
+  getVillageList: async (params = {}) => {
+    await delay(200);
+    const { level = 'all', keyword = '', pageSize = 100 } = params;
+    const list = villageData.getVillageList({ level, keyword, status: 1 });
+    const start = 0;
+    const end = start + pageSize;
+    const pagedList = list.slice(start, end);
+    return { code: 200, data: { list: pagedList, total: list.length, page: 1, pageSize }, message: 'success' };
+  },
+
+  getFeaturedChannels: async () => {
+    await delay(200);
+    const list = villageData.getFeaturedChannels();
     return { code: 200, data: list, message: 'success' };
   },
 
@@ -6862,6 +6879,22 @@ const remoteApi = {
       url: '/api/opera/related-by-topic',
       method: 'GET',
       data: { topicId, limit }
+    });
+  },
+
+  getVillageList: async (params = {}) => {
+    const { level = 'all', keyword = '', page = 1, pageSize = 100 } = params;
+    return request({
+      url: '/api/village/list',
+      method: 'GET',
+      data: { level, keyword, page, pageSize }
+    });
+  },
+
+  getFeaturedChannels: async () => {
+    return request({
+      url: '/api/village/featured-channels',
+      method: 'GET'
     });
   },
 
