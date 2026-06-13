@@ -41,6 +41,7 @@ Page({
     loading: false,
 
     unreadNotificationCount: 0,
+    unreadMessageCount: 0,
 
     draftCount: 0,
 
@@ -71,6 +72,7 @@ Page({
       this.loadStats();
       this.loadMyArticles();
       this.loadUnreadCount();
+      this.loadUnreadMessageCount();
       this.loadDraftCount();
       this.loadTaskData();
     }
@@ -260,6 +262,14 @@ Page({
     });
   },
 
+  goToConversations() {
+    const app = getApp();
+    if (!app.checkLogin()) return;
+    wx.navigateTo({
+      url: '/pages/conversations/conversations'
+    });
+  },
+
   async loadUnreadCount() {
     try {
       const res = await api.getUnreadCount();
@@ -268,6 +278,17 @@ Page({
       }
     } catch (error) {
       console.error('[Mine] 加载未读通知数异常:', error);
+    }
+  },
+
+  async loadUnreadMessageCount() {
+    try {
+      const res = await api.getMessageUnreadCount();
+      if (res.code === 200) {
+        this.setData({ unreadMessageCount: res.data.unreadCount || 0 });
+      }
+    } catch (error) {
+      console.error('[Mine] 加载未读消息数异常:', error);
     }
   },
 

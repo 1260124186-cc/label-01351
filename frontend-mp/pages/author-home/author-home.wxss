@@ -172,6 +172,45 @@
   color: var(--color-text-light);
 }
 
+.pm-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 24rpx;
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.1) 0%, rgba(205, 133, 63, 0.06) 100%);
+  border-radius: 16rpx;
+  margin-top: 16rpx;
+  border: 2rpx solid rgba(139, 69, 19, 0.15);
+}
+
+.pm-entry-left {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.pm-icon {
+  font-size: 32rpx;
+}
+
+.pm-text {
+  font-size: 28rpx;
+  color: #8B4513;
+  font-weight: 600;
+}
+
+.pm-action {
+  padding: 8rpx 20rpx;
+  background: linear-gradient(135deg, #8B4513, #CD853F);
+  border-radius: 24rpx;
+}
+
+.pm-btn {
+  font-size: 24rpx;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
 /* 内容区块 */
 .section {
   margin: 0 32rpx 32rpx;

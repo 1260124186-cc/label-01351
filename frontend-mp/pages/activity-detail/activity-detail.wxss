@@ -330,6 +330,55 @@
   color: #999999;
 }
 
+.contact-organizer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx;
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.08) 0%, rgba(205, 133, 63, 0.04) 100%);
+  border: 2rpx solid rgba(139, 69, 19, 0.12);
+  border-radius: 16rpx;
+  margin-top: 24rpx;
+}
+
+.contact-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.contact-icon {
+  font-size: 40rpx;
+  flex-shrink: 0;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.contact-title {
+  font-size: 28rpx;
+  color: #8B4513;
+  font-weight: 600;
+}
+
+.contact-sub {
+  font-size: 22rpx;
+  color: #a68a6c;
+  margin-top: 4rpx;
+}
+
+.contact-arrow {
+  font-size: 36rpx;
+  color: #8B4513;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
 .activity-footer {
   position: fixed;
   left: 0;

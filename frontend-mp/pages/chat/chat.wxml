@@ -1,0 +1,214 @@
+<view class="chat-page">
+  <view class="accept-banner" wx:if="{{acceptStatus === 'pending'}}">
+    <view class="accept-banner-bg"></view>
+    <view class="accept-banner-content">
+      <view class="banner-left">
+        <text class="banner-icon">📬</text>
+        <view class="banner-texts">
+          <text class="banner-title">{{peerUserName}} 发起了会话请求</text>
+          <text class="banner-sub" wx:if="{{sourceLabelMap[source]}}">{{sourceLabelMap[source]}}</text>
+        </view>
+      </view>
+      <view class="banner-actions">
+        <button class="banner-btn btn-refuse" size="mini" bindtap="onRejectRequest">拒绝</button>
+        <button class="banner-btn btn-approve" size="mini" bindtap="onAcceptRequest">接受</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="waiting-banner" wx:if="{{acceptStatus === 'sent_pending'}}">
+    <text class="waiting-icon">⏳</text>
+    <text class="waiting-text">等待对方接受会话请求，对方接受前不可继续发送消息</text>
+  </view>
+
+  <view class="rejected-banner" wx:if="{{acceptStatus === 'rejected'}}">
+    <text class="rejected-icon">⛔</text>
+    <text class="rejected-text">对方已拒绝此次会话请求</text>
+  </view>
+
+  <view class="source-banner" wx:if="{{sourceTitle && (acceptStatus === 'accepted' || acceptStatus === 'sent_pending')}}">
+    <text class="source-icon">📍</text>
+    <text class="source-text">{{sourceLabelMap[source] || '来源'}}：{{sourceTitle}}</text>
+  </view>
+
+  <scroll-view
+    class="chat-scroll"
+    scroll-y
+    scroll-into-view="{{scrollToMsgId}}"
+    scroll-with-animation
+    enhanced
+    show-scrollbar="{{false}}"
+  >
+    <view class="chat-loading" wx:if="{{loading}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view class="empty-messages" wx:elif="{{messages.length === 0 && !loading}}">
+      <text class="empty-icon">💬</text>
+      <text class="empty-text" wx:if="{{acceptStatus === 'pending'}}">对方等待您接受会话</text>
+      <text class="empty-text" wx:elif="{{acceptStatus === 'sent_pending'}}">等待对方接受您的会话请求</text>
+      <text class="empty-text" wx:else>开始一段新的对话吧～</text>
+    </view>
+
+    <block wx:else>
+      <view class="messages-wrap">
+        <block wx:for="{{messages}}" wx:key="id">
+          <view class="msg-date-sep" wx:if="{{index === 0 || item.dateText !== messages[index-1].dateText}}">
+            <text class="msg-date-text">{{item.dateText}}</text>
+          </view>
+
+          <view
+            class="msg-row {{item.isMine ? 'msg-mine' : 'msg-other'}}"
+            id="msg-{{item.id}}"
+          >
+            <view
+              class="msg-avatar"
+              wx:if="{{!item.isMine}}"
+              bindtap="goToPeerHome"
+            >
+              <image wx:if="{{peerAvatar}}" class="avatar-image" src="{{peerAvatar}}" mode="aspectFill" />
+              <text wx:else class="avatar-text">{{peerUserName[0] || '用'}}</text>
+            </view>
+
+            <view class="msg-body">
+              <view class="msg-sender" wx:if="{{!item.isMine && index > 0 && messages[index-1].fromUserId !== item.fromUserId}}">
+                <text class="sender-name">{{item.fromUserName}}</text>
+              </view>
+              <view
+                class="msg-bubble {{item.isFirstStrangerMessage ? 'bubble-stranger' : ''}}"
+                bindlongpress="onDeleteMessage"
+                data-id="{{item.id}}"
+              >
+                <text class="stranger-tag" wx:if="{{item.isFirstStrangerMessage && !item.isMine}}">陌生人首条</text>
+                <text class="stranger-tag tag-mine" wx:if="{{item.isFirstStrangerMessage && item.isMine}}">会话请求</text>
+                <text class="msg-text">{{item.content}}</text>
+              </view>
+              <view class="msg-meta">
+                <text class="msg-time">{{item.timeText}}</text>
+                <text class="msg-read" wx:if="{{item.isMine && !item.isRead}}">未读</text>
+              </view>
+            </view>
+
+            <view class="msg-avatar avatar-mine" wx:if="{{item.isMine}}">
+              <text class="avatar-text">我</text>
+            </view>
+          </view>
+        </block>
+      </view>
+    </block>
+
+    <view class="scroll-bottom-anchor" id="scroll-bottom"></view>
+  </scroll-view>
+
+  <view class="input-bar {{acceptStatus === 'rejected' ? 'input-disabled' : ''}}">
+    <view class="input-left">
+      <button class="more-btn" bindtap="openMoreSheet">
+        <text class="more-icon">⋯</text>
+      </button>
+    </view>
+    <view class="input-wrap">
+      <textarea
+        class="chat-input"
+        placeholder="{{acceptStatus === 'pending' ? '请先接受会话后再输入消息...' : (acceptStatus === 'sent_pending' ? '等待对方接受...' : (acceptStatus === 'rejected' ? '会话已拒绝' : '输入消息（2-500字）'))}}"
+        value="{{inputText}}"
+        bindinput="onInputChange"
+        maxlength="{{inputMax}}"
+        auto-height
+        disabled="{{acceptStatus === 'pending' || acceptStatus === 'sent_pending' || acceptStatus === 'rejected'}}"
+        adjust-position
+        cursor-spacing="20"
+        show-confirm-bar="{{false}}"
+      />
+    </view>
+    <view class="input-right">
+      <button
+        class="send-btn {{inputText.trim().length >= inputMin && !sending && acceptStatus !== 'pending' && acceptStatus !== 'sent_pending' && acceptStatus !== 'rejected' ? 'send-active' : ''}}"
+        bindtap="onSend"
+        disabled="{{inputText.trim().length < inputMin || sending || acceptStatus === 'pending' || acceptStatus === 'sent_pending' || acceptStatus === 'rejected'}}"
+      >
+        <text wx:if="{{!sending}}">发送</text>
+        <text wx:else>中...</text>
+      </button>
+    </view>
+    <view class="char-count">
+      <text class="count-text">{{inputText.length}}/{{inputMax}}</text>
+    </view>
+  </view>
+
+  <view class="sheet-mask {{showMoreSheet ? 'mask-show' : ''}}" bindtap="closeMoreSheet"></view>
+  <view class="more-sheet {{showMoreSheet ? 'sheet-show' : ''}}">
+    <view class="sheet-header">
+      <text class="sheet-title">更多操作</text>
+      <view class="sheet-close" bindtap="closeMoreSheet">✕</view>
+    </view>
+    <view class="sheet-body">
+      <view class="sheet-item" bindtap="goToPeerHome">
+        <text class="sheet-icon">👤</text>
+        <text class="sheet-label">查看主页</text>
+      </view>
+      <view class="sheet-item" bindtap="onOpenReport">
+        <text class="sheet-icon">🚩</text>
+        <text class="sheet-label">举报用户</text>
+      </view>
+      <view class="sheet-item sheet-danger" bindtap="onBlockUser">
+        <text class="sheet-icon">🚫</text>
+        <text class="sheet-label">拉黑用户</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="sheet-mask {{showReportSheet ? 'mask-show' : ''}}" bindtap="closeReportSheet"></view>
+  <view class="report-sheet {{showReportSheet ? 'sheet-show' : ''}}">
+    <view class="sheet-header">
+      <text class="sheet-title">举报用户</text>
+      <view class="sheet-close" bindtap="closeReportSheet">✕</view>
+    </view>
+    <scroll-view class="sheet-body" scroll-y>
+      <view class="report-section">
+        <text class="section-title">选择举报原因（必填）</text>
+        <view class="reason-list">
+          <view
+            class="reason-item {{selectedReasonId === item.id ? 'reason-selected' : ''}}"
+            wx:for="{{reportReasons}}"
+            wx:key="id"
+            bindtap="onSelectReason"
+            data-id="{{item.id}}"
+          >
+            <text class="reason-icon">{{item.icon}}</text>
+            <text class="reason-name">{{item.name}}</text>
+            <text class="reason-check" wx:if="{{selectedReasonId === item.id}}">✓</text>
+          </view>
+        </view>
+      </view>
+      <view class="report-section">
+        <text class="section-title">详细描述（选填，最多500字）</text>
+        <view class="desc-wrap">
+          <textarea
+            class="desc-input"
+            placeholder="请详细描述违规情况，以便我们更好地核实处理"
+            value="{{reportDescription}}"
+            bindinput="onReportDescInput"
+            maxlength="500"
+            auto-height
+          />
+          <text class="desc-count">{{reportDescription.length}}/500</text>
+        </view>
+      </view>
+      <view class="report-tip">
+        <text class="tip-icon">ℹ️</text>
+        <text class="tip-text">提交后我们将在24小时内核实处理，恶意举报将追究责任</text>
+      </view>
+    </scroll-view>
+    <view class="sheet-footer">
+      <button class="sheet-btn btn-cancel" bindtap="closeReportSheet">取消</button>
+      <button
+        class="sheet-btn btn-submit {{selectedReasonId ? '' : 'btn-disabled'}}"
+        bindtap="onSubmitReport"
+        disabled="{{!selectedReasonId}}"
+      >
+        提交举报
+      </button>
+    </view>
+  </view>
+</view>

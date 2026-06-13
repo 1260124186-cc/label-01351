@@ -13,6 +13,7 @@ Page({
       { key: 'favorite', name: '收藏' },
       { key: 'comment', name: '评论' },
       { key: 'reply', name: '回复' },
+      { key: 'message', name: '私信' },
       { key: 'system', name: '系统' }
     ],
     typeIconMap: {
@@ -20,6 +21,8 @@ Page({
       favorite: '⭐',
       comment: '💬',
       reply: '↩️',
+      message: '✉️',
+      message_request: '📬',
       system: '📢'
     },
     typeLabelMap: {
@@ -27,6 +30,8 @@ Page({
       favorite: '收藏',
       comment: '评论',
       reply: '回复',
+      message: '私信消息',
+      message_request: '会话请求',
       system: '系统公告'
     }
   },
@@ -95,6 +100,16 @@ Page({
     if (notification.jumpType === 'article' && notification.jumpId) {
       wx.navigateTo({
         url: '/pages/detail/detail?id=' + notification.jumpId
+      });
+    } else if (notification.jumpType === 'chat' && notification.jumpId) {
+      const peerUserId = notification.jumpId;
+      const peerUserName = notification.fromUserName || '';
+      const params = [
+        'peerUserId=' + encodeURIComponent(peerUserId),
+        'peerUserName=' + encodeURIComponent(peerUserName)
+      ].join('&');
+      wx.navigateTo({
+        url: '/pages/chat/chat?' + params
       });
     }
   },

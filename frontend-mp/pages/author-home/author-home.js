@@ -129,5 +129,51 @@ Page({
         });
       }
     });
+  },
+
+  async goToChat() {
+    const app = getApp();
+    if (!app.checkLogin()) return;
+    const { authorId, authorName, authorAvatar } = this.data;
+    try {
+      const blockedRes = await api.checkBlocked(authorId);
+      if (blockedRes.code === 200 && blockedRes.data) {
+        const { iBlocked, blockedBy } = blockedRes.data;
+        if (iBlocked) {
+          wx.showModal({
+            title: '已拉黑该用户',
+            content: '您已拉黑此用户，无法发送私信。是否解除拉黑？',
+            confirmText: '解除拉黑',
+            success: async (r) => {
+              if (r.confirm) {
+                const u = await api.unblockUser(authorId);
+                if (u.code === 200) {
+                  wx.showToast({ title: '已解除拉黑', icon: 'success' });
+                  this.goToChat();
+                }
+              }
+            }
+          });
+          return;
+        }
+        if (blockedBy) {
+          wx.showToast({ title: '您已被对方拉黑，无法私信', icon: 'none' });
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('[AuthorHome] 检查拉黑状态失败:', e);
+    }
+    const params = [
+      'peerUserId=' + encodeURIComponent(authorId),
+      'peerUserName=' + encodeURIComponent(authorName || ''),
+      'peerAvatar=' + encodeURIComponent(authorAvatar || ''),
+      'source=' + encodeURIComponent('author'),
+      'sourceId=' + encodeURIComponent(authorId || ''),
+      'sourceTitle=' + encodeURIComponent('')
+    ].join('&');
+    wx.navigateTo({
+      url: '/pages/chat/chat?' + params
+    });
   }
 });

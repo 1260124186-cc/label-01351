@@ -270,5 +270,58 @@ Page({
       title: activity.title,
       path: `/pages/activity-detail/activity-detail?id=${activity.id}`
     };
+  },
+
+  async goToContactOrganizer() {
+    const app = getApp();
+    if (!app.checkLogin()) return;
+    const { activity } = this.data;
+    if (!activity) return;
+    const organizerId = activity.authorId;
+    const organizerName = activity.authorName;
+    if (!organizerId) {
+      wx.showToast({ title: '无法获取组织者信息', icon: 'none' });
+      return;
+    }
+    try {
+      const blockedRes = await api.checkBlocked(organizerId);
+      if (blockedRes.code === 200 && blockedRes.data) {
+        const { iBlocked, blockedBy } = blockedRes.data;
+        if (iBlocked) {
+          wx.showModal({
+            title: '已拉黑该用户',
+            content: '您已拉黑组织者，无法发送私信。是否解除拉黑？',
+            confirmText: '解除拉黑',
+            success: async (r) => {
+              if (r.confirm) {
+                const u = await api.unblockUser(organizerId);
+                if (u.code === 200) {
+                  wx.showToast({ title: '已解除拉黑', icon: 'success' });
+                  this.goToContactOrganizer();
+                }
+              }
+            }
+          });
+          return;
+        }
+        if (blockedBy) {
+          wx.showToast({ title: '您已被对方拉黑，无法联系', icon: 'none' });
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('[ActivityDetail] 检查拉黑状态失败:', e);
+    }
+    const params = [
+      'peerUserId=' + encodeURIComponent(organizerId),
+      'peerUserName=' + encodeURIComponent(organizerName || ''),
+      'peerAvatar=' + encodeURIComponent(''),
+      'source=' + encodeURIComponent('activity'),
+      'sourceId=' + encodeURIComponent(activity.id || ''),
+      'sourceTitle=' + encodeURIComponent(activity.title || '')
+    ].join('&');
+    wx.navigateTo({
+      url: '/pages/chat/chat?' + params
+    });
   }
 });

@@ -5049,6 +5049,507 @@ const storageApi = {
       },
       message: 'success'
     };
+  },
+
+  getConversationList: async (params = {}) => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const conversations = wx.getStorageSync('conversations') || {};
+    const userConversations = conversations[userId] || [];
+    const blockedUsers = storageApi._getBlockedUsers(userId);
+    const blockedIds = blockedUsers.map(b => b.userId);
+    const filtered = userConversations.filter(c => !blockedIds.includes(c.peerUserId));
+    filtered.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+    const totalUnread = filtered.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+    return {
+      code: 200,
+      data: { list: filtered, total: filtered.length, totalUnread },
+      message: 'success'
+    };
+  },
+
+  _getOrCreateConversationObj: (userId, peerUserId, peerUserName, peerAvatar, source) => {
+    const conversations = wx.getStorageSync('conversations') || {};
+    if (!conversations[userId]) conversations[userId] = [];
+    let conv = conversations[userId].find(c => c.peerUserId === peerUserId);
+    if (!conv) {
+      conv = {
+        id: util.generateId('conv'),
+        peerUserId,
+        peerUserName: peerUserName || ('用户' + peerUserId.slice(-4)),
+        peerAvatar: peerAvatar || '',
+        unreadCount: 0,
+        lastMessage: '',
+        lastMessageTime: new Date().toISOString(),
+        status: 'active',
+        acceptStatus: 'pending',
+        source: source || 'direct',
+        createTime: new Date().toISOString()
+      };
+      conversations[userId].unshift(conv);
+    } else {
+      conv.peerUserName = peerUserName || conv.peerUserName;
+      conv.peerAvatar = peerAvatar || conv.peerAvatar;
+    }
+    wx.setStorageSync('conversations', conversations);
+    return conv;
+  },
+
+  _saveConversationObj: (userId, conv) => {
+    const conversations = wx.getStorageSync('conversations') || {};
+    if (!conversations[userId]) conversations[userId] = [];
+    const idx = conversations[userId].findIndex(c => c.id === conv.id || c.peerUserId === conv.peerUserId);
+    if (idx > -1) {
+      conversations[userId][idx] = conv;
+    } else {
+      conversations[userId].unshift(conv);
+    }
+    wx.setStorageSync('conversations', conversations);
+  },
+
+  getOrCreateConversation: async (peerUserId, extra = {}) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!peerUserId) return { code: 400, data: null, message: '对方用户ID不能为空' };
+    const userId = getCurrentUserId();
+    if (peerUserId === userId) return { code: 400, data: null, message: '不能与自己发起会话' };
+    if (storageApi._isBlocked(userId, peerUserId)) {
+      return { code: 403, data: null, message: '您已拉黑该用户，无法发起会话' };
+    }
+    if (storageApi._isBlockedBy(userId, peerUserId)) {
+      return { code: 403, data: null, message: '对方已将您拉黑，无法发起会话' };
+    }
+    const { peerUserName, peerAvatar, source, sourceId, sourceTitle } = extra;
+    const myConv = storageApi._getOrCreateConversationObj(userId, peerUserId, peerUserName, peerAvatar, source);
+    const peerConv = storageApi._getOrCreateConversationObj(peerUserId, userId, '', '', source);
+    if (source && sourceId) {
+      myConv.sourceId = sourceId;
+      myConv.sourceTitle = sourceTitle || '';
+      peerConv.sourceId = sourceId;
+      peerConv.sourceTitle = sourceTitle || '';
+      storageApi._saveConversationObj(userId, myConv);
+      storageApi._saveConversationObj(peerUserId, peerConv);
+    }
+    const messages = storageApi._getMessageListOfConv(userId, peerUserId);
+    return {
+      code: 200,
+      data: { conversation: myConv, messages },
+      message: 'success'
+    };
+  },
+
+  acceptConversationRequest: async (peerUserId) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!peerUserId) return { code: 400, data: null, message: '对方用户ID不能为空' };
+    const userId = getCurrentUserId();
+    const myConv = storageApi._getConversationObj(userId, peerUserId);
+    if (!myConv) return { code: 404, data: null, message: '会话不存在' };
+    myConv.acceptStatus = 'accepted';
+    myConv.status = 'active';
+    storageApi._saveConversationObj(userId, myConv);
+    const peerConv = storageApi._getConversationObj(peerUserId, userId);
+    if (peerConv) {
+      peerConv.acceptStatus = 'accepted';
+      peerConv.status = 'active';
+      storageApi._saveConversationObj(peerUserId, peerConv);
+    }
+    return { code: 200, data: myConv, message: '已接受会话' };
+  },
+
+  rejectConversationRequest: async (peerUserId) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!peerUserId) return { code: 400, data: null, message: '对方用户ID不能为空' };
+    const userId = getCurrentUserId();
+    const myConv = storageApi._getConversationObj(userId, peerUserId);
+    if (!myConv) return { code: 404, data: null, message: '会话不存在' };
+    myConv.acceptStatus = 'rejected';
+    myConv.status = 'rejected';
+    storageApi._saveConversationObj(userId, myConv);
+    const peerConv = storageApi._getConversationObj(peerUserId, userId);
+    if (peerConv) {
+      peerConv.acceptStatus = 'rejected';
+      peerConv.status = 'rejected';
+      storageApi._saveConversationObj(peerUserId, peerConv);
+    }
+    const conversations = wx.getStorageSync('conversations') || {};
+    if (conversations[userId]) {
+      conversations[userId] = conversations[userId].filter(c => c.peerUserId !== peerUserId);
+      wx.setStorageSync('conversations', conversations);
+    }
+    return { code: 200, data: myConv, message: '已拒绝会话' };
+  },
+
+  markConversationAsRead: async (peerUserId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!peerUserId) return { code: 400, data: null, message: '对方用户ID不能为空' };
+    const userId = getCurrentUserId();
+    const conv = storageApi._getConversationObj(userId, peerUserId);
+    if (conv) {
+      conv.unreadCount = 0;
+      storageApi._saveConversationObj(userId, conv);
+    }
+    const messages = wx.getStorageSync('messages') || {};
+    const key = storageApi._convKey(userId, peerUserId);
+    if (messages[key]) {
+      messages[key] = messages[key].map(m => ({ ...m, isRead: true }));
+      wx.setStorageSync('messages', messages);
+    }
+    return { code: 200, data: null, message: 'success' };
+  },
+
+  deleteConversation: async (peerUserId) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!peerUserId) return { code: 400, data: null, message: '对方用户ID不能为空' };
+    const userId = getCurrentUserId();
+    const conversations = wx.getStorageSync('conversations') || {};
+    if (conversations[userId]) {
+      conversations[userId] = conversations[userId].filter(c => c.peerUserId !== peerUserId);
+      wx.setStorageSync('conversations', conversations);
+    }
+    const messages = wx.getStorageSync('messages') || {};
+    delete messages[storageApi._convKey(userId, peerUserId)];
+    wx.setStorageSync('messages', messages);
+    return { code: 200, data: null, message: '已删除会话' };
+  },
+
+  getMessageList: async (peerUserId, params = {}) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!peerUserId) return { code: 400, data: null, message: '对方用户ID不能为空' };
+    const userId = getCurrentUserId();
+    const all = storageApi._getMessageListOfConv(userId, peerUserId);
+    const { page = 1, pageSize = 50 } = params;
+    const total = all.length;
+    const reversed = [...all].reverse();
+    const start = (page - 1) * pageSize;
+    const pageList = reversed.slice(start, start + pageSize).reverse();
+    return {
+      code: 200,
+      data: { list: pageList, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  _convKey: (uid1, uid2) => [uid1, uid2].sort().join('__'),
+
+  _getMessageListOfConv: (userId, peerUserId) => {
+    const messages = wx.getStorageSync('messages') || {};
+    const key = storageApi._convKey(userId, peerUserId);
+    return messages[key] || [];
+  },
+
+  _appendMessage: (userId, peerUserId, message) => {
+    const messages = wx.getStorageSync('messages') || {};
+    const key = storageApi._convKey(userId, peerUserId);
+    if (!messages[key]) messages[key] = [];
+    messages[key].push(message);
+    wx.setStorageSync('messages', messages);
+  },
+
+  _getConversationObj: (userId, peerUserId) => {
+    const conversations = wx.getStorageSync('conversations') || {};
+    const list = conversations[userId] || [];
+    return list.find(c => c.peerUserId === peerUserId);
+  },
+
+  _isStranger: (userId, peerUserId) => {
+    const myConv = storageApi._getConversationObj(userId, peerUserId);
+    if (!myConv) return true;
+    const msgs = storageApi._getMessageListOfConv(userId, peerUserId);
+    const peerSent = msgs.filter(m => m.fromUserId === peerUserId);
+    return peerSent.length === 0 && myConv.acceptStatus !== 'accepted';
+  },
+
+  sendMessage: async (peerUserId, content, extra = {}) => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!peerUserId) return { code: 400, data: null, message: '对方用户ID不能为空' };
+    const userId = getCurrentUserId();
+    if (peerUserId === userId) return { code: 400, data: null, message: '不能给自己发消息' };
+    if (storageApi._isBlocked(userId, peerUserId)) {
+      return { code: 403, data: null, message: '您已拉黑该用户，无法发送消息' };
+    }
+    if (storageApi._isBlockedBy(userId, peerUserId)) {
+      return { code: 403, data: null, message: '对方已将您拉黑，无法发送消息' };
+    }
+    const text = (content || '').trim();
+    if (text.length < 2) return { code: 400, data: null, message: '消息内容至少需要2个字符' };
+    if (text.length > 500) return { code: 400, data: null, message: '消息内容不能超过500个字符' };
+    const sensitive = util.checkSensitiveWords(text);
+    if (sensitive.hasSensitive) {
+      return {
+        code: 400,
+        data: { matchedWords: sensitive.matchedWords },
+        message: '消息包含敏感词：' + sensitive.matchedWords.join('、')
+      };
+    }
+    const myConv = storageApi._getConversationObj(userId, peerUserId);
+    if (myConv && myConv.acceptStatus === 'rejected') {
+      return { code: 403, data: null, message: '对方已拒绝您的会话请求' };
+    }
+    const peerConv = storageApi._getConversationObj(peerUserId, userId);
+    const peerRejected = peerConv && peerConv.acceptStatus === 'rejected';
+    if (peerRejected) {
+      return { code: 403, data: null, message: '对方已拒绝您的会话请求' };
+    }
+    const isFirstContact = storageApi._isStranger(peerUserId, userId);
+    if (myConv && myConv.acceptStatus === 'sent_pending' && !isFirstContact) {
+      return { code: 403, data: null, message: '消息已送达，请等待对方接受会话请求后再发送' };
+    }
+    if (isFirstContact && (!peerConv || peerConv.acceptStatus === 'pending')) {
+      if (peerConv) {
+        peerConv.acceptStatus = 'pending';
+        peerConv.status = 'active';
+      }
+    } else if (myConv && myConv.acceptStatus === 'pending') {
+      myConv.acceptStatus = 'accepted';
+    }
+    const userInfo = wx.getStorageSync('userInfo') || {};
+    const { peerUserName, peerAvatar, source, sourceId, sourceTitle } = extra;
+    const nowStr = new Date().toISOString();
+    const message = {
+      id: util.generateId('msg'),
+      fromUserId: userId,
+      fromUserName: userInfo.nickname || '我',
+      fromUserAvatar: userInfo.avatar || '',
+      toUserId: peerUserId,
+      content: text,
+      type: 'text',
+      createTime: nowStr,
+      isRead: false,
+      isFirstStrangerMessage: isFirstContact
+    };
+    storageApi._appendMessage(userId, peerUserId, message);
+    const mySaved = storageApi._getConversationObj(userId, peerUserId)
+      || storageApi._getOrCreateConversationObj(userId, peerUserId, peerUserName, peerAvatar, source);
+    mySaved.lastMessage = text;
+    mySaved.lastMessageTime = nowStr;
+    mySaved.unreadCount = 0;
+    if (source) mySaved.source = source;
+    if (sourceId) mySaved.sourceId = sourceId;
+    if (sourceTitle) mySaved.sourceTitle = sourceTitle;
+    if (isFirstContact && mySaved.acceptStatus === 'pending') {
+      mySaved.acceptStatus = 'sent_pending';
+    } else if (mySaved.acceptStatus === 'pending' || mySaved.acceptStatus === 'sent_pending') {
+      mySaved.acceptStatus = 'accepted';
+    }
+    storageApi._saveConversationObj(userId, mySaved);
+    const peerSaved = storageApi._getConversationObj(peerUserId, userId)
+      || storageApi._getOrCreateConversationObj(peerUserId, userId, userInfo.nickname, userInfo.avatar, source);
+    peerSaved.lastMessage = text;
+    peerSaved.lastMessageTime = nowStr;
+    peerSaved.unreadCount = (peerSaved.unreadCount || 0) + 1;
+    if (source) peerSaved.source = source;
+    if (sourceId) peerSaved.sourceId = sourceId;
+    if (sourceTitle) peerSaved.sourceTitle = sourceTitle;
+    if (isFirstContact) {
+      peerSaved.acceptStatus = 'pending';
+    } else if (peerSaved.acceptStatus === 'pending' || peerSaved.acceptStatus === 'sent_pending') {
+      peerSaved.acceptStatus = 'accepted';
+    }
+    storageApi._saveConversationObj(peerUserId, peerSaved);
+    storageApi.createNotification({
+      type: isFirstContact ? 'message_request' : 'message',
+      fromUserId: userId,
+      fromUserName: userInfo.nickname || '',
+      targetUserId: peerUserId,
+      targetId: message.id,
+      targetTitle: '',
+      content: isFirstContact
+        ? `${userInfo.nickname || '有人'} 向您发起会话请求：${util.truncateText(text, 30)}`
+        : `${userInfo.nickname || '有人'}：${util.truncateText(text, 30)}`,
+      jumpType: 'chat',
+      jumpId: userId,
+      extraData: { peerUserId: userId, peerUserName: userInfo.nickname || '' }
+    });
+    return { code: 200, data: message, message: '发送成功' };
+  },
+
+  deleteMessage: async (messageId, peerUserId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!messageId) return { code: 400, data: null, message: '消息ID不能为空' };
+    const userId = getCurrentUserId();
+    const messages = wx.getStorageSync('messages') || {};
+    const key = storageApi._convKey(userId, peerUserId || '');
+    if (!messages[key]) return { code: 404, data: null, message: '消息不存在' };
+    const before = messages[key].length;
+    messages[key] = messages[key].filter(m => m.id !== messageId);
+    if (messages[key].length === before) return { code: 404, data: null, message: '消息不存在' };
+    wx.setStorageSync('messages', messages);
+    return { code: 200, data: null, message: '已删除' };
+  },
+
+  getMessageUnreadCount: async () => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return { code: 200, data: { unreadCount: 0, count: 0 }, message: 'success' };
+    const userId = getCurrentUserId();
+    const conversations = wx.getStorageSync('conversations') || {};
+    const list = conversations[userId] || [];
+    const count = list.reduce((s, c) => s + (c.unreadCount || 0), 0);
+    return { code: 200, data: { unreadCount: count, count }, message: 'success' };
+  },
+
+  _getBlockedUsers: (userId) => {
+    const blocked = wx.getStorageSync('blockedUsers') || {};
+    return blocked[userId] || [];
+  },
+
+  _saveBlockedUsers: (userId, list) => {
+    const blocked = wx.getStorageSync('blockedUsers') || {};
+    blocked[userId] = list;
+    wx.setStorageSync('blockedUsers', blocked);
+  },
+
+  _isBlocked: (blockerUserId, targetUserId) => {
+    return storageApi._getBlockedUsers(blockerUserId).some(b => b.userId === targetUserId);
+  },
+
+  _isBlockedBy: (targetUserId, blockerUserId) => {
+    return storageApi._isBlocked(blockerUserId, targetUserId);
+  },
+
+  blockUser: async (targetUserId, reason) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!targetUserId) return { code: 400, data: null, message: '用户ID不能为空' };
+    const userId = getCurrentUserId();
+    if (targetUserId === userId) return { code: 400, data: null, message: '不能拉黑自己' };
+    const list = storageApi._getBlockedUsers(userId);
+    if (list.some(b => b.userId === targetUserId)) {
+      return { code: 200, data: null, message: '已拉黑该用户' };
+    }
+    const userInfo = wx.getStorageSync('userInfo') || {};
+    list.unshift({
+      userId: targetUserId,
+      userName: reason ? '' : '',
+      reason: reason || '',
+      operatorId: userId,
+      operatorName: userInfo.nickname || '',
+      createTime: new Date().toISOString()
+    });
+    storageApi._saveBlockedUsers(userId, list);
+    const conversations = wx.getStorageSync('conversations') || {};
+    if (conversations[userId]) {
+      conversations[userId] = conversations[userId].filter(c => c.peerUserId !== targetUserId);
+      wx.setStorageSync('conversations', conversations);
+    }
+    return { code: 200, data: null, message: '已拉黑该用户' };
+  },
+
+  unblockUser: async (targetUserId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!targetUserId) return { code: 400, data: null, message: '用户ID不能为空' };
+    const userId = getCurrentUserId();
+    const list = storageApi._getBlockedUsers(userId);
+    const next = list.filter(b => b.userId !== targetUserId);
+    storageApi._saveBlockedUsers(userId, next);
+    return { code: 200, data: null, message: '已解除拉黑' };
+  },
+
+  getBlockedList: async () => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const list = storageApi._getBlockedUsers(userId);
+    return {
+      code: 200,
+      data: { blockedUsers: list, total: list.length },
+      message: 'success'
+    };
+  },
+
+  checkBlocked: async (targetUserId) => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!targetUserId) return { code: 400, data: null, message: '用户ID不能为空' };
+    const userId = getCurrentUserId();
+    const iBlocked = storageApi._isBlocked(userId, targetUserId);
+    const blockedBy = storageApi._isBlockedBy(userId, targetUserId);
+    return {
+      code: 200,
+      data: { iBlocked, blockedBy, isBlockedEither: iBlocked || blockedBy },
+      message: 'success'
+    };
+  },
+
+  reportUser: async (data) => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { targetUserId, reasonType, description, messageId, conversationId } = data || {};
+    if (!targetUserId) return { code: 400, data: null, message: '被举报用户ID不能为空' };
+    if (!reasonType) return { code: 400, data: null, message: '请选择举报原因' };
+    if (description && description.length > 500) return { code: 400, data: null, message: '详细描述不能超过500字' };
+    const userId = getCurrentUserId();
+    if (targetUserId === userId) return { code: 400, data: null, message: '不能举报自己' };
+    const userInfo = wx.getStorageSync('userInfo') || {};
+    const report = {
+      id: util.generateId('rpt'),
+      reporterId: userId,
+      reporterName: userInfo.nickname || '',
+      targetUserId,
+      reasonType,
+      description: (description || '').trim(),
+      messageId: messageId || '',
+      conversationId: conversationId || '',
+      status: 'pending',
+      createTime: new Date().toISOString()
+    };
+    const reports = wx.getStorageSync('reports') || [];
+    reports.unshift(report);
+    wx.setStorageSync('reports', reports);
+    return { code: 200, data: report, message: '举报已提交，我们会尽快处理' };
+  },
+
+  getMyReports: async () => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const reports = wx.getStorageSync('reports') || [];
+    const mine = reports.filter(r => r.reporterId === userId);
+    return {
+      code: 200,
+      data: { list: mine, total: mine.length },
+      message: 'success'
+    };
+  },
+
+  getReportReasons: async () => {
+    await delay(100);
+    return {
+      code: 200,
+      data: [
+        { id: 'harassment', name: '骚扰/不当言论', icon: '🚫' },
+        { id: 'fraud', name: '欺诈/诈骗', icon: '⚠️' },
+        { id: 'porn', name: '色情低俗内容', icon: '🔞' },
+        { id: 'violence', name: '暴力/恐怖内容', icon: '💢' },
+        { id: 'sensitive', name: '敏感政治言论', icon: '🚨' },
+        { id: 'other', name: '其他违规', icon: '📋' }
+      ],
+      message: 'success'
+    };
   }
 };
 

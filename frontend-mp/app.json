@@ -52,7 +52,9 @@
     "pages/admin-badge/admin-badge",
     "pages/onboarding/onboarding",
     "pages/tasks/tasks",
-    "pages/village-select/village-select"
+    "pages/village-select/village-select",
+    "pages/conversations/conversations",
+    "pages/chat/chat"
   ],
   "window": {
     "backgroundTextStyle": "dark",

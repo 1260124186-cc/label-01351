@@ -200,6 +200,15 @@
         </view>
         <text class="action-text">消息通知</text>
       </view>
+      <view class="action-item" bindtap="goToConversations">
+        <view class="action-icon-wrap icon-chat">
+          <text class="action-icon">💬</text>
+          <view class="unread-badge" wx:if="{{unreadMessageCount > 0}}">
+            <text class="badge-text">{{unreadMessageCount > 99 ? '99+' : unreadMessageCount}}</text>
+          </view>
+        </view>
+        <text class="action-text">私信消息</text>
+      </view>
       <view class="action-item" bindtap="goToDrafts">
         <view class="action-icon-wrap">
           <text class="action-icon">📝</text>

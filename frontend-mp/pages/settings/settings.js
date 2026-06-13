@@ -15,16 +15,37 @@ Page({
     languageName: '简体中文',
     showDialectAnnotation: true,
     showLanguagePicker: false,
+    blockedList: [],
+    blockCount: 0,
+    reportCount: 0,
     t: {}
   },
 
   onLoad() {
     this.loadSettings();
     this.calculateCacheSize();
+    this.loadPrivacyData();
   },
 
   onShow() {
     this.loadSettings();
+    this.loadPrivacyData();
+  },
+
+  async loadPrivacyData() {
+    try {
+      const blockRes = await api.getBlockedList();
+      const reportRes = await api.getMyReports();
+      const blockedList = blockRes.code === 200 ? (blockRes.data.blockedUsers || []) : [];
+      const reportCount = reportRes.code === 200 ? ((reportRes.data && reportRes.data.list) || []).length : 0;
+      this.setData({
+        blockedList,
+        blockCount: blockedList.length,
+        reportCount
+      });
+    } catch (e) {
+      console.error('[Settings] 加载隐私数据失败:', e);
+    }
   },
 
   loadSettings() {
@@ -248,6 +269,45 @@ Page({
     wx.showModal({
       title: '隐私政策',
       content: '我们非常重视您的个人信息和隐私保护。\n\n一、信息收集\n我们仅收集必要的用户信息用于提供服务。\n\n二、信息使用\n1. 用于提供、维护和改进我们的服务。\n2. 用于向您发送通知和消息。\n3. 用于保障账号安全。\n\n三、信息保护\n我们采用合理的安全措施保护您的个人信息。\n\n四、信息共享\n未经您同意，我们不会向第三方共享您的个人信息。\n\n五、您的权利\n您有权访问、更正、删除您的个人信息。',
+      showCancel: false,
+      confirmText: '我知道了'
+    });
+  },
+
+  goToBlockedList() {
+    wx.showModal({
+      title: '拉黑管理',
+      content: this.data.blockCount > 0
+        ? `您当前拉黑了 ${this.data.blockCount} 位用户。\n确定要查看/管理拉黑列表吗？`
+        : '您还没有拉黑任何用户。',
+      confirmText: this.data.blockCount > 0 ? '查看列表' : '我知道了',
+      showCancel: this.data.blockCount > 0,
+      cancelText: '关闭',
+      success: (res) => {
+        if (!res.confirm || this.data.blockCount === 0) return;
+        this._showBlockedListModal();
+      }
+    });
+  },
+
+  _showBlockedListModal() {
+    const { blockedList } = this.data;
+    if (!blockedList || blockedList.length === 0) return;
+    const names = blockedList.map((b, i) => `${i + 1}. ${b.userName || b.userId}`).join('\n');
+    wx.showModal({
+      title: '已拉黑用户',
+      content: names + '\n\n点击「解除拉黑」可选择解除某位用户的拉黑（此处为列表展示，解除可在私信页面操作）。',
+      showCancel: false,
+      confirmText: '我知道了'
+    });
+  },
+
+  goToMyReports() {
+    wx.showModal({
+      title: '举报记录',
+      content: this.data.reportCount > 0
+        ? `您已提交 ${this.data.reportCount} 条举报。管理员会在24小时内处理。`
+        : '您还没有提交过举报。',
       showCancel: false,
       confirmText: '我知道了'
     });

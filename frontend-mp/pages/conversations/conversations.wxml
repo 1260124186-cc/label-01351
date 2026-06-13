@@ -1,0 +1,130 @@
+<view class="page-container">
+  <view class="tab-bar">
+    <view
+      class="tab-item {{currentTab === item.key ? 'tab-active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="key"
+      wx:for-item="item"
+      bindtap="onTabChange"
+      data-tab="{{item.key}}"
+    >
+      <text class="tab-text">{{item.name}}</text>
+      <view class="tab-indicator" wx:if="{{currentTab === item.key}}"></view>
+    </view>
+  </view>
+
+  <view class="action-bar" wx:if="{{totalUnread > 0 && currentTab === 'all'}}">
+    <text class="unread-hint">{{totalUnread}} 条未读消息</text>
+    <text class="mark-all-btn" bindtap="onMarkAllRead">全部已读</text>
+  </view>
+
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:else>
+    <block wx:if="{{currentTab === 'pending'}}">
+      <block wx:set="{{pendingList = conversations.filter(c => c.acceptStatus === 'pending')}}"></block>
+      <view class="empty-wrap" wx:if="{{pendingList.length === 0}}">
+        <text class="empty-icon">✅</text>
+        <text class="empty-text">暂无待接受的会话请求</text>
+      </view>
+      <view class="conversation-list" wx:else>
+        <view
+          class="conversation-item conv-pending"
+          wx:for="{{pendingList}}"
+          wx:key="id"
+        >
+          <view class="conv-pending-banner">
+            <text class="banner-icon">📬</text>
+            <text class="banner-text">新的会话请求 · {{item.sourceLabel || '待您接受'}}</text>
+          </view>
+          <view class="conversation-main">
+            <view class="avatar-wrap">
+              <image wx:if="{{item.peerAvatar}}" class="avatar-image" src="{{item.peerAvatar}}" mode="aspectFill" />
+              <text wx:else class="avatar-text">{{item.peerUserName[0] || '用'}}</text>
+              <view class="unread-badge" wx:if="{{item.unreadCount > 0}}">
+                <text class="badge-text">{{item.unreadCount > 99 ? '99+' : item.unreadCount}}</text>
+              </view>
+            </view>
+            <view class="conv-content">
+              <view class="conv-header">
+                <text class="conv-name">{{item.peerUserName}}</text>
+                <text class="conv-time">{{item.timeText}}</text>
+              </view>
+              <view class="conv-body">
+                <text class="conv-text">{{item.lastMessageText}}</text>
+              </view>
+              <view class="conv-tags">
+                <view class="conv-tag tag-pending">待接受</view>
+                <view class="conv-tag tag-source" wx:if="{{item.sourceLabel}}">{{item.sourceLabel}}</view>
+              </view>
+            </view>
+          </view>
+          <view class="conv-quick-actions">
+            <button class="quick-btn btn-reject" size="mini" bindtap="onRejectRequest" data-peer="{{item.peerUserId}}" data-name="{{item.peerUserName}}">拒绝</button>
+            <button class="quick-btn btn-accept" size="mini" bindtap="onAcceptRequest" data-peer="{{item.peerUserId}}">接受</button>
+          </view>
+          <view class="conv-actions">
+            <view class="action-row" bindtap="onConversationTap" data-peer="{{item.peerUserId}}">
+              <text class="action-icon">💬</text>
+              <text class="action-label">查看消息</text>
+            </view>
+            <view class="action-divider"></view>
+            <view class="action-row action-danger" bindtap="onBlockUser" data-peer="{{item.peerUserId}}" data-name="{{item.peerUserName}}">
+              <text class="action-icon">🚫</text>
+              <text class="action-label">拉黑</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="empty-wrap" wx:if="{{conversations.length === 0}}">
+        <text class="empty-icon">💬</text>
+        <text class="empty-text">暂无私信消息</text>
+        <text class="empty-hint">去作者主页、活动页或结对页发起会话吧～</text>
+      </view>
+      <view class="conversation-list" wx:else>
+        <view
+          class="conversation-item {{item.unreadCount > 0 ? 'conv-unread' : ''}}"
+          wx:for="{{conversations}}"
+          wx:key="id"
+          bindtap="onConversationTap"
+          data-peer="{{item.peerUserId}}"
+        >
+          <view class="avatar-wrap">
+            <image wx:if="{{item.peerAvatar}}" class="avatar-image" src="{{item.peerAvatar}}" mode="aspectFill" />
+            <text wx:else class="avatar-text">{{item.peerUserName[0] || '用'}}</text>
+            <view class="unread-badge" wx:if="{{item.unreadCount > 0}}">
+              <text class="badge-text">{{item.unreadCount > 99 ? '99+' : item.unreadCount}}</text>
+            </view>
+          </view>
+          <view class="conv-content">
+            <view class="conv-header">
+              <text class="conv-name">{{item.peerUserName}}</text>
+              <text class="conv-time">{{item.timeText}}</text>
+            </view>
+            <view class="conv-body">
+              <text class="conv-text">{{item.lastMessageText}}</text>
+            </view>
+            <view class="conv-tags" wx:if="{{item.acceptStatus === 'sent_pending' || item.sourceLabel}}">
+              <view class="conv-tag tag-waiting" wx:if="{{item.acceptStatus === 'sent_pending'}}">{{item.statusText}}</view>
+              <view class="conv-tag tag-source" wx:if="{{item.sourceLabel}}">{{item.sourceLabel}}</view>
+            </view>
+          </view>
+          <view class="conv-slide-actions">
+            <view class="slide-btn btn-slide-delete" catchtap="onDeleteConversation" data-peer="{{item.peerUserId}}" data-name="{{item.peerUserName}}">
+              <text>删除</text>
+            </view>
+            <view class="slide-btn btn-slide-block" catchtap="onBlockUser" data-peer="{{item.peerUserId}}" data-name="{{item.peerUserName}}">
+              <text>拉黑</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </block>
+</view>

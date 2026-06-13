@@ -93,6 +93,17 @@
         </view>
         <text class="self-arrow">›</text>
       </view>
+
+      <!-- 私信入口（非本人） -->
+      <view class="pm-entry" wx:if="{{!isSelf && isLoggedIn}}" bindtap="goToChat">
+        <view class="pm-entry-left">
+          <text class="pm-icon">💬</text>
+          <text class="pm-text">私信 TA</text>
+        </view>
+        <view class="pm-action">
+          <text class="pm-btn">发起</text>
+        </view>
+      </view>
     </view>
 
     <!-- Ta 的文章 -->
