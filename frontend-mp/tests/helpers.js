@@ -734,6 +734,27 @@ function initStorage(overrides = {}) {
       { id: 'user_002', nickname: '李阿姨', avatar: '', phone: '13800000002', createTime: '2024-01-02', role: 'user' }
     ]);
   }
+  if (overrides.operas) {
+    wx.setStorageSync('operas', overrides.operas);
+  } else {
+    const { DEFAULT_OPERAS } = require('../utils/opera-data');
+    wx.setStorageSync('operas', JSON.parse(JSON.stringify(DEFAULT_OPERAS)));
+  }
+  if (overrides.operaDrafts) {
+    wx.setStorageSync('operaDrafts', overrides.operaDrafts);
+  } else {
+    wx.setStorageSync('operaDrafts', []);
+  }
+  if (overrides.operaFavorites) {
+    wx.setStorageSync('operaFavorites', overrides.operaFavorites);
+  } else {
+    wx.setStorageSync('operaFavorites', {});
+  }
+  if (overrides.ariaFavorites) {
+    wx.setStorageSync('ariaFavorites', overrides.ariaFavorites);
+  } else {
+    wx.setStorageSync('ariaFavorites', {});
+  }
 }
 
 function logoutUser() {

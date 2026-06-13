@@ -52,7 +52,7 @@
           >
             <view class="form-picker">
               <text class="{{form.category ? 'picker-value' : 'picker-placeholder'}}">
-                {{form.category ? (categoryList[categoryList.findIndex(c => c.id === form.category)].name) : '请选择分类（戏曲/曲艺）'}}
+                {{form.category ? categoryName : '请选择分类（戏曲/曲艺）'}}
               </text>
               <text class="picker-arrow">›</text>
             </view>
@@ -72,7 +72,7 @@
           >
             <view class="form-picker">
               <text class="{{form.genre ? 'picker-value' : 'picker-placeholder'}}">
-                {{form.genre ? (genreList[genreList.findIndex(g => g.id === form.genre)].name) : '请选择剧种/曲种'}}
+                {{form.genre ? genreName : '请选择剧种/曲种'}}
               </text>
               <text class="picker-arrow">›</text>
             </view>
@@ -161,8 +161,8 @@
             <text wx:if="{{form.heritageRegions.length === 0}}" class="picker-placeholder">请选择传承地区</text>
             <block wx:else>
               <view class="tag-chips">
-                <view class="tag-chip" wx:for="{{form.heritageRegions}}" wx:key="*this">
-                  <text class="chip-text">{{regionList[regionList.findIndex(r => r.id === item)].name}}</text>
+                <view class="tag-chip" wx:for="{{heritageRegionNames}}" wx:key="*this">
+                  <text class="chip-text">{{item}}</text>
                 </view>
               </view>
             </block>

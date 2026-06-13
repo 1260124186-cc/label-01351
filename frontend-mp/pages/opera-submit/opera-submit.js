@@ -17,6 +17,9 @@ Page({
       isRare: true,
       representativeArias: []
     },
+    categoryName: '',
+    genreName: '',
+    heritageRegionNames: [],
     categoryList: OPERA_CATEGORIES,
     genreList: OPERA_GENRES,
     filteredGenreList: [],
@@ -65,15 +68,17 @@ Page({
     const filteredGenreList = OPERA_GENRES.filter(g => g.category === category.id);
     this.setData({
       'form.category': category.id,
+      categoryName: category.name,
       filteredGenreList,
-      'form.genre': ''
+      'form.genre': '',
+      genreName: ''
     });
   },
 
   selectGenre(e) {
     const value = e.detail.value;
     const genre = this.data.filteredGenreList[value] || this.data.genreList[value];
-    this.setData({ 'form.genre': genre.id });
+    this.setData({ 'form.genre': genre.id, genreName: genre.name });
   },
 
   toggleRegionPicker() {
@@ -89,7 +94,11 @@ Page({
     } else {
       heritageRegions.push(regionId);
     }
-    this.setData({ 'form.heritageRegions': heritageRegions });
+    const heritageRegionNames = heritageRegions.map(id => {
+      const r = this.data.regionList.find(item => item.id === id);
+      return r ? r.name : id;
+    });
+    this.setData({ 'form.heritageRegions': heritageRegions, heritageRegionNames });
   },
 
   addAlias() {
@@ -230,6 +239,9 @@ Page({
             isRare: true,
             representativeArias: []
           },
+          categoryName: '',
+          genreName: '',
+          heritageRegionNames: [],
           filteredGenreList: []
         });
         this.loadMyDrafts();
