@@ -208,7 +208,9 @@ const POINTS_RULES = {
   join_activity: 30,
   correct_quiz: 5,
   view_article: 1,
+  view_opera: 1,
   favorite_article: 2,
+  favorite_opera: 2,
   comment_article: 3,
   share_article: 5,
   volunteer_activity: 100,
@@ -1302,6 +1304,18 @@ const recordAction = (actionType, data = {}) => {
     case 'view_figure':
       updateTaskStat('viewedFigureCount', 1);
       statsUpdates.push('viewedFigureCount');
+      break;
+    case 'view_opera':
+      updateTaskStat('viewedOperaCount', 1);
+      statsUpdates.push('viewedOperaCount');
+      pointsEarned = POINTS_RULES.view_opera;
+      if (pointsEarned) addUserPoints(pointsEarned);
+      break;
+    case 'favorite_opera':
+      updateTaskStat('favoritedOperaCount', 1);
+      statsUpdates.push('favoritedOperaCount');
+      pointsEarned = POINTS_RULES.favorite_opera;
+      if (pointsEarned) addUserPoints(pointsEarned);
       break;
     case 'publish_article':
       updateTaskStat('publishedArticleCount', 1);

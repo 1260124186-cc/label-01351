@@ -9,6 +9,7 @@ const interviewData = require('./interview-data');
 const calendarData = require('./calendar-data');
 const certificateData = require('./certificate-data');
 const taskSystem = require('./task');
+const operaData = require('./opera-data');
 
 const config = {
   useRemote: false,
@@ -1783,6 +1784,501 @@ const storageApi = {
     notifications[data.targetUserId].push(newNotification);
     wx.setStorageSync('notifications', notifications);
     return { code: 200, data: newNotification, message: 'success' };
+  },
+
+  getOperaList: async (params = {}) => {
+    await delay(500);
+    const { category = 'all', genre = 'all', region = 'all', page = 1, pageSize = 10, keyword = '', isRare = false } = params;
+    let operas = wx.getStorageSync('operas') || [];
+    operas = operaData.filterOperas(operas, { category, genre, region, keyword, isRare });
+    operas.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+
+    const total = operas.length;
+    const start = (page - 1) * pageSize;
+    const list = operas.slice(start, start + pageSize).map(item => ({
+      ...item,
+      genreInfo: operaData.getGenreInfo(item.genre),
+      genreName: operaData.getGenreName(item.genre),
+      categoryInfo: operaData.getCategoryInfo(item.category),
+      regionNames: operaData.getRegionNames(item.heritageRegions),
+      ariaCount: Array.isArray(item.representativeArias) ? item.representativeArias.length : 0
+    }));
+
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getOperaDetail: async (id) => {
+    await delay(300);
+    if (!id) {
+      return { code: 400, data: null, message: '剧目ID不能为空' };
+    }
+    const operas = wx.getStorageSync('operas') || [];
+    const opera = operas.find(item => item.id === id);
+    if (!opera) {
+      return { code: 404, data: null, message: '剧目不存在' };
+    }
+
+    opera.viewCount = (opera.viewCount || 0) + 1;
+    wx.setStorageSync('operas', operas);
+
+    const figures = wx.getStorageSync('figures') || [];
+    const relatedFigureIds = new Set();
+    if (Array.isArray(opera.inheritors)) {
+      opera.inheritors.forEach(fid => relatedFigureIds.add(fid));
+    }
+    if (Array.isArray(opera.relatedFigureIds)) {
+      opera.relatedFigureIds.forEach(fid => relatedFigureIds.add(fid));
+    }
+    const relatedFigures = figures
+      .filter(item => relatedFigureIds.has(item.id) && item.status === 1)
+      .map(item => ({
+        id: item.id,
+        name: item.name,
+        avatar: item.avatar,
+        identityInfo: figureData.getIdentityInfo(item.identity),
+        briefIntroduction: item.briefIntroduction
+      }));
+
+    const topics = wx.getStorageSync('topics') || [];
+    const relatedTopics = topics
+      .filter(item => Array.isArray(opera.relatedTopics) && opera.relatedTopics.includes(item.id) && item.status === 1)
+      .map(item => ({
+        id: item.id,
+        title: item.title,
+        cover: item.cover,
+        articleCount: (item.articleIds || []).length
+      }));
+
+    const userId = getCurrentUserId();
+    const operaFavorites = wx.getStorageSync('operaFavorites') || {};
+    const isFavorite = !!(userId && operaFavorites[userId] && operaFavorites[userId][id]);
+
+    const ariaFavorites = wx.getStorageSync('ariaFavorites') || {};
+    const userAriaFavs = (userId && ariaFavorites[userId]) ? ariaFavorites[userId] : {};
+    const ariasWithFavorite = (opera.representativeArias || []).map(aria => ({
+      ...aria,
+      isFavorite: !!userAriaFavs[`${id}_${aria.id}`]
+    }));
+
+    const result = {
+      ...opera,
+      representativeArias: ariasWithFavorite,
+      genreInfo: operaData.getGenreInfo(opera.genre),
+      genreName: operaData.getGenreName(opera.genre),
+      categoryInfo: operaData.getCategoryInfo(opera.category),
+      regionNames: operaData.getRegionNames(opera.heritageRegions),
+      relatedFigures,
+      relatedTopics,
+      isFavorite
+    };
+
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  getOperaFilterOptions: async () => {
+    await delay(100);
+    const categoryList = [{ id: 'all', name: '全部', icon: '📚' }, ...operaData.OPERA_CATEGORIES];
+    const genreList = [{ id: 'all', name: '全部剧种', icon: '🎭' }, ...operaData.OPERA_GENRES];
+    const regionList = [{ id: 'all', name: '全部地区' }, ...operaData.REGIONS];
+
+    return {
+      code: 200,
+      data: { categoryList, genreList, regionList },
+      message: 'success'
+    };
+  },
+
+  getDailyOpera: async () => {
+    await delay(200);
+    const opera = operaData.getDailyOpera();
+    if (!opera) {
+      return { code: 404, data: null, message: '暂无数据' };
+    }
+    const result = {
+      ...opera,
+      genreInfo: operaData.getGenreInfo(opera.genre),
+      genreName: operaData.getGenreName(opera.genre),
+      regionNames: operaData.getRegionNames(opera.heritageRegions),
+      ariaCount: Array.isArray(opera.representativeArias) ? opera.representativeArias.length : 0
+    };
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  getDailyAria: async () => {
+    await delay(200);
+    const aria = operaData.getDailyAria();
+    if (!aria) {
+      return { code: 404, data: null, message: '暂无数据' };
+    }
+    return { code: 200, data: aria, message: 'success' };
+  },
+
+  favoriteOpera: async (id) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '剧目ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const favorites = wx.getStorageSync('operaFavorites') || {};
+    if (!favorites[userId]) {
+      favorites[userId] = {};
+    }
+    if (favorites[userId][id]) {
+      return { code: 200, data: { isFavorite: true }, message: '已收藏' };
+    }
+    favorites[userId][id] = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+    wx.setStorageSync('operaFavorites', favorites);
+
+    const operas = wx.getStorageSync('operas') || [];
+    const opera = operas.find(item => item.id === id);
+    if (opera) {
+      opera.favoriteCount = (opera.favoriteCount || 0) + 1;
+      wx.setStorageSync('operas', operas);
+    }
+    return { code: 200, data: { isFavorite: true }, message: '收藏成功' };
+  },
+
+  unfavoriteOpera: async (id) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '剧目ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const favorites = wx.getStorageSync('operaFavorites') || {};
+    if (favorites[userId] && favorites[userId][id]) {
+      delete favorites[userId][id];
+      wx.setStorageSync('operaFavorites', favorites);
+
+      const operas = wx.getStorageSync('operas') || [];
+      const opera = operas.find(item => item.id === id);
+      if (opera) {
+        opera.favoriteCount = Math.max((opera.favoriteCount || 0) - 1, 0);
+        wx.setStorageSync('operas', operas);
+      }
+    }
+    return { code: 200, data: { isFavorite: false }, message: '已取消收藏' };
+  },
+
+  checkOperaFavorite: async (id) => {
+    await delay(100);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '剧目ID不能为空' };
+    }
+    const userId = getCurrentUserId();
+    const favorites = wx.getStorageSync('operaFavorites') || {};
+    const isFavorite = !!(favorites[userId] && favorites[userId][id]);
+    return { code: 200, data: { isFavorite }, message: 'success' };
+  },
+
+  favoriteAria: async (operaId, ariaId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!operaId || !ariaId) {
+      return { code: 400, data: null, message: '参数错误' };
+    }
+    const userId = getCurrentUserId();
+    const key = `${operaId}_${ariaId}`;
+    const favorites = wx.getStorageSync('ariaFavorites') || {};
+    if (!favorites[userId]) {
+      favorites[userId] = {};
+    }
+    if (favorites[userId][key]) {
+      return { code: 200, data: { isFavorite: true }, message: '已收藏' };
+    }
+    favorites[userId][key] = {
+      operaId,
+      ariaId,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
+    };
+    wx.setStorageSync('ariaFavorites', favorites);
+    return { code: 200, data: { isFavorite: true }, message: '收藏成功' };
+  },
+
+  unfavoriteAria: async (operaId, ariaId) => {
+    await delay(200);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!operaId || !ariaId) {
+      return { code: 400, data: null, message: '参数错误' };
+    }
+    const userId = getCurrentUserId();
+    const key = `${operaId}_${ariaId}`;
+    const favorites = wx.getStorageSync('ariaFavorites') || {};
+    if (favorites[userId] && favorites[userId][key]) {
+      delete favorites[userId][key];
+      wx.setStorageSync('ariaFavorites', favorites);
+    }
+    return { code: 200, data: { isFavorite: false }, message: '已取消收藏' };
+  },
+
+  getOperaFavoriteList: async (params = {}) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { page = 1, pageSize = 10, category = 'all', keyword = '' } = params;
+    const userId = getCurrentUserId();
+    const favorites = wx.getStorageSync('operaFavorites') || {};
+    const userFavs = favorites[userId] || {};
+    const favIds = Object.keys(userFavs);
+    if (favIds.length === 0) {
+      return {
+        code: 200,
+        data: { list: [], total: 0, page, pageSize, hasMore: false },
+        message: 'success'
+      };
+    }
+    let operas = wx.getStorageSync('operas') || [];
+    operas = operas.filter(item => favIds.includes(item.id) && item.status === 1);
+    if (category && category !== 'all') {
+      operas = operas.filter(item => item.category === category);
+    }
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      operas = operas.filter(item =>
+        item.title.toLowerCase().includes(kw) ||
+        (item.introduction || '').toLowerCase().includes(kw)
+      );
+    }
+    operas.sort((a, b) => {
+      const timeA = userFavs[a.id] || '';
+      const timeB = userFavs[b.id] || '';
+      return new Date(timeB) - new Date(timeA);
+    });
+    const total = operas.length;
+    const start = (page - 1) * pageSize;
+    const list = operas.slice(start, start + pageSize).map(item => ({
+      ...item,
+      genreInfo: operaData.getGenreInfo(item.genre),
+      genreName: operaData.getGenreName(item.genre),
+      favoriteTime: userFavs[item.id]
+    }));
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getAriaFavoriteList: async () => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const favorites = wx.getStorageSync('ariaFavorites') || {};
+    const userFavs = favorites[userId] || {};
+    const favKeys = Object.keys(userFavs);
+    if (favKeys.length === 0) {
+      return { code: 200, data: { list: [], total: 0 }, message: 'success' };
+    }
+    const operas = wx.getStorageSync('operas') || [];
+    const list = [];
+    favKeys.forEach(key => {
+      const fav = userFavs[key];
+      const opera = operas.find(o => o.id === fav.operaId && o.status === 1);
+      if (opera && Array.isArray(opera.representativeArias)) {
+        const aria = opera.representativeArias.find(a => a.id === fav.ariaId);
+        if (aria) {
+          list.push({
+            ...aria,
+            operaId: opera.id,
+            operaTitle: opera.title,
+            genreInfo: operaData.getGenreInfo(opera.genre),
+            genreName: operaData.getGenreName(opera.genre),
+            favoriteTime: fav.createTime
+          });
+        }
+      }
+    });
+    list.sort((a, b) => new Date(b.favoriteTime) - new Date(a.favoriteTime));
+    return { code: 200, data: { list, total: list.length }, message: 'success' };
+  },
+
+  submitOperaDraft: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!data.title || !data.title.trim()) {
+      return { code: 400, data: null, message: '剧目名称不能为空' };
+    }
+    if (!data.category) {
+      return { code: 400, data: null, message: '请选择分类（戏曲/曲艺）' };
+    }
+    if (!data.genre) {
+      return { code: 400, data: null, message: '请选择剧种/曲种' };
+    }
+    if (!data.introduction || !data.introduction.trim()) {
+      return { code: 400, data: null, message: '请填写剧目简介' };
+    }
+
+    const userInfo = wx.getStorageSync('userInfo');
+    const drafts = wx.getStorageSync('operaDrafts') || [];
+
+    const title = data.title.trim();
+    const sensitiveCheck = util.checkSensitiveWords(
+      title + ' ' + (data.introduction || '') + ' ' + (data.plotSummary || '') + ' ' + ((data.tags || []).join(' '))
+    );
+    if (sensitiveCheck.hasSensitive) {
+      return {
+        code: 400,
+        data: { matchedWords: sensitiveCheck.matchedWords },
+        message: '内容包含敏感词：' + sensitiveCheck.matchedWords.join('、') + '，请修改后重试'
+      };
+    }
+
+    const newDraft = {
+      id: util.generateId('opera_draft'),
+      title,
+      category: data.category,
+      genre: data.genre,
+      alias: data.alias || [],
+      introduction: data.introduction.trim(),
+      plotSummary: (data.plotSummary || '').trim(),
+      representativeArias: data.representativeArias || [],
+      heritageRegions: data.heritageRegions || [],
+      inheritors: data.inheritors || [],
+      relatedTopics: data.relatedTopics || [],
+      relatedFigureIds: data.relatedFigureIds || [],
+      tags: data.tags || [],
+      cover: data.cover || '',
+      isRare: data.isRare !== false,
+      submitterId: userInfo.id,
+      submitterName: userInfo.nickname,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      status: 0,
+      reviewStatus: 'pending',
+      reviewNote: ''
+    };
+
+    drafts.unshift(newDraft);
+    wx.setStorageSync('operaDrafts', drafts);
+    return { code: 200, data: newDraft, message: '提交成功，等待审核' };
+  },
+
+  getMyOperaDrafts: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    let drafts = wx.getStorageSync('operaDrafts') || [];
+    drafts = drafts.filter(item => item.submitterId === userId);
+    drafts.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const list = drafts.map(item => ({
+      ...item,
+      genreInfo: operaData.getGenreInfo(item.genre),
+      genreName: operaData.getGenreName(item.genre),
+      categoryInfo: operaData.getCategoryInfo(item.category)
+    }));
+    return { code: 200, data: { list, total: list.length }, message: 'success' };
+  },
+
+  getOperaReviewList: async (params = {}) => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { status = 'pending', page = 1, pageSize = 10 } = params;
+    let drafts = wx.getStorageSync('operaDrafts') || [];
+    if (status && status !== 'all') {
+      drafts = drafts.filter(item => item.reviewStatus === status);
+    }
+    drafts.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const total = drafts.length;
+    const start = (page - 1) * pageSize;
+    const list = drafts.slice(start, start + pageSize).map(item => ({
+      ...item,
+      genreInfo: operaData.getGenreInfo(item.genre),
+      genreName: operaData.getGenreName(item.genre),
+      categoryInfo: operaData.getCategoryInfo(item.category)
+    }));
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  reviewOperaDraft: async (id, decision) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '草稿ID不能为空' };
+    }
+    if (!['approved', 'rejected'].includes(decision)) {
+      return { code: 400, data: null, message: '审核决定无效' };
+    }
+    const drafts = wx.getStorageSync('operaDrafts') || [];
+    const draftIndex = drafts.findIndex(item => item.id === id);
+    if (draftIndex === -1) {
+      return { code: 404, data: null, message: '草稿不存在' };
+    }
+    const draft = drafts[draftIndex];
+    draft.reviewStatus = decision;
+    draft.reviewTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+
+    if (decision === 'approved') {
+      draft.status = 1;
+      const operas = wx.getStorageSync('operas') || [];
+      const approvedOpera = {
+        id: util.generateId('opera'),
+        title: draft.title,
+        category: draft.category,
+        genre: draft.genre,
+        alias: draft.alias,
+        introduction: draft.introduction,
+        plotSummary: draft.plotSummary,
+        representativeArias: draft.representativeArias,
+        heritageRegions: draft.heritageRegions,
+        inheritors: draft.inheritors,
+        relatedTopics: draft.relatedTopics,
+        relatedFigureIds: draft.relatedFigureIds,
+        tags: draft.tags,
+        cover: draft.cover,
+        isRare: draft.isRare,
+        viewCount: 0,
+        favoriteCount: 0,
+        createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+        status: 1
+      };
+      operas.unshift(approvedOpera);
+      wx.setStorageSync('operas', operas);
+      draft.approvedOperaId = approvedOpera.id;
+    }
+    drafts[draftIndex] = draft;
+    wx.setStorageSync('operaDrafts', drafts);
+    return { code: 200, data: draft, message: decision === 'approved' ? '审核通过' : '已驳回' };
+  },
+
+  getRelatedOperasByFigure: async (figureId, limit = 5) => {
+    await delay(200);
+    const related = operaData.getRelatedOperasByFigure(figureId, limit);
+    const list = related.map(item => ({
+      ...item,
+      genreInfo: operaData.getGenreInfo(item.genre),
+      genreName: operaData.getGenreName(item.genre)
+    }));
+    return { code: 200, data: list, message: 'success' };
+  },
+
+  getRelatedOperasByTopic: async (topicId, limit = 5) => {
+    await delay(200);
+    const related = operaData.getRelatedOperasByTopic(topicId, limit);
+    const list = related.map(item => ({
+      ...item,
+      genreInfo: operaData.getGenreInfo(item.genre),
+      genreName: operaData.getGenreName(item.genre)
+    }));
+    return { code: 200, data: list, message: 'success' };
   },
 
   getActivityTypes: async () => {
@@ -6182,6 +6678,190 @@ const remoteApi = {
       url: '/api/notification/create',
       method: 'POST',
       data
+    });
+  },
+
+  getOperaList: async (params = {}) => {
+    const { category = 'all', genre = 'all', region = 'all', page = 1, pageSize = 10, keyword = '', isRare = false } = params;
+    return request({
+      url: '/api/opera/list',
+      method: 'GET',
+      data: { category, genre, region, page, pageSize, keyword, isRare }
+    });
+  },
+
+  getOperaDetail: async (id) => {
+    if (!id) {
+      return { code: 400, data: null, message: '剧目ID不能为空' };
+    }
+    return request({
+      url: `/api/opera/detail/${id}`,
+      method: 'GET'
+    });
+  },
+
+  getOperaFilterOptions: async () => {
+    return request({
+      url: '/api/opera/filter-options',
+      method: 'GET'
+    });
+  },
+
+  getDailyOpera: async () => {
+    return request({
+      url: '/api/opera/daily',
+      method: 'GET'
+    });
+  },
+
+  getDailyAria: async () => {
+    return request({
+      url: '/api/opera/daily-aria',
+      method: 'GET'
+    });
+  },
+
+  favoriteOpera: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '剧目ID不能为空' };
+    }
+    return request({
+      url: '/api/opera/favorite',
+      method: 'POST',
+      data: { id }
+    });
+  },
+
+  unfavoriteOpera: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '剧目ID不能为空' };
+    }
+    return request({
+      url: '/api/opera/unfavorite',
+      method: 'POST',
+      data: { id }
+    });
+  },
+
+  checkOperaFavorite: async (id) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '剧目ID不能为空' };
+    }
+    return request({
+      url: `/api/opera/check-favorite/${id}`,
+      method: 'GET'
+    });
+  },
+
+  favoriteAria: async (operaId, ariaId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!operaId || !ariaId) {
+      return { code: 400, data: null, message: '参数错误' };
+    }
+    return request({
+      url: '/api/opera/aria-favorite',
+      method: 'POST',
+      data: { operaId, ariaId }
+    });
+  },
+
+  unfavoriteAria: async (operaId, ariaId) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!operaId || !ariaId) {
+      return { code: 400, data: null, message: '参数错误' };
+    }
+    return request({
+      url: '/api/opera/aria-unfavorite',
+      method: 'POST',
+      data: { operaId, ariaId }
+    });
+  },
+
+  getOperaFavoriteList: async (params = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { page = 1, pageSize = 10, category = 'all', keyword = '' } = params;
+    return request({
+      url: '/api/opera/favorite-list',
+      method: 'GET',
+      data: { page, pageSize, category, keyword }
+    });
+  },
+
+  getAriaFavoriteList: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/opera/aria-favorite-list',
+      method: 'GET'
+    });
+  },
+
+  submitOperaDraft: async (data) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    return request({
+      url: '/api/opera/submit',
+      method: 'POST',
+      data: { ...data, submitterId: userId }
+    });
+  },
+
+  getMyOperaDrafts: async () => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    return request({
+      url: '/api/opera/my-drafts',
+      method: 'GET'
+    });
+  },
+
+  getOperaReviewList: async (params = {}) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    const { status = 'pending', page = 1, pageSize = 10 } = params;
+    return request({
+      url: '/api/opera/review-list',
+      method: 'GET',
+      data: { status, page, pageSize }
+    });
+  },
+
+  reviewOperaDraft: async (id, decision) => {
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '草稿ID不能为空' };
+    }
+    return request({
+      url: '/api/opera/review',
+      method: 'POST',
+      data: { id, decision }
+    });
+  },
+
+  getRelatedOperasByFigure: async (figureId, limit = 5) => {
+    return request({
+      url: '/api/opera/related-by-figure',
+      method: 'GET',
+      data: { figureId, limit }
+    });
+  },
+
+  getRelatedOperasByTopic: async (topicId, limit = 5) => {
+    return request({
+      url: '/api/opera/related-by-topic',
+      method: 'GET',
+      data: { topicId, limit }
     });
   },
 

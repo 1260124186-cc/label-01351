@@ -91,6 +91,18 @@ Page({
     });
   },
 
+  goToOperas() {
+    wx.navigateTo({
+      url: '/pages/operas/operas'
+    });
+  },
+
+  goToQuiz() {
+    wx.navigateTo({
+      url: '/pages/quiz/quiz'
+    });
+  },
+
   onCardTagClick(e) {
     const tag = e.currentTarget.dataset.tag;
     if (!tag) return;

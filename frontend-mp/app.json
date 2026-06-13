@@ -8,6 +8,8 @@
     "pages/mine/mine",
     "pages/detail/detail",
     "pages/figure-detail/figure-detail",
+    "pages/opera-detail/opera-detail",
+    "pages/operas/operas",
     "pages/figure-create/figure-create",
     "pages/login/login",
     "pages/favorites/favorites",
@@ -19,6 +21,7 @@
     "pages/admin/admin",
     "pages/admin-topic/admin-topic",
     "pages/admin-encyclopedia/admin-encyclopedia",
+    "pages/admin-opera/admin-opera",
     "pages/notifications/notifications",
     "pages/activity-detail/activity-detail",
     "pages/activity-publish/activity-publish",
@@ -54,7 +57,9 @@
     "pages/tasks/tasks",
     "pages/village-select/village-select",
     "pages/conversations/conversations",
-    "pages/chat/chat"
+    "pages/chat/chat",
+    "pages/opera-favorites/opera-favorites",
+    "pages/opera-submit/opera-submit"
   ],
   "window": {
     "backgroundTextStyle": "dark",

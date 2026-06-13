@@ -7,6 +7,7 @@ const taskSystem = require('./utils/task');
 const i18n = require('./utils/i18n');
 const dialect = require('./utils/dialect-dictionary');
 const villageData = require('./utils/village-data');
+const operaData = require('./utils/opera-data');
 
 App({
   globalData: {
@@ -382,6 +383,7 @@ App({
   initMockData() {
     figureData.initFigureData();
     villageData.initVillageData();
+    operaData.initOperaData();
 
     const articles = wx.getStorageSync('articles');
     if (!articles || articles.length === 0) {

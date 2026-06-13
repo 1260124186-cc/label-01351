@@ -226,6 +226,18 @@ Page({
     });
   },
 
+  goToOperaFavorites() {
+    wx.navigateTo({
+      url: '/pages/opera-favorites/opera-favorites'
+    });
+  },
+
+  goToOperaSubmit() {
+    wx.navigateTo({
+      url: '/pages/opera-submit/opera-submit'
+    });
+  },
+
   goToLikes() {
     wx.navigateTo({
       url: '/pages/likes/likes'

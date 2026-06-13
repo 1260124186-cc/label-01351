@@ -224,6 +224,18 @@
         </view>
         <text class="action-text">我的收藏</text>
       </view>
+      <view class="action-item" bindtap="goToOperaFavorites">
+        <view class="action-icon-wrap">
+          <text class="action-icon">🎭</text>
+        </view>
+        <text class="action-text">戏曲收藏</text>
+      </view>
+      <view class="action-item" bindtap="goToOperaSubmit">
+        <view class="action-icon-wrap">
+          <text class="action-icon">📜</text>
+        </view>
+        <text class="action-text">我的投稿(剧目)</text>
+      </view>
       <view class="action-item" bindtap="goToLikes">
         <view class="action-icon-wrap">
           <text class="action-icon">👍</text>

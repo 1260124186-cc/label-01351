@@ -260,6 +260,14 @@
   background: linear-gradient(135deg, #E74C3C 0%, #F1948A 100%);
 }
 
+.icon-opera {
+  background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+}
+
+.icon-quiz {
+  background: linear-gradient(135deg, #27AE60 0%, #58D68D 100%);
+}
+
 .entry-icon {
   font-size: 40rpx;
 }

@@ -113,6 +113,20 @@
       <text class="entry-name">文化基金</text>
       <text class="entry-desc">公益透明</text>
     </view>
+    <view class="entry-item" bindtap="goToOperas">
+      <view class="entry-icon-wrap icon-opera">
+        <text class="entry-icon">🎭</text>
+      </view>
+      <text class="entry-name">戏曲曲艺</text>
+      <text class="entry-desc">剧目唱段</text>
+    </view>
+    <view class="entry-item" bindtap="goToQuiz">
+      <view class="entry-icon-wrap icon-quiz">
+        <text class="entry-icon">❓</text>
+      </view>
+      <text class="entry-name">知识问答</text>
+      <text class="entry-desc">以赛促学</text>
+    </view>
   </view>
 
   <!-- 分类标签 -->

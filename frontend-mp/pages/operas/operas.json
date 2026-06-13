@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "戏曲曲艺库",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50,
+  "backgroundColor": "#FFF8DC"
+}

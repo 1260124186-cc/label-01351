@@ -1,0 +1,229 @@
+<view class="page-container">
+  <view class="header">
+    <view class="header-title">
+      <text class="title-main">戏曲曲艺库</text>
+      <text class="title-sub">一曲一词 · 传承千年</text>
+    </view>
+  </view>
+
+  <view class="daily-card" bindtap="goToDailyDetail" wx:if="{{dailyOpera || dailyAria}}">
+    <view class="daily-header">
+      <text class="daily-label">📜 今日一曲</text>
+      <text class="daily-arrow">›</text>
+    </view>
+    <view class="daily-opera" wx:if="{{dailyOpera}}">
+      <text class="daily-opera-icon">{{dailyOpera.genreInfo.icon || '🎭'}}</text>
+      <view class="daily-opera-info">
+        <view class="daily-opera-title-row">
+          <text class="daily-opera-title">{{dailyOpera.title}}</text>
+          <view class="daily-opera-genre">{{dailyOpera.genreName}}</view>
+        </view>
+        <text class="daily-opera-desc">{{dailyOpera.introduction}}</text>
+      </view>
+    </view>
+    <view class="daily-divider" wx:if="{{dailyOpera && dailyAria}}"></view>
+    <view class="daily-aria" wx:if="{{dailyAria}}">
+      <view class="daily-aria-header">
+        <text class="daily-aria-name">🎵 {{dailyAria.name}}</text>
+        <text class="daily-aria-opera" wx:if="{{dailyAria.operaTitle}}">— {{dailyAria.operaTitle}}</text>
+      </view>
+      <text class="daily-aria-text">{{dailyAria.text}}</text>
+    </view>
+  </view>
+
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input 
+        class="search-input" 
+        placeholder="搜索剧目、唱段或剧种" 
+        placeholder-class="search-placeholder"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+    <view class="filter-btn" bindtap="toggleFilter">
+      <text class="filter-icon">⚙️</text>
+      <view class="filter-badge" wx:if="{{filterCount > 0}}">{{filterCount}}</view>
+    </view>
+  </view>
+
+  <view class="rare-switch-row">
+    <text class="rare-label">稀有剧目</text>
+    <switch 
+      class="rare-switch" 
+      checked="{{showRareOnly}}" 
+      bindchange="toggleRareOnly"
+      color="#8B4513"
+    />
+    <text class="rare-status">{{showRareOnly ? '开' : '关'}}</text>
+  </view>
+
+  <view class="filter-panel {{showFilter ? 'show' : ''}}" wx:if="{{showFilter}}">
+    <view class="filter-tabs">
+      <view 
+        class="filter-tab {{activeFilterTab === 'category' ? 'active' : ''}}"
+        bindtap="switchFilterTab"
+        data-tab="category"
+      >
+        <text>分类</text>
+      </view>
+      <view 
+        class="filter-tab {{activeFilterTab === 'genre' ? 'active' : ''}}"
+        bindtap="switchFilterTab"
+        data-tab="genre"
+      >
+        <text>剧种</text>
+      </view>
+      <view 
+        class="filter-tab {{activeFilterTab === 'region' ? 'active' : ''}}"
+        bindtap="switchFilterTab"
+        data-tab="region"
+      >
+        <text>地区</text>
+      </view>
+    </view>
+
+    <scroll-view class="filter-options" scroll-y>
+      <view class="option-grid" wx:if="{{activeFilterTab === 'category'}}">
+        <view 
+          class="option-item {{currentCategory === item.id ? 'active' : ''}}"
+          wx:for="{{categoryList}}"
+          wx:key="id"
+          bindtap="onFilterChange"
+          data-type="category"
+          data-id="{{item.id}}"
+        >
+          <text class="option-icon" wx:if="{{item.icon}}">{{item.icon}}</text>
+          <text class="option-name">{{item.name}}</text>
+        </view>
+      </view>
+
+      <view class="option-grid" wx:if="{{activeFilterTab === 'genre'}}">
+        <view 
+          class="option-item {{currentGenre === item.id ? 'active' : ''}}"
+          wx:for="{{genreList}}"
+          wx:key="id"
+          bindtap="onFilterChange"
+          data-type="genre"
+          data-id="{{item.id}}"
+        >
+          <text class="option-icon" wx:if="{{item.icon}}">{{item.icon}}</text>
+          <text class="option-name">{{item.name}}</text>
+        </view>
+      </view>
+
+      <view class="option-grid" wx:if="{{activeFilterTab === 'region'}}">
+        <view 
+          class="option-item {{currentRegion === item.id ? 'active' : ''}}"
+          wx:for="{{regionList}}"
+          wx:key="id"
+          bindtap="onFilterChange"
+          data-type="region"
+          data-id="{{item.id}}"
+        >
+          <text class="option-name">{{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="filter-actions">
+      <button class="btn-reset" bindtap="resetFilters">重置筛选</button>
+      <button class="btn-confirm" bindtap="toggleFilter">确定</button>
+    </view>
+  </view>
+
+  <view class="filter-mask {{showFilter ? 'show' : ''}}" bindtap="toggleFilter" wx:if="{{showFilter}}"></view>
+
+  <scroll-view class="category-scroll" scroll-x show-scrollbar="{{false}}" wx:if="{{categoryList.length > 0}}">
+    <view 
+      class="category-chip {{currentCategory === item.id ? 'active' : ''}}"
+      wx:for="{{categoryList}}"
+      wx:key="id"
+      bindtap="onFilterChange"
+      data-type="category"
+      data-id="{{item.id}}"
+    >
+      <text class="chip-icon" wx:if="{{item.icon}}">{{item.icon}}</text>
+      <text class="chip-name">{{item.name}}</text>
+    </view>
+  </scroll-view>
+
+  <view class="nav-entries">
+    <view class="nav-entry" bindtap="goToFavorites">
+      <text class="nav-icon">⭐</text>
+      <text class="nav-text">我的收藏</text>
+    </view>
+    <view class="nav-entry" bindtap="goToAdmin">
+      <text class="nav-icon">🛡️</text>
+      <text class="nav-text">审核后台</text>
+    </view>
+  </view>
+
+  <view class="opera-list">
+    <view class="loading-wrap" wx:if="{{loading && operaList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view class="empty-wrap" wx:elif="{{!loading && operaList.length === 0}}">
+      <text class="empty-icon">🎭</text>
+      <text class="empty-text">暂无戏曲剧目</text>
+      <text class="empty-hint">点击右下角按钮，投稿你知道的稀有剧目吧</text>
+    </view>
+
+    <view 
+      class="opera-card"
+      wx:for="{{operaList}}"
+      wx:key="id"
+      bindtap="goToDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="opera-header">
+        <view class="opera-title-row">
+          <text class="opera-genre-icon">{{item.genreInfo.icon || '🎭'}}</text>
+          <text class="opera-title">{{item.title}}</text>
+          <view class="opera-genre-tag">{{item.genreName}}</view>
+          <view class="opera-rare-tag" wx:if="{{item.isRare}}">稀有</view>
+        </view>
+        <text class="opera-regions">📍 {{item.regionNames}}</text>
+      </view>
+
+      <text class="opera-intro">{{item.introduction}}</text>
+
+      <view class="opera-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+        <view class="opera-tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">
+          {{tag}}
+        </view>
+      </view>
+
+      <view class="opera-stats">
+        <view class="stat-item">
+          <text class="stat-icon">🎵</text>
+          <text class="stat-value">{{item.ariaCount || 0}}唱段</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-icon">👁</text>
+          <text class="stat-value">{{item.viewCount || 0}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-icon">⭐</text>
+          <text class="stat-value">{{item.favoriteCount || 0}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="load-more" wx:if="{{operaList.length > 0}}">
+      <text wx:if="{{loadingMore}}">加载中...</text>
+      <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+      <text wx:else bindtap="loadMore">点击加载更多</text>
+    </view>
+  </view>
+
+  <view class="fab" bindtap="goToSubmit">
+    <text class="fab-icon">+</text>
+    <text class="fab-text">投稿稀有</text>
+  </view>
+</view>

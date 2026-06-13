@@ -1,0 +1,100 @@
+<view class="page-container">
+  <view class="tab-bar">
+    <view class="tab-item {{activeTab === 'operas' ? 'active' : ''}}" bindtap="switchTab" data-tab="operas">
+      <text class="tab-text">剧目收藏</text>
+    </view>
+    <view class="tab-item {{activeTab === 'arias' ? 'active' : ''}}" bindtap="switchTab" data-tab="arias">
+      <text class="tab-text">唱段收藏</text>
+    </view>
+  </view>
+
+  <block wx:if="{{activeTab === 'operas'}}">
+    <view class="search-bar">
+      <view class="search-input-wrap">
+        <text class="search-icon">🔍</text>
+        <input
+          class="search-input"
+          placeholder="搜索剧目"
+          placeholder-class="search-placeholder"
+          value="{{keyword}}"
+          bindinput="onSearchInput"
+          bindconfirm="onSearch"
+          confirm-type="search"
+        />
+        <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+      </view>
+    </view>
+
+    <view class="list-container">
+      <view class="loading-wrap" wx:if="{{loading && operaList.length === 0}}">
+        <view class="loading-spinner"></view>
+        <text class="loading-text">加载中...</text>
+      </view>
+
+      <view class="empty-wrap" wx:elif="{{!loading && operaList.length === 0}}">
+        <text class="empty-icon">🎭</text>
+        <text class="empty-text">暂无剧目收藏</text>
+        <text class="empty-hint">快去收藏喜欢的戏曲吧</text>
+      </view>
+
+      <view
+        class="opera-card"
+        wx:for="{{operaList}}"
+        wx:key="id"
+        bindtap="goToDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="card-header">
+          <view class="opera-genre">
+            <text class="genre-icon">{{item.genreInfo.icon}}</text>
+            <text class="genre-name">{{item.genreName}}</text>
+          </view>
+          <text class="favorite-time">{{item.favoriteTime}}</text>
+        </view>
+        <view class="opera-title">{{item.title}}</view>
+        <view class="opera-introduction">{{item.introduction}}</view>
+      </view>
+
+      <view class="load-more" wx:if="{{operaList.length > 0}}">
+        <text wx:if="{{loading}}">加载中...</text>
+        <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+        <text wx:else bindtap="loadOperaList">点击加载更多</text>
+      </view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="list-container">
+      <view class="loading-wrap" wx:if="{{loading && ariaList.length === 0}}">
+        <view class="loading-spinner"></view>
+        <text class="loading-text">加载中...</text>
+      </view>
+
+      <view class="empty-wrap" wx:elif="{{!loading && ariaList.length === 0}}">
+        <text class="empty-icon">🎵</text>
+        <text class="empty-text">暂无唱段收藏</text>
+        <text class="empty-hint">快去收藏喜欢的唱段吧</text>
+      </view>
+
+      <view
+        class="aria-card"
+        wx:for="{{ariaList}}"
+        wx:key="id"
+      >
+        <view class="card-header">
+          <view class="aria-name">{{item.name}}</view>
+          <text class="favorite-time">{{item.favoriteTime}}</text>
+        </view>
+        <view class="aria-opera">
+          <text class="label">所属剧目：</text>
+          <text class="value">{{item.operaTitle}}</text>
+        </view>
+        <view class="aria-genre">
+          <text class="label">剧种：</text>
+          <text class="value">{{item.genreName}}</text>
+        </view>
+        <view class="aria-text">{{item.text}}</view>
+      </view>
+    </view>
+  </block>
+</view>

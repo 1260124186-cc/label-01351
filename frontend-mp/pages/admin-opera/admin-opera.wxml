@@ -1,0 +1,107 @@
+<view class="page-container">
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <text class="login-icon">🔒</text>
+    <text class="login-text">请先登录后使用管理功能</text>
+  </view>
+
+  <block wx:else>
+    <view class="stats-card">
+      <view class="stats-item stats-pending">
+        <text class="stats-label">待审核</text>
+        <text class="stats-value">{{totalStats.pending}}</text>
+      </view>
+      <view class="stats-item stats-approved">
+        <text class="stats-label">已通过</text>
+        <text class="stats-value">{{totalStats.approved}}</text>
+      </view>
+      <view class="stats-item stats-rejected">
+        <text class="stats-label">已驳回</text>
+        <text class="stats-value">{{totalStats.rejected}}</text>
+      </view>
+    </view>
+
+    <view class="status-tabs">
+      <view
+        class="status-tab {{currentStatus === item.id ? 'active' : ''}}"
+        wx:for="{{statusList}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="switchStatus"
+      >
+        {{item.name}}
+      </view>
+    </view>
+
+    <view class="loading-wrap" wx:if="{{loading && draftList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view class="empty-wrap" wx:elif="{{!loading && draftList.length === 0}}">
+      <text class="empty-icon">📋</text>
+      <text class="empty-text">暂无戏曲草稿</text>
+    </view>
+
+    <view class="draft-list" wx:else>
+      <view class="draft-card" wx:for="{{draftList}}" wx:key="id">
+        <block wx:if="{{item.reviewStatus === 'pending'}}">
+          <view class="draft-header">
+            <text class="draft-title">{{item.title}}</text>
+            <view class="status-tag status-pending">待审核</view>
+          </view>
+          <view class="draft-info">
+            <text class="info-item">分类：{{item.categoryInfo ? item.categoryInfo.name : item.category}}</text>
+            <text class="info-item">剧种：{{item.genreName || '-'}}</text>
+            <text class="info-item">提交人：{{item.submitterName || '-'}}</text>
+            <text class="info-item">提交时间：{{item.createTime || '-'}}</text>
+          </view>
+          <view class="draft-actions">
+            <view class="action-btn action-view" data-id="{{item.id}}" bindtap="viewDraft">
+              <text>查看</text>
+            </view>
+            <view class="action-btn action-approve" data-id="{{item.id}}" bindtap="approve">
+              <text>通过</text>
+            </view>
+            <view class="action-btn action-reject" data-id="{{item.id}}" bindtap="reject">
+              <text>驳回</text>
+            </view>
+          </view>
+        </block>
+
+        <block wx:elif="{{item.reviewStatus === 'approved'}}">
+          <view class="draft-header">
+            <text class="draft-title">{{item.title}}</text>
+            <view class="status-tag status-approved">已通过</view>
+          </view>
+          <view class="draft-info">
+            <text class="info-item">审核时间：{{item.reviewTime || '-'}}</text>
+          </view>
+          <view class="draft-actions">
+            <view class="action-btn action-detail" data-id="{{item.id}}" bindtap="goToApprovedDetail">
+              <text>跳转详情</text>
+            </view>
+          </view>
+        </block>
+
+        <block wx:elif="{{item.reviewStatus === 'rejected'}}">
+          <view class="draft-header">
+            <text class="draft-title">{{item.title}}</text>
+            <view class="status-tag status-rejected">已驳回</view>
+          </view>
+          <view class="draft-info">
+            <text class="info-item">审核时间：{{item.reviewTime || '-'}}</text>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <view class="load-more" wx:if="{{draftList.length > 0 && !hasMore}}">
+      <text class="load-more-text">没有更多了</text>
+    </view>
+
+    <view class="load-more" wx:if="{{loading && draftList.length > 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+  </block>
+</view>

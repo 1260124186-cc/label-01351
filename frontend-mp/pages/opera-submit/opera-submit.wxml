@@ -1,0 +1,368 @@
+<view class="page-container">
+  <view class="login-wrap" wx:if="{{!isLoggedIn}}">
+    <view class="login-card">
+      <text class="login-icon">📝</text>
+      <text class="login-text">登录后即可补充稀有剧目</text>
+      <button class="btn-login" bindtap="goToLogin">立即登录</button>
+    </view>
+  </view>
+
+  <block wx:else>
+    <scroll-view class="form-container" scroll-y>
+      <view class="page-header">
+        <text class="header-title">补充稀有剧目</text>
+        <text class="header-desc">记录你知道的稀有戏曲、曲艺剧目，一起传承文化</text>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">📋</text>
+          <text class="title-text">基本信息</text>
+        </view>
+
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">剧名</text>
+            <text class="label-required">*</text>
+          </view>
+          <view class="form-input-wrap">
+            <input
+              class="form-input"
+              placeholder="请输入剧目名称（至少2字）"
+              placeholder-class="input-placeholder"
+              maxlength="50"
+              value="{{form.title}}"
+              data-field="title"
+              bindinput="onInput"
+            />
+            <text class="input-count">{{form.title.length}}/50</text>
+          </view>
+        </view>
+
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">分类</text>
+            <text class="label-required">*</text>
+          </view>
+          <picker
+            mode="selector"
+            range="{{categoryList}}"
+            range-key="name"
+            bindchange="selectCategory"
+          >
+            <view class="form-picker">
+              <text class="{{form.category ? 'picker-value' : 'picker-placeholder'}}">
+                {{form.category ? (categoryList[categoryList.findIndex(c => c.id === form.category)].name) : '请选择分类（戏曲/曲艺）'}}
+              </text>
+              <text class="picker-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">剧种/曲种</text>
+            <text class="label-required">*</text>
+          </view>
+          <picker
+            mode="selector"
+            range="{{form.category ? filteredGenreList : genreList}}"
+            range-key="name"
+            bindchange="selectGenre"
+          >
+            <view class="form-picker">
+              <text class="{{form.genre ? 'picker-value' : 'picker-placeholder'}}">
+                {{form.genre ? (genreList[genreList.findIndex(g => g.id === form.genre)].name) : '请选择剧种/曲种'}}
+              </text>
+              <text class="picker-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">别名</text>
+            <text class="label-hint">（可多个）</text>
+          </view>
+          <view class="tag-chips" wx:if="{{form.alias.length > 0}}">
+            <view class="tag-chip" wx:for="{{form.alias}}" wx:key="*this" wx:for-item="item" wx:for-index="idx">
+              <text class="chip-text">{{item}}</text>
+              <view class="chip-remove" bindtap="removeAlias" data-idx="{{idx}}">✕</view>
+            </view>
+          </view>
+          <view class="tag-input-row">
+            <input
+              class="form-input flex-1"
+              placeholder="输入别名后点击添加"
+              placeholder-class="input-placeholder"
+              maxlength="20"
+              value="{{form.aliasInput}}"
+              data-field="aliasInput"
+              bindinput="onInput"
+            />
+            <view class="tag-add-btn" bindtap="addAlias">
+              <text>添加</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">剧目简介</text>
+            <text class="label-required">*</text>
+          </view>
+          <view class="form-textarea-wrap">
+            <textarea
+              class="form-textarea"
+              placeholder="简要介绍剧目的主要内容和特点（至少10字）"
+              placeholder-class="input-placeholder"
+              maxlength="500"
+              value="{{form.introduction}}"
+              data-field="introduction"
+              bindinput="onInput"
+              auto-height
+            />
+            <text class="textarea-count">{{form.introduction.length}}/500</text>
+          </view>
+        </view>
+
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">剧情梗概</text>
+          </view>
+          <view class="form-textarea-wrap">
+            <textarea
+              class="form-textarea"
+              placeholder="详细介绍剧目剧情（选填）"
+              placeholder-class="input-placeholder"
+              maxlength="2000"
+              value="{{form.plotSummary}}"
+              data-field="plotSummary"
+              bindinput="onInput"
+              auto-height
+            />
+            <text class="textarea-count">{{form.plotSummary.length}}/2000</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">📍</text>
+          <text class="title-text">传承信息</text>
+        </view>
+
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">传承地区</text>
+            <text class="label-hint">（可多选）</text>
+          </view>
+          <view class="region-picker-trigger" bindtap="toggleRegionPicker">
+            <text wx:if="{{form.heritageRegions.length === 0}}" class="picker-placeholder">请选择传承地区</text>
+            <block wx:else>
+              <view class="tag-chips">
+                <view class="tag-chip" wx:for="{{form.heritageRegions}}" wx:key="*this">
+                  <text class="chip-text">{{regionList[regionList.findIndex(r => r.id === item)].name}}</text>
+                </view>
+              </view>
+            </block>
+            <text class="picker-arrow">{{showRegionPicker ? '˄' : '˅'}}</text>
+          </view>
+          <view class="region-picker-list" wx:if="{{showRegionPicker}}">
+            <view class="region-grid">
+              <view
+                class="region-item {{form.heritageRegions.indexOf(item.id) > -1 ? 'active' : ''}}"
+                wx:for="{{regionList}}"
+                wx:key="id"
+                bindtap="toggleRegion"
+                data-id="{{item.id}}"
+              >
+                {{item.name}}
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">稀有剧目</text>
+          </view>
+          <view class="switch-row">
+            <text class="switch-desc">标记为稀有剧目</text>
+            <switch
+              checked="{{form.isRare}}"
+              bindchange="toggleRare"
+              color="#8B4513"
+            />
+          </view>
+        </view>
+
+        <view class="form-item">
+          <view class="form-label">
+            <text class="label-text">标签</text>
+          </view>
+          <view class="tag-chips" wx:if="{{form.tags.length > 0}}">
+            <view class="tag-chip" wx:for="{{form.tags}}" wx:key="*this" wx:for-item="item" wx:for-index="idx">
+              <text class="chip-text">{{item}}</text>
+              <view class="chip-remove" bindtap="removeTag" data-idx="{{idx}}">✕</view>
+            </view>
+          </view>
+          <view class="tag-input-row">
+            <input
+              class="form-input flex-1"
+              placeholder="输入标签后点击添加"
+              placeholder-class="input-placeholder"
+              maxlength="20"
+              value="{{form.tagInput}}"
+              data-field="tagInput"
+              bindinput="onInput"
+            />
+            <view class="tag-add-btn" bindtap="addTag">
+              <text>添加</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="title-icon">🎵</text>
+          <text class="title-text">代表唱段</text>
+          <text class="title-hint">（选填，可多个）</text>
+        </view>
+
+        <view
+          class="aria-item"
+          wx:for="{{form.representativeArias}}"
+          wx:key="id"
+          wx:for-item="aria"
+          wx:for-index="idx"
+        >
+          <view class="aria-header">
+            <text class="aria-index">唱段 {{idx + 1}}</text>
+            <view class="aria-remove" bindtap="removeAria" data-idx="{{idx}}">
+              <text>✕</text>
+            </view>
+          </view>
+          <view class="form-item">
+            <view class="form-label">
+              <text class="label-text">唱段名</text>
+            </view>
+            <input
+              class="form-input"
+              placeholder="请输入唱段名称"
+              placeholder-class="input-placeholder"
+              maxlength="50"
+              value="{{aria.name}}"
+              data-idx="{{idx}}"
+              data-field="name"
+              bindinput="updateAria"
+            />
+          </view>
+          <view class="form-item">
+            <view class="form-label">
+              <text class="label-text">角色</text>
+            </view>
+            <input
+              class="form-input"
+              placeholder="如：杨玉环（旦角）"
+              placeholder-class="input-placeholder"
+              maxlength="30"
+              value="{{aria.role}}"
+              data-idx="{{idx}}"
+              data-field="role"
+              bindinput="updateAria"
+            />
+          </view>
+          <view class="form-item">
+            <view class="form-label">
+              <text class="label-text">曲调</text>
+            </view>
+            <input
+              class="form-input"
+              placeholder="如：四平调、二黄慢板"
+              placeholder-class="input-placeholder"
+              maxlength="30"
+              value="{{aria.tune}}"
+              data-idx="{{idx}}"
+              data-field="tune"
+              bindinput="updateAria"
+            />
+          </view>
+          <view class="form-item">
+            <view class="form-label">
+              <text class="label-text">唱词文本</text>
+            </view>
+            <textarea
+              class="form-textarea"
+              placeholder="请输入唱词内容"
+              placeholder-class="input-placeholder"
+              maxlength="1000"
+              value="{{aria.text}}"
+              data-idx="{{idx}}"
+              data-field="text"
+              bindinput="updateAria"
+              auto-height
+            />
+          </view>
+        </view>
+
+        <view class="add-btn" bindtap="addAria">
+          <text class="add-icon">+</text>
+          <text class="add-text">添加唱段</text>
+        </view>
+      </view>
+
+      <view class="form-tips">
+        <view class="tip-item">
+          <text class="tip-icon">💡</text>
+          <text class="tip-text">提交后需要审核，审核通过后会在戏曲库中展示</text>
+        </view>
+        <view class="tip-item">
+          <text class="tip-icon">📝</text>
+          <text class="tip-text">请确保信息真实准确，感谢你为文化传承做出的贡献</text>
+        </view>
+      </view>
+
+      <view class="form-section" wx:if="{{myDrafts.length > 0}}">
+        <view class="section-title">
+          <text class="title-icon">📄</text>
+          <text class="title-text">我的提交</text>
+        </view>
+        <view
+          class="draft-item"
+          wx:for="{{myDrafts}}"
+          wx:key="id"
+        >
+          <view class="draft-content" bindtap="goToDetail" data-id="{{item.id}}">
+            <view class="draft-header">
+              <text class="draft-title">{{item.title}}</text>
+              <view class="review-status status-{{item.reviewStatus}}">
+                <text wx:if="{{item.reviewStatus === 'pending'}}">审核中</text>
+                <text wx:elif="{{item.reviewStatus === 'approved'}}">已通过</text>
+                <text wx:else>已驳回</text>
+              </view>
+            </view>
+            <view class="draft-meta">
+              <text class="draft-genre">{{item.genreName}}</text>
+              <text class="draft-date">{{item.createTime}}</text>
+            </view>
+            <view class="draft-intro">{{item.introduction}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view style="height: 180rpx;"></view>
+    </scroll-view>
+
+    <view class="form-actions">
+      <button
+        class="btn-submit {{submitting ? 'disabled' : ''}}"
+        bindtap="submit"
+      >
+        <text wx:if="{{submitting}}">提交中...</text>
+        <text wx:else>提交审核</text>
+      </button>
+    </view>
+  </block>
+</view>

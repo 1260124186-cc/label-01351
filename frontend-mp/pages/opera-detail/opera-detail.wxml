@@ -1,0 +1,214 @@
+<view class="page-container" wx:if="{{!loading && opera}}">
+  <view class="hero-section">
+    <view class="favorite-btn" bindtap="toggleFavorite">
+      <text class="favorite-icon">{{isFavorite ? '❤️' : '🤍'}}</text>
+    </view>
+    <view class="hero-content">
+      <view class="hero-icon-wrap">
+        <text class="hero-icon">{{opera.genreInfo.icon}}</text>
+      </view>
+      <view class="hero-info">
+        <view class="hero-title-row">
+          <text class="hero-title">{{opera.title}}</text>
+          <view class="genre-tag">
+            <text>{{opera.genreName}}</text>
+          </view>
+          <view class="rare-badge" wx:if="{{opera.isRare}}">
+            <text>稀有</text>
+          </view>
+        </view>
+        <view class="hero-region">
+          <text>📍 {{opera.regionNames.join('、')}}</text>
+        </view>
+        <view class="hero-stats">
+          <view class="stat-item">
+            <text class="stat-icon">👁</text>
+            <text class="stat-value">{{opera.viewCount}}</text>
+            <text class="stat-label">浏览</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-icon">⭐</text>
+            <text class="stat-value">{{favoriteCount}}</text>
+            <text class="stat-label">收藏</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="tab-bar">
+    <view
+      class="tab-item {{activeTab === 'info' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="info"
+    >
+      <text class="tab-icon">📜</text>
+      <text class="tab-text">剧目档案</text>
+    </view>
+    <view
+      class="tab-item {{activeTab === 'arias' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="arias"
+    >
+      <text class="tab-icon">🎵</text>
+      <text class="tab-text">代表唱段</text>
+      <view class="tab-badge" wx:if="{{opera.representativeArias && opera.representativeArias.length > 0}}">{{opera.representativeArias.length}}</view>
+    </view>
+    <view
+      class="tab-item {{activeTab === 'related' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="related"
+    >
+      <text class="tab-icon">🔗</text>
+      <text class="tab-text">关联内容</text>
+    </view>
+  </view>
+
+  <view class="tab-content">
+    <view class="info-container" wx:if="{{activeTab === 'info'}}">
+      <view class="section-card" wx:if="{{opera.alias && opera.alias.length > 0}}">
+        <view class="section-title">
+          <text class="title-icon">🏷️</text>
+          <text class="title-text">别名</text>
+        </view>
+        <view class="alias-list">
+          <view class="alias-tag" wx:for="{{opera.alias}}" wx:key="*this">{{item}}</view>
+        </view>
+      </view>
+
+      <view class="section-card" wx:if="{{opera.introduction}}">
+        <view class="section-title">
+          <text class="title-icon">📝</text>
+          <text class="title-text">简介</text>
+        </view>
+        <view class="intro-content">{{opera.introduction}}</view>
+      </view>
+
+      <view class="section-card" wx:if="{{opera.plotSummary}}">
+        <view class="section-title">
+          <text class="title-icon">🎬</text>
+          <text class="title-text">剧情梗概</text>
+        </view>
+        <view class="intro-content">{{opera.plotSummary}}</view>
+      </view>
+
+      <view class="section-card" wx:if="{{opera.tags && opera.tags.length > 0}}">
+        <view class="section-title">
+          <text class="title-icon">✨</text>
+          <text class="title-text">标签</text>
+        </view>
+        <view class="tags-list">
+          <view class="opera-tag" wx:for="{{opera.tags}}" wx:key="*this">{{item}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="arias-container" wx:if="{{activeTab === 'arias'}}">
+      <block wx:if="{{opera.representativeArias && opera.representativeArias.length > 0}}">
+        <view
+          class="aria-card"
+          wx:for="{{opera.representativeArias}}"
+          wx:key="id"
+        >
+          <view class="aria-header">
+            <view
+              class="aria-main"
+              bindtap="toggleAria"
+              data-aria-id="{{item.id}}"
+            >
+              <text class="aria-name">{{item.name}}</text>
+              <text class="aria-arrow {{expandedArias.indexOf(item.id) > -1 ? 'expanded' : ''}}">▼</text>
+            </view>
+            <view
+              class="aria-favorite {{item.isFavorite ? 'favorited' : ''}}"
+              catchtap="toggleAriaFavorite"
+              data-aria-id="{{item.id}}"
+            >
+              <text>{{item.isFavorite ? '❤️' : '🤍'}}</text>
+            </view>
+          </view>
+          <view class="aria-meta">
+            <text class="aria-role">{{item.role}}</text>
+            <text class="aria-tune">{{item.tune}}</text>
+          </view>
+          <view class="aria-text {{expandedArias.indexOf(item.id) > -1 ? 'expanded' : ''}}">
+            <text>{{item.text}}</text>
+          </view>
+        </view>
+      </block>
+      <view class="empty-state" wx:else>
+        <text class="empty-icon">🎵</text>
+        <text class="empty-text">暂无代表唱段</text>
+      </view>
+    </view>
+
+    <view class="related-container" wx:if="{{activeTab === 'related'}}">
+      <view class="section-card" wx:if="{{opera.relatedFigures && opera.relatedFigures.length > 0}}">
+        <view class="section-title">
+          <text class="title-icon">👤</text>
+          <text class="title-text">关联人物</text>
+        </view>
+        <scroll-view class="related-scroll" scroll-x="true">
+          <view
+            class="figure-card"
+            wx:for="{{opera.relatedFigures}}"
+            wx:key="id"
+            bindtap="goToFigureDetail"
+            data-id="{{item.id}}"
+          >
+            <image class="figure-avatar" src="{{item.avatar}}" mode="aspectFill" />
+            <view class="figure-info">
+              <text class="figure-name">{{item.name}}</text>
+              <text class="figure-identity" style="color: {{item.identityInfo.color}};">{{item.identityInfo.name}}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view class="section-card" wx:if="{{opera.relatedTopics && opera.relatedTopics.length > 0}}">
+        <view class="section-title">
+          <text class="title-icon">📚</text>
+          <text class="title-text">关联专题</text>
+        </view>
+        <scroll-view class="related-scroll" scroll-x="true">
+          <view
+            class="topic-card"
+            wx:for="{{opera.relatedTopics}}"
+            wx:key="id"
+            bindtap="goToTopicDetail"
+            data-id="{{item.id}}"
+          >
+            <image class="topic-cover" src="{{item.cover}}" mode="aspectFill" />
+            <view class="topic-info">
+              <text class="topic-title">{{item.title}}</text>
+              <text class="topic-count">{{item.articleCount}}篇文章</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view class="empty-state" wx:if="{{(!opera.relatedFigures || opera.relatedFigures.length === 0) && (!opera.relatedTopics || opera.relatedTopics.length === 0)}}">
+        <text class="empty-icon">🔗</text>
+        <text class="empty-text">暂无关联内容</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="submit-bar">
+    <button class="submit-btn" bindtap="goToSubmit">
+      <text class="submit-icon">✏️</text>
+      <text class="submit-text">我也来补充此剧目</text>
+    </button>
+  </view>
+</view>
+
+<view class="loading-container" wx:if="{{loading}}">
+  <view class="loading-spinner"></view>
+  <text class="loading-text">加载中...</text>
+</view>
+
+<view class="error-container" wx:if="{{!loading && !opera}}">
+  <text class="error-icon">❌</text>
+  <text class="error-text">加载失败</text>
+  <button class="retry-btn" bindtap="loadOperaDetail">重新加载</button>
+</view>
