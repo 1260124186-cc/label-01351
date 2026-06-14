@@ -13,6 +13,7 @@ const operaData = require('./opera-data');
 const villageData = require('./village-data');
 const craftTutorialData = require('./craft-tutorial-data');
 const pairingData = require('./pairing-data');
+const collectionData = require('./collection-data');
 
 const config = {
   useRemote: false,
@@ -2703,6 +2704,391 @@ const storageApi = {
       data: { list, total: list.length },
       message: 'success'
     };
+  },
+
+  getCollectionTypes: async () => {
+    await delay(200);
+    return { code: 200, data: util.getCollectionTypes(), message: 'success' };
+  },
+
+  getCollectionList: async (params = {}) => {
+    await delay(500);
+    const { type = 'all', status = 'all', sort = 'latest', page = 1, pageSize = 10, keyword = '' } = params;
+    let collections = wx.getStorageSync('collectionRequests') || [];
+    collections = collections.filter(item => item.status === 1 || item.status === undefined);
+
+    if (type && type !== 'all') {
+      collections = collections.filter(item => item.type === type);
+    }
+
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      collections = collections.filter(item =>
+        item.title.toLowerCase().includes(kw) ||
+        item.description.toLowerCase().includes(kw) ||
+        (Array.isArray(item.tags) && item.tags.some(t => t.toLowerCase().includes(kw)))
+      );
+    }
+
+    if (status && status !== 'all') {
+      collections = collections.filter(item => {
+        const s = util.getCollectionStatus(item);
+        return s.id === status;
+      });
+    }
+
+    if (sort === 'hot') {
+      collections.sort((a, b) => (b.responseCount || 0) - (a.responseCount || 0));
+    } else if (sort === 'urgent') {
+      collections.sort((a, b) => {
+        const aUrgent = util.isCollectionUrgent(a) ? 1 : 0;
+        const bUrgent = util.isCollectionUrgent(b) ? 1 : 0;
+        if (bUrgent !== aUrgent) return bUrgent - aUrgent;
+        return new Date(a.endTime) - new Date(b.endTime);
+      });
+    } else if (sort === 'ending') {
+      collections = collections.filter(c => {
+        const s = util.getCollectionStatus(c);
+        return s.id !== 'ended' && s.id !== 'achieved';
+      });
+      collections.sort((a, b) => new Date(a.endTime) - new Date(b.endTime));
+    } else {
+      collections.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    }
+
+    const total = collections.length;
+    const start = (page - 1) * pageSize;
+    const list = collections.slice(start, start + pageSize).map(item => ({
+      ...item,
+      typeName: util.getCollectionTypeName(item.type),
+      typeIcon: util.getCollectionTypeIcon(item.type),
+      statusInfo: util.getCollectionStatus(item),
+      progress: util.getCollectionProgress(item),
+      remainingDays: util.getCollectionRemainingDays(item),
+      isUrgent: util.isCollectionUrgent(item)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getHotCollections: async (limit = 5) => {
+    await delay(300);
+    let collections = wx.getStorageSync('collectionRequests') || [];
+    collections = collections.filter(item => {
+      const s = util.getCollectionStatus(item);
+      return s.id !== 'ended' && (item.status === 1 || item.status === undefined);
+    });
+    collections.sort((a, b) => (b.responseCount || 0) - (a.responseCount || 0));
+
+    const list = collections.slice(0, limit).map(item => ({
+      ...item,
+      typeName: util.getCollectionTypeName(item.type),
+      typeIcon: util.getCollectionTypeIcon(item.type),
+      statusInfo: util.getCollectionStatus(item),
+      progress: util.getCollectionProgress(item),
+      remainingDays: util.getCollectionRemainingDays(item)
+    }));
+
+    return { code: 200, data: list, message: 'success' };
+  },
+
+  getUrgentCollections: async (limit = 5) => {
+    await delay(300);
+    let collections = wx.getStorageSync('collectionRequests') || [];
+    collections = collections.filter(item => {
+      const s = util.getCollectionStatus(item);
+      return s.id !== 'ended' && s.id !== 'achieved' && util.isCollectionUrgent(item);
+    });
+    collections.sort((a, b) => new Date(a.endTime) - new Date(b.endTime));
+
+    const list = collections.slice(0, limit).map(item => ({
+      ...item,
+      typeName: util.getCollectionTypeName(item.type),
+      typeIcon: util.getCollectionTypeIcon(item.type),
+      statusInfo: util.getCollectionStatus(item),
+      progress: util.getCollectionProgress(item),
+      remainingDays: util.getCollectionRemainingDays(item)
+    }));
+
+    return { code: 200, data: list, message: 'success' };
+  },
+
+  getCollectionDetail: async (id) => {
+    await delay(300);
+    if (!id) {
+      return { code: 400, data: null, message: '征集ID不能为空' };
+    }
+    const collections = wx.getStorageSync('collectionRequests') || [];
+    const collection = collections.find(item => item.id === id);
+    if (!collection) {
+      return { code: 404, data: null, message: '征集不存在' };
+    }
+
+    collection.viewCount = (collection.viewCount || 0) + 1;
+    wx.setStorageSync('collectionRequests', collections);
+
+    const articles = wx.getStorageSync('articles') || [];
+    const responseArticles = (collection.responseArticleIds || [])
+      .map(articleId => articles.find(a => a.id === articleId && a.status === 1))
+      .filter(Boolean);
+
+    const result = {
+      ...collection,
+      typeName: util.getCollectionTypeName(collection.type),
+      typeIcon: util.getCollectionTypeIcon(collection.type),
+      typeDescription: util.getCollectionTypeDescription(collection.type),
+      statusInfo: util.getCollectionStatus(collection),
+      progress: util.getCollectionProgress(collection),
+      remainingDays: util.getCollectionRemainingDays(collection),
+      responseArticleList: responseArticles,
+      isUrgent: util.isCollectionUrgent(collection)
+    };
+
+    if (collection.achievedTopicId) {
+      const topics = wx.getStorageSync('topics') || [];
+      const achievedTopic = topics.find(t => t.id === collection.achievedTopicId);
+      if (achievedTopic) {
+        result.achievedTopic = achievedTopic;
+      }
+    }
+
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  createCollectionRequest: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userInfo = wx.getStorageSync('userInfo');
+    if (!userInfo.role || (userInfo.role !== 'admin' && userInfo.role !== 'verified' && userInfo.role !== 'user')) {
+      return { code: 403, data: null, message: '无权限发布征集' };
+    }
+
+    if (!data.title || !data.title.trim()) {
+      return { code: 400, data: null, message: '征集标题不能为空' };
+    }
+    if (!data.type) {
+      return { code: 400, data: null, message: '请选择征集类型' };
+    }
+    if (!data.targetCount || parseInt(data.targetCount) <= 0) {
+      return { code: 400, data: null, message: '请输入有效的目标条数' };
+    }
+    if (!data.endTime) {
+      return { code: 400, data: null, message: '请选择截止时间' };
+    }
+    if (!data.description || !data.description.trim()) {
+      return { code: 400, data: null, message: '征集详情不能为空' };
+    }
+    if (!data.category) {
+      return { code: 400, data: null, message: '请选择关联分类' };
+    }
+
+    const endTime = new Date(data.endTime);
+    if (endTime <= new Date()) {
+      return { code: 400, data: null, message: '截止时间必须晚于当前时间' };
+    }
+
+    const collections = wx.getStorageSync('collectionRequests') || [];
+    const newCollection = {
+      id: util.generateId('collection'),
+      title: data.title.trim(),
+      type: data.type,
+      description: data.description.trim(),
+      targetCount: parseInt(data.targetCount),
+      responseCount: 0,
+      responseArticleIds: [],
+      endTime: data.endTime,
+      category: data.category,
+      tags: data.tags || [],
+      coverImage: data.coverImage || '',
+      completionThreshold: data.completionThreshold || 80,
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      authorAvatar: userInfo.avatar || '',
+      viewCount: 0,
+      likeCount: 0,
+      achievedTopicId: '',
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 1
+    };
+    collections.unshift(newCollection);
+    wx.setStorageSync('collectionRequests', collections);
+
+    return { code: 200, data: newCollection, message: '发布成功' };
+  },
+
+  respondToCollection: async (collectionId, articleId) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!collectionId) {
+      return { code: 400, data: null, message: '征集ID不能为空' };
+    }
+    if (!articleId) {
+      return { code: 400, data: null, message: '文章ID不能为空' };
+    }
+
+    const collections = wx.getStorageSync('collectionRequests') || [];
+    const collectionIndex = collections.findIndex(item => item.id === collectionId);
+    if (collectionIndex === -1) {
+      return { code: 404, data: null, message: '征集不存在' };
+    }
+
+    const collection = collections[collectionIndex];
+    const statusInfo = util.getCollectionStatus(collection);
+    if (statusInfo.id === 'ended') {
+      return { code: 400, data: null, message: '征集已结束，无法响应' };
+    }
+    if (statusInfo.id === 'achieved') {
+      return { code: 400, data: null, message: '征集已达成目标' };
+    }
+
+    if (!collection.responseArticleIds) {
+      collection.responseArticleIds = [];
+    }
+    if (collection.responseArticleIds.includes(articleId)) {
+      return { code: 400, data: null, message: '该文章已响应过此征集' };
+    }
+
+    collection.responseArticleIds.push(articleId);
+    collection.responseCount = (collection.responseCount || 0) + 1;
+    collections[collectionIndex] = collection;
+    wx.setStorageSync('collectionRequests', collections);
+
+    const articles = wx.getStorageSync('articles') || [];
+    const articleIndex = articles.findIndex(a => a.id === articleId);
+    if (articleIndex > -1) {
+      if (!articles[articleIndex].collectionRequestIds) {
+        articles[articleIndex].collectionRequestIds = [];
+      }
+      if (!articles[articleIndex].collectionRequestIds.includes(collectionId)) {
+        articles[articleIndex].collectionRequestIds.push(collectionId);
+      }
+      wx.setStorageSync('articles', articles);
+    }
+
+    const progress = util.getCollectionProgress(collection);
+    if (progress.progress >= 100 && !collection.achievedTopicId) {
+      storageApi.generateCollectionAchievedTopic(collectionId);
+    }
+
+    return {
+      code: 200,
+      data: {
+        responseCount: collection.responseCount,
+        progress: util.getCollectionProgress(collection)
+      },
+      message: '响应成功'
+    };
+  },
+
+  generateCollectionAchievedTopic: async (collectionId) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    if (!collectionId) {
+      return { code: 400, data: null, message: '征集ID不能为空' };
+    }
+
+    const collections = wx.getStorageSync('collectionRequests') || [];
+    const collectionIndex = collections.findIndex(item => item.id === collectionId);
+    if (collectionIndex === -1) {
+      return { code: 404, data: null, message: '征集不存在' };
+    }
+
+    const collection = collections[collectionIndex];
+    if (collection.achievedTopicId) {
+      return { code: 400, data: null, message: '该征集已生成成果专题' };
+    }
+
+    const userInfo = wx.getStorageSync('userInfo');
+    const articles = wx.getStorageSync('articles') || [];
+    const responseArticles = (collection.responseArticleIds || [])
+      .map(articleId => articles.find(a => a.id === articleId && a.status === 1))
+      .filter(Boolean);
+
+    const introduction = `本专题收录了"${collection.title}"征集活动的全部响应投稿，共${responseArticles.length}篇。通过这些真实的记录，我们得以窥见那些正在消逝的文化记忆。让我们一同守护这些珍贵的文化遗产。`;
+
+    const topicData = {
+      title: `${collection.title} · 征集成果`,
+      category: collection.category || 'culture',
+      introduction,
+      coverImage: collection.coverImage || '',
+      articleIds: collection.responseArticleIds || [],
+      tags: collection.tags || [],
+      relatedTopicIds: [],
+      extendedReading: [],
+      fromCollectionId: collectionId
+    };
+
+    const res = await storageApi.createTopic(topicData);
+    if (res.code === 200 && res.data) {
+      collection.achievedTopicId = res.data.id;
+      collections[collectionIndex] = collection;
+      wx.setStorageSync('collectionRequests', collections);
+      return { code: 200, data: res.data, message: '成果专题生成成功' };
+    }
+    return { code: 500, data: null, message: res.message || '专题生成失败' };
+  },
+
+  getMyCollectionResponses: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    const articles = wx.getStorageSync('articles') || [];
+    const myArticles = articles.filter(item => item.authorId === userId && item.status === 1);
+    const collectionArticles = myArticles.filter(a => a.collectionRequestIds && a.collectionRequestIds.length > 0);
+
+    const collections = wx.getStorageSync('collectionRequests') || [];
+    const list = collectionArticles.map(article => {
+      const relatedCollections = (article.collectionRequestIds || [])
+        .map(cid => collections.find(c => c.id === cid))
+        .filter(Boolean)
+        .map(c => ({
+          id: c.id,
+          title: c.title,
+          typeName: util.getCollectionTypeName(c.type)
+        }));
+      return {
+        ...article,
+        relatedCollections,
+        categoryName: util.getCategoryName(article.category)
+      };
+    });
+
+    list.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    return { code: 200, data: { list, total: list.length }, message: 'success' };
+  },
+
+  getMyPublishedCollections: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userId = getCurrentUserId();
+    let collections = wx.getStorageSync('collectionRequests') || [];
+    collections = collections.filter(item => item.authorId === userId);
+    collections.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+    const list = collections.map(item => ({
+      ...item,
+      typeName: util.getCollectionTypeName(item.type),
+      typeIcon: util.getCollectionTypeIcon(item.type),
+      statusInfo: util.getCollectionStatus(item),
+      progress: util.getCollectionProgress(item),
+      remainingDays: util.getCollectionRemainingDays(item)
+    }));
+
+    return { code: 200, data: { list, total: list.length }, message: 'success' };
   },
 
   getLandmarkCategories: async () => {
@@ -8898,6 +9284,440 @@ const remoteApi = {
       data: { skillList, regionList, methodList },
       message: 'success'
     };
+  },
+
+  initCollectionData: async () => {
+    const existing = wx.getStorageSync('collections');
+    if (!existing || existing.length === 0) {
+      wx.setStorageSync('collections', JSON.parse(JSON.stringify(collectionData.DEFAULT_COLLECTIONS)));
+    }
+    return { code: 200, data: null, message: 'success' };
+  },
+
+  getCollectionTypes: async () => {
+    await delay(100);
+    const types = collectionData.getCollectionTypes();
+    return { code: 200, data: types, message: 'success' };
+  },
+
+  getCollectionList: async (params = {}) => {
+    await delay(300);
+    await storageApi.initCollectionData();
+    const { type = 'all', status = 'all', sort = 'latest', page = 1, pageSize = 10, keyword = '' } = params;
+    let collections = wx.getStorageSync('collections') || [];
+    collections = collections.filter(item => item.status === 1);
+
+    if (type && type !== 'all') {
+      collections = collections.filter(item => item.type === type);
+    }
+
+    if (status && status !== 'all') {
+      collections = collections.filter(item => {
+        const s = collectionData.getCollectionStatus(item);
+        return s.id === status;
+      });
+    }
+
+    if (keyword && keyword.trim()) {
+      const kw = keyword.toLowerCase().trim();
+      collections = collections.filter(item =>
+        item.title.toLowerCase().includes(kw) ||
+        item.description.toLowerCase().includes(kw)
+      );
+    }
+
+    if (sort === 'hot') {
+      collections.sort((a, b) => (b.respondedCount || 0) - (a.respondedCount || 0) || (b.viewCount || 0) - (a.viewCount || 0));
+    } else if (sort === 'urgent') {
+      collections = collections.filter(item => {
+        const s = collectionData.getCollectionStatus(item);
+        return s.id === 'ongoing';
+      }).sort((a, b) => new Date(a.endTime) - new Date(b.endTime));
+    } else if (sort === 'progress') {
+      collections.sort((a, b) => collectionData.getProgressPercent(b) - collectionData.getProgressPercent(a));
+    } else {
+      collections.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    }
+
+    const total = collections.length;
+    const start = (page - 1) * pageSize;
+    const list = collections.slice(start, start + pageSize).map(item => ({
+      ...item,
+      typeInfo: collectionData.getCollectionTypeInfo(item.type),
+      statusInfo: collectionData.getCollectionStatus(item),
+      progressPercent: collectionData.getProgressPercent(item),
+      remainingDays: collectionData.getRemainingDays(item.endTime),
+      isUrgent: collectionData.isUrgent(item),
+      isAchieved: collectionData.isAchieved(item)
+    }));
+
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getCollectionDetail: async (id) => {
+    await delay(200);
+    await storageApi.initCollectionData();
+    if (!id) {
+      return { code: 400, data: null, message: '征集ID不能为空' };
+    }
+    const collections = wx.getStorageSync('collections') || [];
+    const index = collections.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '征集不存在' };
+    }
+
+    collections[index].viewCount = (collections[index].viewCount || 0) + 1;
+    wx.setStorageSync('collections', collections);
+    const collection = collections[index];
+
+    const articles = wx.getStorageSync('articles') || [];
+    const responseArticles = (collection.responseArticleIds || [])
+      .map(articleId => articles.find(a => a.id === articleId && a.status === 1))
+      .filter(Boolean);
+
+    const userId = getCurrentUserId();
+    const userResponses = wx.getStorageSync('collectionResponses') || {};
+    const hasResponded = !!(userId && userResponses[userId] && userResponses[userId].includes(id));
+
+    const result = {
+      ...collection,
+      typeInfo: collectionData.getCollectionTypeInfo(collection.type),
+      statusInfo: collectionData.getCollectionStatus(collection),
+      progressPercent: collectionData.getProgressPercent(collection),
+      remainingDays: collectionData.getRemainingDays(collection.endTime),
+      isUrgent: collectionData.isUrgent(collection),
+      isAchieved: collectionData.isAchieved(collection),
+      deadlineText: collectionData.formatCollectionDeadline(collection.endTime),
+      responseArticles,
+      responseArticleList: responseArticles,
+      hasResponded
+    };
+
+    return { code: 200, data: result, message: 'success' };
+  },
+
+  createCollection: async (data) => {
+    await delay(600);
+    const authError = requireLogin();
+    if (authError) return authError;
+
+    const userInfo = wx.getStorageSync('userInfo');
+    if (!userInfo.role || (userInfo.role !== 'admin' && userInfo.role !== 'verified')) {
+      return { code: 403, data: null, message: '仅管理员或认证用户可发布征集' };
+    }
+
+    if (!data.title || !data.title.trim()) {
+      return { code: 400, data: null, message: '征集标题不能为空' };
+    }
+    if (!data.type) {
+      return { code: 400, data: null, message: '请选择征集类型' };
+    }
+    if (!data.endTime) {
+      return { code: 400, data: null, message: '请选择截止时间' };
+    }
+    if (!data.targetCount || data.targetCount <= 0) {
+      return { code: 400, data: null, message: '请输入有效的目标条数' };
+    }
+    if (!data.description || !data.description.trim()) {
+      return { code: 400, data: null, message: '征集详情不能为空' };
+    }
+
+    const end = new Date(data.endTime);
+    if (end <= new Date()) {
+      return { code: 400, data: null, message: '截止时间必须晚于当前时间' };
+    }
+
+    const typeInfo = collectionData.getCollectionTypeInfo(data.type);
+    if (!typeInfo) {
+      return { code: 400, data: null, message: '无效的征集类型' };
+    }
+
+    await storageApi.initCollectionData();
+    const collections = wx.getStorageSync('collections') || [];
+    const newCollection = {
+      id: util.generateId('collection'),
+      title: data.title.trim(),
+      type: data.type,
+      defaultCategory: typeInfo.defaultCategory,
+      defaultTags: typeInfo.defaultTags,
+      description: data.description.trim(),
+      targetCount: parseInt(data.targetCount),
+      respondedCount: 0,
+      endTime: data.endTime,
+      cover: data.cover || '',
+      requirements: data.requirements || '',
+      responseArticleIds: [],
+      resultTopicId: null,
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      viewCount: 0,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+      status: 1
+    };
+
+    const sensitiveCheck = util.checkSensitiveWords(
+      newCollection.title + ' ' + newCollection.description + ' ' + (newCollection.requirements || '')
+    );
+    if (sensitiveCheck.hasSensitive) {
+      return {
+        code: 400,
+        data: { matchedWords: sensitiveCheck.matchedWords },
+        message: '内容包含敏感词：' + sensitiveCheck.matchedWords.join('、') + '，请修改后重试'
+      };
+    }
+
+    collections.unshift(newCollection);
+    wx.setStorageSync('collections', collections);
+
+    return { code: 200, data: newCollection, message: '发布成功' };
+  },
+
+  updateCollection: async (id, data) => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '征集ID不能为空' };
+    }
+    await storageApi.initCollectionData();
+    const collections = wx.getStorageSync('collections') || [];
+    const index = collections.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '征集不存在' };
+    }
+
+    const userId = getCurrentUserId();
+    const userInfo = wx.getStorageSync('userInfo');
+    if (collections[index].authorId !== userId && userInfo.role !== 'admin') {
+      return { code: 403, data: null, message: '仅发布者或管理员可编辑' };
+    }
+
+    const allowedFields = ['title', 'type', 'description', 'endTime', 'targetCount', 'cover', 'requirements'];
+    allowedFields.forEach(field => {
+      if (data[field] !== undefined) {
+        if (field === 'title' || field === 'description') {
+          collections[index][field] = data[field].trim();
+        } else if (field === 'targetCount') {
+          collections[index][field] = parseInt(data[field]);
+        } else {
+          collections[index][field] = data[field];
+        }
+      }
+    });
+
+    if (data.type) {
+      const typeInfo = collectionData.getCollectionTypeInfo(data.type);
+      if (typeInfo) {
+        collections[index].defaultCategory = typeInfo.defaultCategory;
+        collections[index].defaultTags = typeInfo.defaultTags;
+      }
+    }
+
+    wx.setStorageSync('collections', collections);
+    return { code: 200, data: collections[index], message: '更新成功' };
+  },
+
+  deleteCollection: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) {
+      return { code: 400, data: null, message: '征集ID不能为空' };
+    }
+    await storageApi.initCollectionData();
+    const collections = wx.getStorageSync('collections') || [];
+    const index = collections.findIndex(item => item.id === id);
+    if (index === -1) {
+      return { code: 404, data: null, message: '征集不存在' };
+    }
+
+    const userId = getCurrentUserId();
+    const userInfo = wx.getStorageSync('userInfo');
+    if (collections[index].authorId !== userId && userInfo.role !== 'admin') {
+      return { code: 403, data: null, message: '仅发布者或管理员可删除' };
+    }
+
+    collections[index].status = 0;
+    wx.setStorageSync('collections', collections);
+    return { code: 200, data: null, message: '删除成功' };
+  },
+
+  getHotCollections: async (limit = 5) => {
+    await delay(200);
+    const result = await storageApi.getCollectionList({ sort: 'hot', page: 1, pageSize: limit, status: 'ongoing' });
+    return { code: 200, data: result.data.list, message: 'success' };
+  },
+
+  getUrgentCollections: async (limit = 5) => {
+    await delay(200);
+    const result = await storageApi.getCollectionList({ sort: 'urgent', page: 1, pageSize: limit });
+    const list = result.data.list.filter(item => item.remainingDays >= 0 && item.remainingDays <= 7);
+    return { code: 200, data: list.slice(0, limit), message: 'success' };
+  },
+
+  respondToCollection: async (collectionId, articleData) => {
+    await delay(600);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!collectionId) {
+      return { code: 400, data: null, message: '征集ID不能为空' };
+    }
+    if (!articleData || !articleData.title || !articleData.title.trim()) {
+      return { code: 400, data: null, message: '文章标题不能为空' };
+    }
+
+    await storageApi.initCollectionData();
+    const collections = wx.getStorageSync('collections') || [];
+    const colIndex = collections.findIndex(item => item.id === collectionId);
+    if (colIndex === -1) {
+      return { code: 404, data: null, message: '征集不存在' };
+    }
+
+    const collection = collections[colIndex];
+    const statusInfo = collectionData.getCollectionStatus(collection);
+    if (statusInfo.id !== 'ongoing') {
+      return { code: 400, data: null, message: '该征集已结束或已达成目标' };
+    }
+
+    const userId = getCurrentUserId();
+    const userResponses = wx.getStorageSync('collectionResponses') || {};
+    if (!userResponses[userId]) {
+      userResponses[userId] = [];
+    }
+
+    const typeInfo = collectionData.getCollectionTypeInfo(collection.type);
+    const finalCategory = articleData.category || collection.defaultCategory || typeInfo.defaultCategory;
+    const existingTags = articleData.tags || [];
+    const defaultTags = collection.defaultTags || typeInfo.defaultTags || [];
+    const finalTags = Array.from(new Set([...defaultTags, ...existingTags]));
+
+    const userInfo = wx.getStorageSync('userInfo');
+    const articles = wx.getStorageSync('articles') || [];
+    const newArticle = {
+      id: util.generateId('article'),
+      title: articleData.title.trim(),
+      category: finalCategory,
+      tags: finalTags,
+      content: (articleData.content || '').trim(),
+      summary: articleData.summary || '',
+      cover: articleData.cover || collection.cover || '',
+      images: articleData.images || [],
+      collectionRequestId: collectionId,
+      authorId: userInfo.id,
+      authorName: userInfo.nickname,
+      authorAvatar: userInfo.avatar || '',
+      viewCount: 0,
+      likeCount: 0,
+      commentCount: 0,
+      status: 1,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
+    };
+
+    articles.unshift(newArticle);
+    wx.setStorageSync('articles', articles);
+
+    collection.respondedCount = (collection.respondedCount || 0) + 1;
+    if (!collection.responseArticleIds) {
+      collection.responseArticleIds = [];
+    }
+    collection.responseArticleIds.push(newArticle.id);
+    collections[colIndex] = collection;
+    wx.setStorageSync('collections', collections);
+
+    if (!userResponses[userId].includes(collectionId)) {
+      userResponses[userId].push(collectionId);
+    }
+    wx.setStorageSync('collectionResponses', userResponses);
+
+    let createdTopic = null;
+    if (!collection.resultTopicId && collection.respondedCount >= collection.targetCount) {
+      const topics = wx.getStorageSync('topics') || [];
+      const newTopic = {
+        id: util.generateId('topic'),
+        title: collection.title + ' - 征集成果专题',
+        description: collection.description + '\n\n本专题为文化征集活动自动生成的成果展示，共收录 ' + collection.respondedCount + ' 篇投稿。',
+        cover: collection.cover || '',
+        articleIds: [...collection.responseArticleIds],
+        collectionId: collectionId,
+        isAutoGenerated: true,
+        createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss'),
+        status: 1,
+        viewCount: 0,
+        authorId: userInfo.id,
+        authorName: '系统自动生成'
+      };
+      topics.unshift(newTopic);
+      wx.setStorageSync('topics', topics);
+      collection.resultTopicId = newTopic.id;
+      collections[colIndex] = collection;
+      wx.setStorageSync('collections', collections);
+      createdTopic = newTopic;
+    }
+
+    storageApi.createNotification({
+      type: 'collection',
+      fromUserId: userId,
+      fromUserName: userInfo ? userInfo.nickname : '',
+      targetUserId: collection.authorId,
+      targetId: collectionId,
+      targetTitle: collection.title,
+      content: (userInfo ? userInfo.nickname : '有人') + ' 响应了您发布的征集：《' + collection.title + '》',
+      jumpType: 'collection',
+      jumpId: collectionId
+    });
+
+    return {
+      code: 200,
+      data: {
+        article: newArticle,
+        collection: collections[colIndex],
+        createdTopic: createdTopic,
+        isAchieved: collectionData.isAchieved(collections[colIndex])
+      },
+      message: createdTopic ? '投稿成功，征集已达成目标，成果专题已自动生成！' : '投稿成功'
+    };
+  },
+
+  getCollectionArticles: async (collectionId, params = {}) => {
+    await delay(200);
+    if (!collectionId) {
+      return { code: 400, data: null, message: '征集ID不能为空' };
+    }
+    const { page = 1, pageSize = 10 } = params;
+    const detailResult = await storageApi.getCollectionDetail(collectionId);
+    if (detailResult.code !== 200) return detailResult;
+    const articles = detailResult.data.responseArticles || [];
+    const total = articles.length;
+    const start = (page - 1) * pageSize;
+    const list = articles.slice(start, start + pageSize);
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getMyPublishedCollections: async () => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    await storageApi.initCollectionData();
+    const userId = getCurrentUserId();
+    let collections = wx.getStorageSync('collections') || [];
+    collections = collections.filter(item => item.authorId === userId && item.status === 1);
+    collections.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const list = collections.map(item => ({
+      ...item,
+      typeInfo: collectionData.getCollectionTypeInfo(item.type),
+      statusInfo: collectionData.getCollectionStatus(item),
+      progressPercent: collectionData.getProgressPercent(item),
+      remainingDays: collectionData.getRemainingDays(item.endTime)
+    }));
+    return { code: 200, data: { list, total: list.length }, message: 'success' };
   }
 };
 

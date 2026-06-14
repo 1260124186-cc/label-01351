@@ -70,7 +70,10 @@
     "pages/learning-publish/learning-publish",
     "pages/pairing-detail/pairing-detail",
     "pages/pairing-matches/pairing-matches",
-    "pages/commemorative-card/commemorative-card"
+    "pages/commemorative-card/commemorative-card",
+    "pages/collection-wall/collection-wall",
+    "pages/collection-publish/collection-publish",
+    "pages/collection-detail/collection-detail"
   ],
   "window": {
     "backgroundTextStyle": "dark",

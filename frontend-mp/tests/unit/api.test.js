@@ -3957,3 +3957,461 @@ describe('api.getAuthorProfile', () => {
     expect(res.message).toBe('作者不存在');
   });
 });
+
+describe('api.getCollectionTypes 征集类型列表', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('返回征集类型列表', async () => {
+    const res = await api.getCollectionTypes();
+    expect(res.code).toBe(200);
+    expect(Array.isArray(res.data)).toBe(true);
+    expect(res.data.length).toBeGreaterThan(0);
+  });
+
+  test('每个类型包含 id/name/icon/description', async () => {
+    const res = await api.getCollectionTypes();
+    res.data.forEach(item => {
+      expect(item).toHaveProperty('id');
+      expect(item).toHaveProperty('name');
+      expect(item).toHaveProperty('icon');
+    });
+  });
+});
+
+describe('api.getCollectionList 征集列表', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('返回已发布征集列表', async () => {
+    const res = await api.getCollectionList();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    expect(res.data.list.every(item => item.status === 1)).toBe(true);
+  });
+
+  test('按类型筛选征集', async () => {
+    const res = await api.getCollectionList({ type: 'figure' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.every(item => item.type === 'figure')).toBe(true);
+  });
+
+  test('按关键词搜索征集', async () => {
+    const res = await api.getCollectionList({ keyword: '竹筐' });
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    res.data.list.forEach(item => {
+      const matchTitle = item.title.includes('竹筐');
+      const matchDesc = item.description && item.description.includes('竹筐');
+      expect(matchTitle || matchDesc).toBe(true);
+    });
+  });
+
+  test('分页功能正常工作', async () => {
+    const res1 = await api.getCollectionList({ page: 1, pageSize: 2 });
+    expect(res1.code).toBe(200);
+    expect(res1.data.list.length).toBe(2);
+    expect(res1.data.page).toBe(1);
+
+    const res2 = await api.getCollectionList({ page: 2, pageSize: 2 });
+    expect(res2.code).toBe(200);
+    expect(res2.data.page).toBe(2);
+  });
+
+  test('列表项包含 typeInfo/statusInfo/progressPercent/remainingDays', async () => {
+    const res = await api.getCollectionList();
+    expect(res.code).toBe(200);
+    const item = res.data.list[0];
+    expect(item).toHaveProperty('typeInfo');
+    expect(item).toHaveProperty('statusInfo');
+    expect(item).toHaveProperty('progressPercent');
+    expect(item).toHaveProperty('remainingDays');
+  });
+
+  test('sort=hot 按热门（浏览量）排序', async () => {
+    const res = await api.getCollectionList({ sort: 'hot' });
+    expect(res.code).toBe(200);
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect((list[i].viewCount || 0) >= (list[i + 1].viewCount || 0)).toBe(true);
+    }
+  });
+
+  test('sort=urgent 按即将截止排序', async () => {
+    const res = await api.getCollectionList({ sort: 'urgent' });
+    expect(res.code).toBe(200);
+    const list = res.data.list;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect((list[i].remainingDays) <= (list[i + 1].remainingDays)).toBe(true);
+    }
+  });
+});
+
+describe('api.getCollectionDetail 征集详情', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('根据 ID 获取征集详情', async () => {
+    const res = await api.getCollectionDetail('collection_001');
+    expect(res.code).toBe(200);
+    expect(res.data.id).toBe('collection_001');
+    expect(res.data.title).toBe('寻找会编竹筐的老人');
+  });
+
+  test('每次获取详情浏览量自动递增', async () => {
+    const before = wx.getStorageSync('collections').find(c => c.id === 'collection_001');
+    const viewCountBefore = before.viewCount;
+
+    await api.getCollectionDetail('collection_001');
+
+    const after = wx.getStorageSync('collections').find(c => c.id === 'collection_001');
+    expect(after.viewCount).toBe(viewCountBefore + 1);
+  });
+
+  test('征集 ID 为空返回 400', async () => {
+    const res = await api.getCollectionDetail('');
+    expect(res.code).toBe(400);
+    expect(res.data).toBeNull();
+  });
+
+  test('不存在的征集 ID 返回 404', async () => {
+    const res = await api.getCollectionDetail('collection_notexist');
+    expect(res.code).toBe(404);
+    expect(res.data).toBeNull();
+  });
+
+  test('返回进度和状态信息', async () => {
+    const res = await api.getCollectionDetail('collection_001');
+    expect(res.code).toBe(200);
+    expect(res.data).toHaveProperty('typeInfo');
+    expect(res.data).toHaveProperty('statusInfo');
+    expect(res.data).toHaveProperty('progressPercent');
+    expect(res.data).toHaveProperty('remainingDays');
+  });
+});
+
+describe('api.createCollection 发布征集', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: { ...defaultUser, role: 'verified' },
+      isLoggedIn: true
+    });
+  });
+
+  test('成功发布征集', async () => {
+    const res = await api.createCollection({
+      title: '测试征集标题',
+      type: 'memory',
+      description: '这是一个测试征集的详情描述，长度足够。',
+      targetCount: 10,
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.title).toBe('测试征集标题');
+    expect(res.data.status).toBe(1);
+  });
+
+  test('新征集被添加到列表头部', async () => {
+    const before = wx.getStorageSync('collections');
+    const beforeLen = before.length;
+
+    await api.createCollection({
+      title: '新发布的征集',
+      type: 'craft',
+      description: '新征集的详情描述，长度超过十个字符没问题。',
+      targetCount: 5,
+      endTime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString()
+    });
+
+    const after = wx.getStorageSync('collections');
+    expect(after.length).toBe(beforeLen + 1);
+    expect(after[0].title).toBe('新发布的征集');
+  });
+
+  test('未登录时返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.createCollection({
+      title: '测试',
+      type: 'memory',
+      description: '描述内容',
+      targetCount: 5,
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    expect(res.code).toBe(401);
+  });
+
+  test('标题为空返回 400', async () => {
+    const res = await api.createCollection({
+      title: '',
+      type: 'memory',
+      description: '描述',
+      targetCount: 5,
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('未选择类型返回 400', async () => {
+    const res = await api.createCollection({
+      title: '测试',
+      type: '',
+      description: '描述',
+      targetCount: 5,
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('目标条数小于等于0返回 400', async () => {
+    const res = await api.createCollection({
+      title: '测试',
+      type: 'memory',
+      description: '描述',
+      targetCount: 0,
+      endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('截止时间早于当前时间返回 400', async () => {
+    const res = await api.createCollection({
+      title: '测试',
+      type: 'memory',
+      description: '描述',
+      targetCount: 5,
+      endTime: new Date(Date.now() - 1000).toISOString()
+    });
+    expect(res.code).toBe(400);
+  });
+});
+
+describe('api.getHotCollections 热门征集榜', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('返回热门征集列表', async () => {
+    const res = await api.getHotCollections(5);
+    expect(res.code).toBe(200);
+    expect(Array.isArray(res.data)).toBe(true);
+    expect(res.data.length).toBeGreaterThan(0);
+  });
+
+  test('限制返回数量', async () => {
+    const res = await api.getHotCollections(2);
+    expect(res.code).toBe(200);
+    expect(res.data.length).toBeLessThanOrEqual(2);
+  });
+
+  test('热门征集按浏览量排序', async () => {
+    const res = await api.getHotCollections(10);
+    const list = res.data;
+    for (let i = 0; i < list.length - 1; i++) {
+      expect((list[i].viewCount || 0) >= (list[i + 1].viewCount || 0)).toBe(true);
+    }
+  });
+});
+
+describe('api.getUrgentCollections 即将截止提醒', () => {
+  beforeEach(() => {
+    initStorage();
+  });
+
+  test('返回即将截止的征集列表', async () => {
+    const res = await api.getUrgentCollections(5);
+    expect(res.code).toBe(200);
+    expect(Array.isArray(res.data)).toBe(true);
+  });
+
+  test('即将截止征集剩余天数不超过7天', async () => {
+    const res = await api.getUrgentCollections(10);
+    res.data.forEach(item => {
+      expect(item.remainingDays).toBeLessThanOrEqual(7);
+      expect(item.remainingDays).toBeGreaterThanOrEqual(0);
+    });
+  });
+});
+
+describe('api.respondToCollection 响应征集投稿', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('成功响应征集并创建文章', async () => {
+    const res = await api.respondToCollection('collection_001', {
+      title: '我村的编竹筐老人',
+      content: '我们村有一位李大爷，今年已经80岁了，还在坚持编竹筐。他编的竹筐结实耐用，十里八乡的人都来找他编。',
+      category: 'craft',
+      tags: ['竹编', '老人']
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.article).toBeDefined();
+    expect(res.data.article.title).toBe('我村的编竹筐老人');
+    expect(res.data.article.collectionRequestId).toBe('collection_001');
+  });
+
+  test('响应征集后征集响应数增加', async () => {
+    const before = wx.getStorageSync('collections').find(c => c.id === 'collection_001');
+    const countBefore = before.respondedCount || 0;
+
+    await api.respondToCollection('collection_001', {
+      title: '另一位编竹筐的老人',
+      content: '我也认识一位会编竹筐的老人，内容足够十个字以上。',
+      category: 'craft'
+    });
+
+    const after = wx.getStorageSync('collections').find(c => c.id === 'collection_001');
+    expect(after.respondedCount).toBe(countBefore + 1);
+  });
+
+  test('自动填充征集的默认分类和标签', async () => {
+    const res = await api.respondToCollection('collection_001', {
+      title: '竹编技艺传承人',
+      content: '关于竹编技艺的详细描述，长度足够。'
+    });
+    expect(res.code).toBe(200);
+    expect(res.data.article.category).toBeTruthy();
+    expect(res.data.article.tags.length).toBeGreaterThan(0);
+  });
+
+  test('未登录时响应征集返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.respondToCollection('collection_001', {
+      title: '测试投稿',
+      content: '测试投稿内容'
+    });
+    expect(res.code).toBe(401);
+  });
+
+  test('征集ID为空返回 400', async () => {
+    const res = await api.respondToCollection('', {
+      title: '测试',
+      content: '内容'
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('不存在的征集ID返回 404', async () => {
+    const res = await api.respondToCollection('notexist_collection', {
+      title: '测试',
+      content: '内容'
+    });
+    expect(res.code).toBe(404);
+  });
+
+  test('文章标题为空返回 400', async () => {
+    const res = await api.respondToCollection('collection_001', {
+      title: '',
+      content: '内容'
+    });
+    expect(res.code).toBe(400);
+  });
+
+  test('达成目标后自动生成成果专题', async () => {
+    const collections = wx.getStorageSync('collections');
+    const colIndex = collections.findIndex(c => c.id === 'collection_001');
+    collections[colIndex].targetCount = 4;
+    collections[colIndex].respondedCount = 3;
+    wx.setStorageSync('collections', collections);
+
+    const res = await api.respondToCollection('collection_001', {
+      title: '达成目标的投稿',
+      content: '这篇投稿让征集达成了目标，字数足够多。'
+    });
+
+    expect(res.code).toBe(200);
+    expect(res.data.createdTopic).toBeDefined();
+    expect(res.data.isAchieved).toBe(true);
+
+    const updated = wx.getStorageSync('collections').find(c => c.id === 'collection_001');
+    expect(updated.resultTopicId).toBeTruthy();
+
+    const topics = wx.getStorageSync('topics');
+    const topic = topics.find(t => t.id === updated.resultTopicId);
+    expect(topic).toBeDefined();
+    expect(topic.title).toContain('征集成果');
+  });
+});
+
+describe('api.deleteCollection 删除征集', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('成功删除征集（软删除 status=0）', async () => {
+    const res = await api.deleteCollection('collection_001');
+    expect(res.code).toBe(200);
+
+    const collections = wx.getStorageSync('collections');
+    const deleted = collections.find(c => c.id === 'collection_001');
+    expect(deleted.status).toBe(0);
+  });
+
+  test('征集ID为空返回 400', async () => {
+    const res = await api.deleteCollection('');
+    expect(res.code).toBe(400);
+  });
+
+  test('不存在的征集ID返回 404', async () => {
+    const res = await api.deleteCollection('notexist_collection');
+    expect(res.code).toBe(404);
+  });
+
+  test('非作者且非管理员无法删除', async () => {
+    const otherUser = { id: 'user_999', nickname: '其他用户', role: 'user' };
+    wx.setStorageSync('userInfo', otherUser);
+
+    const res = await api.deleteCollection('collection_001');
+    expect(res.code).toBe(403);
+  });
+
+  test('管理员可以删除任意征集', async () => {
+    const admin = { id: 'admin_001', nickname: '管理员', role: 'admin' };
+    wx.setStorageSync('userInfo', admin);
+
+    const res = await api.deleteCollection('collection_001');
+    expect(res.code).toBe(200);
+  });
+});
+
+describe('api.getMyPublishedCollections 我发布的征集', () => {
+  beforeEach(() => {
+    initStorage({
+      userInfo: defaultUser,
+      isLoggedIn: true
+    });
+  });
+
+  test('返回当前用户发布的征集列表', async () => {
+    const res = await api.getMyPublishedCollections();
+    expect(res.code).toBe(200);
+    expect(res.data.list.length).toBeGreaterThan(0);
+    res.data.list.forEach(item => {
+      expect(item.authorId).toBe('user_001');
+    });
+  });
+
+  test('未登录返回 401', async () => {
+    wx.removeStorageSync('userInfo');
+    wx.removeStorageSync('isLoggedIn');
+    const res = await api.getMyPublishedCollections();
+    expect(res.code).toBe(401);
+  });
+});

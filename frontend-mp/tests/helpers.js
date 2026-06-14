@@ -621,6 +621,78 @@ const defaultActivities = [
   }
 ];
 
+const getFutureDateOnly = (days) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const defaultCollections = [
+  {
+    id: 'collection_001',
+    title: '寻找会编竹筐的老人',
+    type: 'figure',
+    defaultCategory: 'figure',
+    defaultTags: ['竹编', '手艺人', '传统技艺'],
+    description: '我们正在寻找还会手工编织竹筐的老艺人，记录他们的技艺和故事。如果您身边有这样的老人，或者您本人就是，请与我们联系！',
+    targetCount: 10,
+    respondedCount: 3,
+    endTime: getFutureDateOnly(30),
+    cover: '',
+    requirements: '请提供老人的基本信息、擅长的竹编类型、相关照片等。',
+    responseArticleIds: [],
+    resultTopicId: null,
+    authorId: 'user_001',
+    authorName: '测试用户',
+    viewCount: 256,
+    createTime: '2024-12-10 09:00:00',
+    status: 1
+  },
+  {
+    id: 'collection_002',
+    title: '收集80年代村口广播记忆',
+    type: 'memory',
+    defaultCategory: 'memory',
+    defaultTags: ['广播', '80年代', '乡村记忆'],
+    description: '还记得村口大喇叭里播放的声音吗？新闻、歌曲、通知……那是一个时代的声音记忆。欢迎分享您关于村口广播的故事。',
+    targetCount: 20,
+    respondedCount: 8,
+    endTime: getFutureDateOnly(15),
+    cover: '',
+    requirements: '请分享您记忆中印象最深的广播内容、相关故事或老照片。',
+    responseArticleIds: [],
+    resultTopicId: null,
+    authorId: 'user_001',
+    authorName: '测试用户',
+    viewCount: 412,
+    createTime: '2024-12-08 14:00:00',
+    status: 1
+  },
+  {
+    id: 'collection_003',
+    title: '征集老农具照片',
+    type: 'farming',
+    defaultCategory: 'farming',
+    defaultTags: ['农具', '老物件', '农耕文化'],
+    description: '犁、耙、锄、镰……那些伴随祖辈耕耘田野的老农具，正在慢慢消失。请拍下您身边的老农具，留住那段农耕记忆。',
+    targetCount: 30,
+    respondedCount: 12,
+    endTime: getFutureDateOnly(2),
+    cover: '',
+    requirements: '请上传清晰的老农具照片，并附上简单介绍（名称、用途、年代等）。',
+    responseArticleIds: [],
+    resultTopicId: null,
+    authorId: 'user_001',
+    authorName: '测试用户',
+    viewCount: 189,
+    createTime: '2024-12-15 10:00:00',
+    status: 1
+  }
+];
+
 function initStorage(overrides = {}) {
   wx._resetStorage();
   wx.setStorageSync('articles', overrides.articles || JSON.parse(JSON.stringify(defaultArticles)));
@@ -773,6 +845,16 @@ function initStorage(overrides = {}) {
     var pairingDataModule3 = require('../utils/pairing-data');
     wx.setStorageSync('pairings', JSON.parse(JSON.stringify(pairingDataModule3.DEFAULT_PAIRINGS)));
   }
+  if (overrides.collections) {
+    wx.setStorageSync('collections', overrides.collections);
+  } else {
+    wx.setStorageSync('collections', JSON.parse(JSON.stringify(defaultCollections)));
+  }
+  if (overrides.collectionResponses) {
+    wx.setStorageSync('collectionResponses', overrides.collectionResponses);
+  } else {
+    wx.setStorageSync('collectionResponses', {});
+  }
 }
 
 function logoutUser() {
@@ -920,6 +1002,7 @@ module.exports = {
   defaultTopics,
   defaultEncyclopedias,
   defaultActivities,
+  defaultCollections,
   defaultQuizzes,
   defaultInterviews,
   defaultComments,

@@ -346,6 +346,80 @@ const generateToken = (userId) => {
   return header + '.' + payload + '.' + signature;
 };
 
+const COLLECTION_TYPES = {
+  figure: { id: 'figure', name: '寻找人物', icon: '👤', description: '寻找会某项技艺的传承人或文化见证者' },
+  memory: { id: 'memory', name: '记忆征集', icon: '📸', description: '收集特定年代、特定地点的文化记忆' },
+  object: { id: 'object', name: '实物征集', icon: '🏺', description: '收集老物件、老照片、老书籍等实物' },
+  story: { id: 'story', name: '故事征集', icon: '📖', description: '征集口述故事、民间传说、家族历史' },
+  custom: { id: 'custom', name: '其他征集', icon: '📝', description: '其他类型的文化征集活动' }
+};
+
+const COLLECTION_STATUS = {
+  recruiting: { id: 'recruiting', name: '征集中', color: '#52C41A', icon: '📥' },
+  achieving: { id: 'achieving', name: '即将达成', color: '#FA8C16', icon: '🎯' },
+  achieved: { id: 'achieved', name: '已达成', color: '#1890FF', icon: '✅' },
+  ended: { id: 'ended', name: '已结束', color: '#999999', icon: '⏹️' }
+};
+
+const getCollectionTypes = () => Object.values(COLLECTION_TYPES);
+const getCollectionTypeName = (typeId) => COLLECTION_TYPES[typeId] ? COLLECTION_TYPES[typeId].name : '未知类型';
+const getCollectionTypeIcon = (typeId) => COLLECTION_TYPES[typeId] ? COLLECTION_TYPES[typeId].icon : '📋';
+const getCollectionTypeDescription = (typeId) => COLLECTION_TYPES[typeId] ? COLLECTION_TYPES[typeId].description : '';
+
+const getCollectionStatus = (collection) => {
+  const now = new Date().getTime();
+  const endTime = new Date(collection.endTime).getTime();
+  const targetCount = collection.targetCount || 0;
+  const responseCount = collection.responseCount || 0;
+  const completionThreshold = collection.completionThreshold || 80;
+  const progress = targetCount > 0 ? (responseCount / targetCount) * 100 : 0;
+
+  if (now > endTime || collection.status === 'ended') {
+    return COLLECTION_STATUS.ended;
+  }
+  if (progress >= 100) {
+    return COLLECTION_STATUS.achieved;
+  }
+  if (progress >= completionThreshold) {
+    return COLLECTION_STATUS.achieving;
+  }
+  return COLLECTION_STATUS.recruiting;
+};
+
+const getCollectionProgress = (collection) => {
+  const targetCount = collection.targetCount || 0;
+  const responseCount = collection.responseCount || 0;
+  const progress = targetCount > 0 ? Math.min((responseCount / targetCount) * 100, 100) : 0;
+  return {
+    targetCount,
+    responseCount,
+    remainingCount: Math.max(targetCount - responseCount, 0),
+    progress,
+    progressText: progress.toFixed(0) + '%'
+  };
+};
+
+const getCollectionRemainingDays = (collection) => {
+  if (!collection || !collection.endTime) return 0;
+  const now = new Date().getTime();
+  const endTime = new Date(collection.endTime).getTime();
+  if (isNaN(endTime)) return 0;
+  const diff = endTime - now;
+  if (diff <= 0) return 0;
+  return Math.ceil(diff / (24 * 60 * 60 * 1000));
+};
+
+const getCollectionStatusInfo = (statusId) => {
+  return COLLECTION_STATUS[statusId] || { id: 'unknown', name: '未知', color: '#999', icon: '❓' };
+};
+
+const isCollectionUrgent = (collection) => {
+  if (!collection) return false;
+  const remainingDays = getCollectionRemainingDays(collection);
+  const progress = getCollectionProgress(collection).progress;
+  return remainingDays > 0 && remainingDays <= 3 && progress < 80;
+};
+
 module.exports = {
   formatDate,
   formatRelativeTime,
@@ -368,6 +442,17 @@ module.exports = {
   base64Encode,
   base64Decode,
   generateToken,
+  COLLECTION_TYPES,
+  COLLECTION_STATUS,
+  getCollectionTypes,
+  getCollectionTypeName,
+  getCollectionTypeIcon,
+  getCollectionTypeDescription,
+  getCollectionStatus,
+  getCollectionProgress,
+  getCollectionRemainingDays,
+  getCollectionStatusInfo,
+  isCollectionUrgent,
 
   FUND_STATUS: {
     ongoing: { id: 'ongoing', name: '进行中', color: '#52c41a', icon: '🟢' },

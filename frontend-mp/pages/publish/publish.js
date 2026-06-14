@@ -59,11 +59,17 @@ Page({
     showPreview: false,
     previewData: null,
 
+    // 关联征集
+    collectionRequestId: '',
+    collectionInfo: null,
+
     // 表单状态
     canSubmit: false,
     submitting: false,
     showSuccess: false,
-    newArticleId: ''
+    newArticleId: '',
+    successTitle: '发布成功',
+    successDesc: '感谢你的分享，让更多人了解乡村文化'
   },
 
   _categoriesLoaded: false,
@@ -82,6 +88,10 @@ Page({
     } else if (options && options.draftId) {
       this.setData({ draftId: options.draftId, isEditingDraft: true });
       this.loadDraftDetail(options.draftId);
+    } else if (options && options.collectionRequestId) {
+      this.setData({ collectionRequestId: options.collectionRequestId });
+      wx.setNavigationBarTitle({ title: '响应征集投稿' });
+      this.loadCollectionRequestInfo(options.collectionRequestId);
     }
   },
 
@@ -177,6 +187,45 @@ Page({
       wx.hideLoading();
       console.error('[Publish] 加载文章异常:', error);
       wx.showToast({ title: '网络错误，请重试', icon: 'none' });
+    }
+  },
+
+  async loadCollectionRequestInfo(collectionId) {
+    try {
+      wx.showLoading({ title: '加载征集信息...' });
+      const res = await api.getCollectionDetail(collectionId);
+      wx.hideLoading();
+      if (res.code === 200 && res.data) {
+        const collection = res.data;
+        const formData = { ...this.data.formData };
+        const typeInfo = collection.typeInfo || {};
+        const defaultCategory = collection.defaultCategory || typeInfo.category || collection.category;
+        const defaultTags = collection.defaultTags || typeInfo.defaultTags || collection.tags || [];
+        if (defaultCategory) {
+          formData.category = defaultCategory;
+        }
+        if (defaultTags && defaultTags.length > 0) {
+          formData.tags = defaultTags.slice(0, 3);
+        }
+        const progressPercent = collection.progressPercent || 0;
+        const displayCollection = {
+          ...collection,
+          responseCount: collection.respondedCount || collection.responseCount || 0,
+          progressInfo: {
+            progress: progressPercent,
+            progressText: progressPercent + '%'
+          }
+        };
+        this.setData({
+          collectionInfo: displayCollection,
+          formData
+        }, () => {
+          this.checkCanSubmit();
+        });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('[Publish] 加载征集信息异常:', error);
     }
   },
 
@@ -550,6 +599,18 @@ Page({
           figureId: figureId || ''
         };
         res = await api.updateArticle(articleId, updateData);
+      } else if (this.data.collectionRequestId) {
+        const articleData = {
+          title: titleTrimmed,
+          category,
+          summary: autoSummary,
+          content: contentTrimmed,
+          tags: tags && tags.length > 0 ? tags : []
+        };
+        if (figureId) {
+          articleData.figureId = figureId;
+        }
+        res = await api.respondToCollection(this.data.collectionRequestId, articleData);
       } else if (this.data.draftId) {
         const updateRes = await api.updateArticleDraft(this.data.draftId, {
           title: titleTrimmed,
@@ -589,8 +650,8 @@ Page({
             wx.navigateBack();
           }, 1000);
         } else {
-          const articleId = res.data && res.data.id;
-          if (!isEditingDraft) {
+          const articleId = (res.data && res.data.article && res.data.article.id) || (res.data && res.data.id);
+          if (!isEditingDraft && !this.data.collectionRequestId) {
             const categoryName = (this.data.categories.find(c => c.id === category) || {}).name;
             await api.recordTaskAction('publish_article', {
               articleId,
@@ -600,11 +661,28 @@ Page({
             });
           }
 
+          let successMessage = '发布成功';
+          if (this.data.collectionRequestId && res.data && res.data.createdTopic) {
+            successMessage = '投稿成功！征集已达成，成果专题已自动生成';
+          } else if (this.data.collectionRequestId) {
+            successMessage = '投稿成功，感谢您的响应！';
+          }
+
+          const finalArticleId = (res.data && res.data.article && res.data.article.id) || (res.data && res.data.id) || '';
+          let successDesc = '感谢你的分享，让更多人了解乡村文化';
+          if (this.data.collectionRequestId && res.data && res.data.createdTopic) {
+            successDesc = '恭喜！该征集已达成目标，成果专题已自动生成';
+          } else if (this.data.collectionRequestId) {
+            successDesc = '您的投稿已成功响应该征集，感谢您为文化传承贡献力量';
+          }
+
           this.setData({
             showPreview: false,
             previewData: null,
             showSuccess: true,
-            newArticleId: res.data.id,
+            newArticleId: finalArticleId,
+            successTitle: successMessage,
+            successDesc: successDesc,
             draftId: '',
             isEditingDraft: false,
             formData: {

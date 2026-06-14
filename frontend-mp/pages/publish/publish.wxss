@@ -74,6 +74,113 @@
   color: #ccc;
 }
 
+/* 关联征集信息卡片 */
+.collection-info-card {
+  margin: 0 24rpx 24rpx;
+  padding: 24rpx;
+  background: linear-gradient(135deg, #FFF8DC 0%, #FFEFD5 100%);
+  border-radius: 16rpx;
+  border: 2rpx solid #DEB887;
+  box-shadow: 0 4rpx 12rpx rgba(139, 69, 19, 0.1);
+}
+
+.collection-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.collection-icon {
+  font-size: 48rpx;
+  width: 72rpx;
+  height: 72rpx;
+  background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.collection-header-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.collection-type-label {
+  font-size: 22rpx;
+  color: #8B4513;
+  background-color: rgba(139, 69, 19, 0.1);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  align-self: flex-start;
+}
+
+.collection-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  line-height: 1.4;
+}
+
+.collection-progress-row {
+  margin-bottom: 16rpx;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.progress-text {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.progress-percent {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #8B4513;
+}
+
+.progress-bar-wrap {
+  width: 100%;
+  height: 12rpx;
+  background-color: rgba(139, 69, 19, 0.12);
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #8B4513 0%, #CD853F 100%);
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+}
+
+.collection-tag-hint {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx dashed rgba(139, 69, 19, 0.25);
+}
+
+.hint-icon {
+  font-size: 24rpx;
+}
+
+.hint-text {
+  font-size: 24rpx;
+  color: #8B4513;
+  line-height: 1.5;
+}
+
 /* 表单容器 */
 .form-container {
   padding: 32rpx;

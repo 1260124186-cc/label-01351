@@ -1,0 +1,168 @@
+<view class="page-container">
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <view wx:elif="{{!collection}}">
+    <view class="empty-wrap">
+      <text class="empty-icon">📭</text>
+      <text class="empty-text">征集不存在或已删除</text>
+    </view>
+  </view>
+
+  <block wx:else>
+    <view class="cover-section type-{{collection.type}}">
+      <text class="cover-emoji">{{collection.typeIcon}}</text>
+      <view class="cover-mask"></view>
+      <view class="cover-content">
+        <view class="cover-tags">
+          <view class="cover-type">{{collection.typeName}}</view>
+          <view class="cover-status" style="background-color: {{collection.statusInfo.color}};">
+            {{collection.statusInfo.icon}} {{collection.statusInfo.name}}
+          </view>
+          <view class="cover-urgent" wx:if="{{collection.isUrgent}}">⏰ 即将截止</view>
+        </view>
+        <view class="cover-title">{{collection.title}}</view>
+        <view class="cover-author">
+          <text class="author-icon">✍️</text>
+          <text class="author-name">{{collection.authorName}}</text>
+          <text class="author-time">{{collection.createTime}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="progress-card">
+      <view class="progress-header">
+        <text class="progress-title">征集进度</text>
+        <view class="achievement-badge" wx:if="{{collection.isAchieved}}">
+          🎯 已达成
+        </view>
+      </view>
+      <view class="progress-main">
+        <view class="progress-numbers">
+          <view class="number-item">
+            <text class="number-value">{{collection.respondedCount}}</text>
+            <text class="number-label">已响应</text>
+          </view>
+          <view class="number-divider"></view>
+          <view class="number-item">
+            <text class="number-value target">{{collection.targetCount}}</text>
+            <text class="number-label">目标</text>
+          </view>
+          <view class="number-divider"></view>
+          <view class="number-item">
+            <text class="number-value {{collection.remainingDays <= 3 ? 'urgent' : ''}}">
+              {{collection.remainingDays >= 0 ? collection.remainingDays : '已结束'}}
+            </text>
+            <text class="number-label">{{collection.remainingDays >= 0 ? '剩余天数' : '状态'}}</text>
+          </view>
+        </view>
+        <view class="progress-bar-section">
+          <view class="progress-bar-wrap">
+            <view class="progress-bar">
+              <view class="progress-fill" style="width: {{collection.progressPercent}}%; background-color: {{collection.statusInfo.color}};"></view>
+            </view>
+            <text class="progress-percent">{{collection.progressPercent}}%</text>
+          </view>
+          <view class="deadline-text" wx:if="{{collection.deadlineText}}">
+            📅 截止：{{collection.deadlineText}}
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="action-bar" wx:if="{{collection.statusInfo.id === 'ongoing' || collection.resultTopicId}}">
+      <view
+        class="action-btn primary {{!canRespond ? 'disabled' : ''}}"
+        bindtap="goToRespond"
+        wx:if="{{collection.statusInfo.id === 'ongoing'}}"
+      >
+        <text class="action-icon">📝</text>
+        <text class="action-text">{{collection.hasResponded ? '已响应' : '立即响应'}}</text>
+      </view>
+      <view class="action-btn secondary" bindtap="goToResultTopic" wx:if="{{collection.resultTopicId}}">
+        <text class="action-icon">📚</text>
+        <text class="action-text">查看成果专题</text>
+      </view>
+      <view class="action-btn danger" bindtap="onDelete" wx:if="{{isAuthor}}">
+        <text class="action-icon">🗑️</text>
+        <text class="action-text">删除</text>
+      </view>
+    </view>
+
+    <view class="info-section">
+      <view class="section-title">
+        <text class="section-icon">📋</text>
+        <text class="section-label">征集详情</text>
+      </view>
+      <view class="info-content">
+        <text class="info-text">{{collection.description}}</text>
+      </view>
+    </view>
+
+    <view class="info-section" wx:if="{{collection.requirements}}">
+      <view class="section-title">
+        <text class="section-icon">📝</text>
+        <text class="section-label">投稿要求</text>
+      </view>
+      <view class="info-content">
+        <text class="info-text">{{collection.requirements}}</text>
+      </view>
+    </view>
+
+    <view class="info-section" wx:if="{{collection.defaultTags && collection.defaultTags.length > 0}}">
+      <view class="section-title">
+        <text class="section-icon">🏷️</text>
+        <text class="section-label">推荐标签</text>
+      </view>
+      <view class="tag-list">
+        <text class="tag-item" wx:for="{{collection.defaultTags}}" wx:key="*this">#{{item}}</text>
+      </view>
+    </view>
+
+    <view class="info-section" wx:if="{{collection.responseArticles && collection.responseArticles.length > 0}}">
+      <view class="section-title">
+        <text class="section-icon">📖</text>
+        <text class="section-label">响应投稿 ({{collection.responseArticles.length}})</text>
+      </view>
+      <view class="article-list">
+        <view
+          class="article-item"
+          wx:for="{{collection.responseArticles}}"
+          wx:key="id"
+          bindtap="goToArticle"
+          data-id="{{item.id}}"
+        >
+          <view class="article-cover" wx:if="{{item.cover}}">
+            <image src="{{item.cover}}" mode="aspectFill" class="article-image"></image>
+          </view>
+          <view class="article-cover placeholder" wx:else>
+            <text class="article-emoji">📄</text>
+          </view>
+          <view class="article-info">
+            <view class="article-title">{{item.title}}</view>
+            <view class="article-meta">
+              <text class="meta-item">✍️ {{item.authorName}}</text>
+              <text class="meta-item">📅 {{item.createTime}}</text>
+            </view>
+          </view>
+          <text class="article-arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="info-section empty-responses" wx:else>
+      <view class="section-title">
+        <text class="section-icon">📖</text>
+        <text class="section-label">响应投稿</text>
+      </view>
+      <view class="empty-articles">
+        <text class="empty-icon">📝</text>
+        <text class="empty-text">还没有人响应，快来成为第一个投稿的人吧！</text>
+      </view>
+    </view>
+
+    <view class="bottom-space"></view>
+  </block>
+</view>

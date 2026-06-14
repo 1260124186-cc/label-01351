@@ -1,0 +1,218 @@
+<view class="page-container">
+  <view class="header">
+    <view class="header-title">
+      <text class="title-main">文化征集墙</text>
+      <text class="title-sub">汇聚记忆 · 共筑传承</text>
+    </view>
+    <view class="header-actions">
+      <view class="action-btn" bindtap="goToMyCollections" wx:if="{{isLoggedIn}}">
+        <text class="action-icon">📝</text>
+        <text class="action-text">我发布的</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input
+        class="search-input"
+        placeholder="搜索征集"
+        placeholder-class="search-placeholder"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+    <view class="admin-btn" bindtap="goToPublish">
+      <text class="admin-icon">➕</text>
+    </view>
+  </view>
+
+  <view class="urgent-section" wx:if="{{showUrgentReminder && urgentCollections.length > 0}}">
+    <view class="section-header" bindtap="toggleUrgentReminder">
+      <view class="section-title-wrap">
+        <text class="section-icon">⏰</text>
+        <text class="section-title">即将截止提醒</text>
+      </view>
+      <text class="section-toggle">{{showUrgentReminder ? '收起' : '展开'}}</text>
+    </view>
+    <scroll-view class="urgent-scroll" scroll-x enable-flex wx:if="{{showUrgentReminder}}">
+      <view
+        class="urgent-card"
+        wx:for="{{urgentCollections}}"
+        wx:key="id"
+        bindtap="goToHotDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="urgent-card-header">
+          <text class="urgent-type-icon">{{item.typeInfo.icon}}</text>
+          <view class="urgent-status-badge" style="color: #FF6B6B;">仅剩{{item.remainingDays}}天</view>
+        </view>
+        <view class="urgent-title">{{item.title}}</view>
+        <view class="urgent-progress-wrap">
+          <view class="urgent-progress-bar">
+            <view class="urgent-progress-fill" style="width: {{item.progressPercent}}%;"></view>
+          </view>
+          <text class="urgent-progress-text">{{item.respondedCount}}/{{item.targetCount}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="hot-section" wx:if="{{showHotRanking && hotCollections.length > 0}}">
+    <view class="section-header" bindtap="toggleHotRanking">
+      <view class="section-title-wrap">
+        <text class="section-icon">🔥</text>
+        <text class="section-title">热门征集榜</text>
+      </view>
+      <text class="section-toggle">{{showHotRanking ? '收起' : '展开'}}</text>
+    </view>
+    <view class="hot-list" wx:if="{{showHotRanking}}">
+      <view
+        class="hot-item"
+        wx:for="{{hotCollections}}"
+        wx:key="id"
+        bindtap="goToHotDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="hot-rank rank-{{index + 1}}">{{index + 1}}</view>
+        <view class="hot-content">
+          <view class="hot-title-row">
+            <text class="hot-type-icon">{{item.typeInfo.icon}}</text>
+            <text class="hot-title">{{item.title}}</text>
+          </view>
+          <view class="hot-meta">
+            <text class="hot-meta-item">{{item.respondedCount}}条响应</text>
+            <text class="hot-meta-item">剩余{{item.remainingDays}}天</text>
+          </view>
+        </view>
+        <text class="hot-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="filter-scroll" scroll-x enable-flex>
+    <view class="filter-group">
+      <text class="filter-label">类型:</text>
+      <view
+        class="filter-item {{currentType === item.id ? 'active' : ''}}"
+        wx:for="{{typeList}}"
+        wx:key="id"
+        bindtap="onTypeChange"
+        data-id="{{item.id}}"
+      >
+        <text class="filter-icon">{{item.icon}}</text>
+        <text class="filter-name">{{item.name}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <scroll-view class="filter-scroll second" scroll-x enable-flex>
+    <view class="filter-group">
+      <text class="filter-label">状态:</text>
+      <view
+        class="filter-item {{currentStatus === item.id ? 'active' : ''}}"
+        wx:for="{{statusList}}"
+        wx:key="id"
+        bindtap="onStatusChange"
+        data-id="{{item.id}}"
+      >
+        <text class="filter-icon">{{item.icon}}</text>
+        <text class="filter-name">{{item.name}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <scroll-view class="filter-scroll third" scroll-x enable-flex>
+    <view class="filter-group">
+      <text class="filter-label">排序:</text>
+      <view
+        class="filter-item {{currentSort === item.id ? 'active' : ''}}"
+        wx:for="{{sortList}}"
+        wx:key="id"
+        bindtap="onSortChange"
+        data-id="{{item.id}}"
+      >
+        <text class="filter-icon">{{item.icon}}</text>
+        <text class="filter-name">{{item.name}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="collection-list">
+    <view class="loading-wrap" wx:if="{{loading && collectionList.length === 0}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view class="empty-wrap" wx:elif="{{!loading && collectionList.length === 0}}">
+      <text class="empty-icon">📭</text>
+      <text class="empty-text">暂无征集</text>
+      <text class="empty-hint">点击右上角发布第一条征集</text>
+    </view>
+
+    <view
+      class="collection-card {{item.isUrgent ? 'urgent-card-bg' : ''}}"
+      wx:for="{{collectionList}}"
+      wx:key="id"
+      bindtap="goToDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="collection-cover type-{{item.type}}">
+        <text class="cover-emoji">{{item.typeIcon}}</text>
+      </view>
+      <view class="collection-content">
+        <view class="collection-header">
+          <view class="collection-type tag-{{item.type}}">
+            {{item.typeName}}
+          </view>
+          <view class="collection-status status-badge" style="background-color: rgba({{item.statusInfo.id === 'ongoing' ? '82,196,26' : item.statusInfo.id === 'achieved' ? '24,144,255' : '153,153,153'}}, 0.1); color: {{item.statusInfo.color}};">
+            {{item.statusInfo.name}}
+          </view>
+          <view class="urgent-badge" wx:if="{{item.isUrgent}}">紧急</view>
+        </view>
+        <view class="collection-title">{{item.title}}</view>
+
+        <view class="progress-section">
+          <view class="progress-info">
+            <text class="progress-count">{{item.respondedCount}}/{{item.targetCount}}条</text>
+            <text class="progress-days" wx:if="{{item.remainingDays > 0}}">剩余{{item.remainingDays}}天</text>
+            <text class="progress-days ended" wx:elif="{{item.remainingDays === 0}}">今日截止</text>
+            <text class="progress-days ended" wx:else>已结束</text>
+          </view>
+          <view class="progress-bar-wrap">
+            <view class="progress-bar">
+              <view class="progress-fill" style="width: {{item.progressPercent}}%; background-color: {{item.statusInfo.color}};"></view>
+            </view>
+            <text class="progress-percent">{{item.progressPercent}}%</text>
+          </view>
+        </view>
+
+        <view class="tag-list" wx:if="{{item.defaultTags && item.defaultTags.length > 0}}">
+          <text class="tag-item" wx:for="{{item.defaultTags}}" wx:for-item="tag" wx:key="*this">#{{tag}}</text>
+        </view>
+
+        <view class="collection-summary">{{item.summary}}</view>
+
+        <view class="collection-footer">
+          <view class="footer-item">
+            <text class="footer-icon">👁️</text>
+            <text class="footer-text">{{item.viewCount || 0}}</text>
+          </view>
+          <view class="footer-item">
+            <text class="footer-icon">✍️</text>
+            <text class="footer-text">{{item.authorName}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="load-more" wx:if="{{collectionList.length > 0}}">
+      <text wx:if="{{loadingMore}}">加载中...</text>
+      <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+      <text wx:else bindtap="loadMore">点击加载更多</text>
+    </view>
+  </view>
+</view>

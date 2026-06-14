@@ -29,6 +29,30 @@
       <text class="village-info-arrow">›</text>
     </view>
 
+    <!-- 关联征集信息 -->
+    <view class="collection-info-card" wx:if="{{collectionInfo}}">
+      <view class="collection-card-header">
+        <text class="collection-icon">{{collectionInfo.typeInfo && collectionInfo.typeInfo.icon || '📝'}}</text>
+        <view class="collection-header-info">
+          <text class="collection-type-label">{{collectionInfo.typeInfo && collectionInfo.typeInfo.name || '文化征集'}}</text>
+          <text class="collection-title">{{collectionInfo.title}}</text>
+        </view>
+      </view>
+      <view class="collection-progress-row">
+        <view class="progress-info">
+          <text class="progress-text">目标 {{collectionInfo.targetCount}} 条 · 已响应 {{collectionInfo.responseCount || 0}} 条</text>
+          <text class="progress-percent">{{collectionInfo.progressInfo && collectionInfo.progressInfo.progressText || '0%'}}</text>
+        </view>
+        <view class="progress-bar-wrap">
+          <view class="progress-bar" style="width: {{collectionInfo.progressInfo && collectionInfo.progressInfo.progress || 0}}%;"></view>
+        </view>
+      </view>
+      <view class="collection-tag-hint">
+        <text class="hint-icon">💡</text>
+        <text class="hint-text">已自动填充该征集的分类和标签，您可根据需要调整</text>
+      </view>
+    </view>
+
     <!-- 表单区域 -->
     <view class="form-container">
       <!-- 标题输入 -->
@@ -350,8 +374,8 @@
   <view class="success-mask"></view>
   <view class="success-content">
     <text class="success-icon">🎉</text>
-    <text class="success-title">发布成功</text>
-    <text class="success-desc">感谢你的分享，让更多人了解乡村文化</text>
+    <text class="success-title">{{successTitle}}</text>
+    <text class="success-desc">{{successDesc}}</text>
     <view class="success-actions">
       <button class="btn-continue" bindtap="continuePublish">继续投稿</button>
       <button class="btn-view" bindtap="goToHome">查看文章</button>

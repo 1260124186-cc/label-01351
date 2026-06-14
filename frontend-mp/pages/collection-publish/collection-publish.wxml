@@ -1,0 +1,170 @@
+<view class="page-container">
+  <view wx:if="{{!isLoggedIn}}" class="login-wrap">
+    <text class="login-icon">🔒</text>
+    <text class="login-title">请先登录</text>
+    <text class="login-desc">登录后可发布文化征集</text>
+    <view class="login-btn" bindtap="goToLogin">去登录</view>
+  </view>
+
+  <view wx:elif="{{!hasPermission}}" class="permission-wrap">
+    <text class="permission-icon">⛔</text>
+    <text class="permission-title">无发布权限</text>
+    <text class="permission-desc">仅管理员或认证用户可发布征集</text>
+  </view>
+
+  <view wx:elif="{{showSuccess}}" class="success-wrap">
+    <view class="success-icon">🎉</view>
+    <text class="success-title">发布成功！</text>
+    <text class="success-desc">您的文化征集已成功发布，等待大家响应</text>
+    <view class="success-btns">
+      <view class="success-btn primary" bindtap="goToNewCollection">查看征集</view>
+      <view class="success-btn secondary" bindtap="publishAnother">继续发布</view>
+      <view class="success-btn text" bindtap="goBackToList">返回列表</view>
+    </view>
+  </view>
+
+  <block wx:else>
+    <scroll-view scroll-y class="form-scroll">
+      <view class="form-section">
+        <view class="section-title">
+          <text class="required">*</text>
+          <text class="section-label">征集标题</text>
+        </view>
+        <view class="input-wrap">
+          <input
+            class="form-input"
+            placeholder="例如：寻找会编竹筐的老人"
+            placeholder-class="form-placeholder"
+            value="{{formData.title}}"
+            bindinput="onTitleInput"
+            maxlength="50"
+          />
+          <text class="input-count">{{formData.title.length}}/50</text>
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="required">*</text>
+          <text class="section-label">征集类型</text>
+        </view>
+        <view class="type-list">
+          <view
+            class="type-item {{formData.type === item.id ? 'active' : ''}}"
+            wx:for="{{typeList}}"
+            wx:key="id"
+            bindtap="onTypeSelect"
+            data-id="{{item.id}}"
+          >
+            <text class="type-icon">{{item.icon}}</text>
+            <text class="type-name">{{item.name}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="required">*</text>
+          <text class="section-label">截止日期</text>
+        </view>
+        <view class="input-wrap">
+          <picker
+            mode="date"
+            value="{{formData.endDate}}"
+            start="{{minDate}}"
+            bindchange="onEndDateChange"
+          >
+            <view class="picker-input {{formData.endDate ? '' : 'placeholder'}}">
+              <text wx:if="{{formData.endDate}}">{{formData.endDate}}</text>
+              <text wx:else>请选择截止日期</text>
+              <text class="picker-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+        <view class="form-tip">截止时间为所选日期的 23:59:59</view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="required">*</text>
+          <text class="section-label">目标条数</text>
+        </view>
+        <view class="input-wrap">
+          <input
+            class="form-input"
+            type="number"
+            placeholder="请输入目标响应条数，例如：10"
+            placeholder-class="form-placeholder"
+            value="{{formData.targetCount}}"
+            bindinput="onTargetCountInput"
+          />
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="required">*</text>
+          <text class="section-label">征集详情</text>
+        </view>
+        <view class="textarea-wrap">
+          <textarea
+            class="form-textarea"
+            placeholder="请详细描述您的征集内容、目的等..."
+            placeholder-class="form-placeholder"
+            value="{{formData.description}}"
+            bindinput="onDescriptionInput"
+            maxlength="1000"
+            auto-height
+          />
+          <text class="input-count">{{formData.description.length}}/1000</text>
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="section-label">投稿要求（选填）</text>
+        </view>
+        <view class="textarea-wrap">
+          <textarea
+            class="form-textarea"
+            placeholder="请描述投稿需要满足的要求，例如照片规格、内容方向等..."
+            placeholder-class="form-placeholder"
+            value="{{formData.requirements}}"
+            bindinput="onRequirementsInput"
+            maxlength="500"
+            auto-height
+          />
+          <text class="input-count">{{formData.requirements.length}}/500</text>
+        </view>
+      </view>
+
+      <view class="form-section">
+        <view class="section-title">
+          <text class="section-label">封面图片（选填）</text>
+        </view>
+        <view class="cover-section">
+          <view wx:if="{{formData.cover}}" class="cover-preview">
+            <image src="{{formData.cover}}" mode="aspectFill" class="cover-image" bindtap="chooseCover"></image>
+            <view class="cover-remove" catchtap="removeCover">✕</view>
+          </view>
+          <view wx:else class="cover-upload" bindtap="chooseCover">
+            <text class="upload-icon">📷</text>
+            <text class="upload-text">上传封面</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="bottom-space"></view>
+    </scroll-view>
+
+    <view class="submit-bar">
+      <view
+        class="submit-btn {{canSubmit && !submitting ? '' : 'disabled'}}"
+        bindtap="onSubmit"
+      >
+        <text wx:if="{{submitting}}">发布中...</text>
+        <text wx:else>发布征集</text>
+      </view>
+    </view>
+  </block>
+</view>
