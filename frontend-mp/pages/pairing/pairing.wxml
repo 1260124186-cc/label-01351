@@ -1,0 +1,226 @@
+<view class="page-container">
+  <view class="header-banner">
+    <view class="banner-content">
+      <text class="banner-title">师徒结对·技艺传承</text>
+      <text class="banner-desc">连接传承人与学习者，让传统技艺薪火相传</text>
+    </view>
+  </view>
+
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input
+        class="search-input"
+        placeholder="搜索师徒结对"
+        placeholder-class="search-placeholder"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearch"
+        confirm-type="search"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+  </view>
+
+  <view class="tab-bar">
+    <view
+      class="tab-item {{currentTab === item.id ? 'active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="id"
+      bindtap="onTabChange"
+      data-id="{{item.id}}"
+    >
+      <text class="tab-name">{{item.name}}</text>
+      <view class="tab-indicator" wx:if="{{currentTab === item.id}}"></view>
+    </view>
+  </view>
+
+  <view wx:if="{{currentTab !== 'myPairings'}}">
+    <scroll-view class="skill-scroll" scroll-x enable-flex>
+      <view
+        class="skill-item {{currentSkillType === item.id ? 'active' : ''}}"
+        wx:for="{{skillTypes}}"
+        wx:key="id"
+        bindtap="onSkillChange"
+        data-id="{{item.id}}"
+      >
+        <text class="skill-icon">{{item.icon}}</text>
+        <text class="skill-name">{{item.name}}</text>
+      </view>
+    </scroll-view>
+
+    <scroll-view class="region-scroll" scroll-x enable-flex>
+      <view
+        class="region-item {{currentRegion === item.id ? 'active' : ''}}"
+        wx:for="{{regions}}"
+        wx:key="id"
+        bindtap="onRegionChange"
+        data-id="{{item.id}}"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="list-container">
+    <view class="loading-wrap" wx:if="{{loading && (currentTab === 'teaching' && teachingList.length === 0 || currentTab === 'learning' && learningList.length === 0 || currentTab === 'myPairings' && myPairingList.length === 0)}}">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <block wx:if="{{currentTab === 'teaching'}}">
+      <view class="empty-wrap" wx:if="{{!loading && teachingList.length === 0}}">
+        <text class="empty-icon">🧶</text>
+        <text class="empty-text">暂无传技艺信息</text>
+        <text class="empty-hint">试试切换技艺类型或地区</text>
+      </view>
+
+      <view
+        class="teaching-card"
+        wx:for="{{teachingList}}"
+        wx:key="id"
+        bindtap="goToTeachingDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="card-header">
+          <view class="card-meta">
+            <view class="meta-badge skill-badge">
+              <text>{{item.skillInfo.icon}} {{item.skillInfo.name}}</text>
+            </view>
+            <view class="meta-badge method-badge" wx:if="{{item.methodInfo}}">
+              <text>{{item.methodInfo.icon}} {{item.methodInfo.name}}</text>
+            </view>
+          </view>
+          <view class="card-region" wx:if="{{item.regionName}}">
+            <text class="region-icon">📍</text>
+            <text>{{item.regionName}}</text>
+          </view>
+        </view>
+        <view class="card-title">{{item.title}}</view>
+        <view class="card-summary">{{item.description}}</view>
+        <view class="card-info-row">
+          <view class="info-item">
+            <text class="info-icon">👤</text>
+            <text class="info-text">{{item.masterName}}</text>
+          </view>
+          <view class="info-item">
+            <text class="info-icon">👥</text>
+            <text class="info-text">{{item.currentStudents}}/{{item.maxStudents}}人</text>
+          </view>
+        </view>
+        <view class="card-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+          <text class="tag-item" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">#{{tag}}</text>
+        </view>
+      </view>
+    </block>
+
+    <block wx:if="{{currentTab === 'learning'}}">
+      <view class="empty-wrap" wx:if="{{!loading && learningList.length === 0}}">
+        <text class="empty-icon">📖</text>
+        <text class="empty-text">暂无想学信息</text>
+        <text class="empty-hint">试试切换技艺类型或地区</text>
+      </view>
+
+      <view
+        class="learning-card"
+        wx:for="{{learningList}}"
+        wx:key="id"
+        bindtap="goToLearningDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="card-header">
+          <view class="card-meta">
+            <view class="meta-badge skill-badge">
+              <text>{{item.skillInfo.icon}} {{item.skillInfo.name}}</text>
+            </view>
+          </view>
+          <view class="card-region" wx:if="{{item.regionName}}">
+            <text class="region-icon">📍</text>
+            <text>{{item.regionName}}</text>
+          </view>
+        </view>
+        <view class="card-title">{{item.title}}</view>
+        <view class="card-summary">{{item.description}}</view>
+        <view class="card-info-row">
+          <view class="info-item">
+            <text class="info-icon">👤</text>
+            <text class="info-text">{{item.learnerName}}</text>
+          </view>
+          <view class="info-item" wx:if="{{item.timeCommitmentInfo}}">
+            <text class="info-icon">⏰</text>
+            <text class="info-text">{{item.timeCommitmentInfo.name}}</text>
+          </view>
+        </view>
+        <view class="card-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+          <text class="tag-item" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">#{{tag}}</text>
+        </view>
+      </view>
+    </block>
+
+    <block wx:if="{{currentTab === 'myPairings'}}">
+      <view class="empty-wrap" wx:if="{{!loading && myPairingList.length === 0}}">
+        <text class="empty-icon">🤝</text>
+        <text class="empty-text">暂无结对记录</text>
+        <text class="empty-hint">发布传技艺或想学信息，开始师徒结对</text>
+      </view>
+
+      <view
+        class="pairing-card"
+        wx:for="{{myPairingList}}"
+        wx:key="id"
+        bindtap="goToPairingDetail"
+        data-id="{{item.id}}"
+      >
+        <view class="card-header">
+          <view class="card-meta">
+            <view class="meta-badge status-badge" style="background: {{item.statusInfo.color}}22; color: {{item.statusInfo.color}};">
+              <text>{{item.statusInfo.icon}} {{item.statusInfo.name}}</text>
+            </view>
+            <view class="meta-badge skill-badge">
+              <text>{{item.skillInfo.icon}} {{item.skillInfo.name}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="pairing-names">
+          <text class="pairing-name">{{item.masterName}}</text>
+          <text class="pairing-arrow">↔</text>
+          <text class="pairing-name">{{item.learnerName}}</text>
+        </view>
+        <view class="card-info-row">
+          <view class="info-item">
+            <text class="info-icon">⏱️</text>
+            <text class="info-text">{{item.totalHours}}学时</text>
+          </view>
+          <view class="info-item">
+            <text class="info-icon">✅</text>
+            <text class="info-text">{{item.checkinCount}}次打卡</text>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view class="load-more" wx:if="{{(currentTab === 'teaching' && teachingList.length > 0) || (currentTab === 'learning' && learningList.length > 0) || (currentTab === 'myPairings' && myPairingList.length > 0)}}">
+      <text wx:if="{{loadingMore}}">加载中...</text>
+      <text wx:elif="{{!hasMore}}">— 已经到底了 —</text>
+      <text wx:else bindtap="loadMore">点击加载更多</text>
+    </view>
+  </view>
+
+  <view class="fab-btn" bindtap="toggleFabMenu">
+    <text class="fab-icon">+</text>
+  </view>
+
+  <view class="fab-menu" wx:if="{{showFabMenu}}">
+    <view class="fab-mask" bindtap="toggleFabMenu"></view>
+    <view class="fab-menu-list">
+      <view class="fab-menu-item" bindtap="goToTeachingPublish">
+        <text class="fab-menu-icon">🎓</text>
+        <text class="fab-menu-text">发布传技艺</text>
+      </view>
+      <view class="fab-menu-item" bindtap="goToLearningPublish">
+        <text class="fab-menu-icon">📖</text>
+        <text class="fab-menu-text">发布想学</text>
+      </view>
+    </view>
+  </view>
+</view>

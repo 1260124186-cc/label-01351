@@ -755,6 +755,24 @@ function initStorage(overrides = {}) {
   } else {
     wx.setStorageSync('ariaFavorites', {});
   }
+  if (overrides.teachings) {
+    wx.setStorageSync('teachings', overrides.teachings);
+  } else {
+    var pairingDataModule = require('../utils/pairing-data');
+    wx.setStorageSync('teachings', JSON.parse(JSON.stringify(pairingDataModule.DEFAULT_TEACHINGS)));
+  }
+  if (overrides.learnings) {
+    wx.setStorageSync('learnings', overrides.learnings);
+  } else {
+    var pairingDataModule2 = require('../utils/pairing-data');
+    wx.setStorageSync('learnings', JSON.parse(JSON.stringify(pairingDataModule2.DEFAULT_LEARNINGS)));
+  }
+  if (overrides.pairings) {
+    wx.setStorageSync('pairings', overrides.pairings);
+  } else {
+    var pairingDataModule3 = require('../utils/pairing-data');
+    wx.setStorageSync('pairings', JSON.parse(JSON.stringify(pairingDataModule3.DEFAULT_PAIRINGS)));
+  }
 }
 
 function logoutUser() {

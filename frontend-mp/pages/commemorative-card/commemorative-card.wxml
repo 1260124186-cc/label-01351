@@ -1,0 +1,94 @@
+<view class="page-container">
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <view class="empty-wrap" wx:elif="{{!cardData}}">
+    <text class="empty-icon">📜</text>
+    <text class="empty-text">暂无纪念卡数据</text>
+  </view>
+
+  <block wx:else>
+    <view class="card-wrapper">
+      <view class="card-outer">
+        <view class="card-border-decor top-left"></view>
+        <view class="card-border-decor top-right"></view>
+        <view class="card-border-decor bottom-left"></view>
+        <view class="card-border-decor bottom-right"></view>
+
+        <view class="card-inner">
+          <view class="card-header">
+            <view class="header-line"></view>
+            <text class="card-title">结业纪念卡</text>
+            <view class="header-line"></view>
+          </view>
+
+          <view class="person-section master-section">
+            <view class="person-label">
+              <text class="label-text">师父</text>
+            </view>
+            <view class="person-info">
+              <image class="person-avatar" src="{{cardData.masterAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+              <text class="person-name">{{cardData.masterName}}</text>
+            </view>
+          </view>
+
+          <view class="divider-wrap">
+            <view class="divider-line"></view>
+            <text class="divider-icon">🤝</text>
+            <view class="divider-line"></view>
+          </view>
+
+          <view class="person-section learner-section">
+            <view class="person-label">
+              <text class="label-text">学徒</text>
+            </view>
+            <view class="person-info">
+              <image class="person-avatar" src="{{cardData.learnerAvatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+              <text class="person-name">{{cardData.learnerName}}</text>
+            </view>
+          </view>
+
+          <view class="skill-section">
+            <text class="skill-icon">🎨</text>
+            <text class="skill-name">{{cardData.skillName}}</text>
+          </view>
+
+          <view class="stats-section">
+            <view class="stat-item">
+              <text class="stat-value">{{cardData.totalHours}}</text>
+              <text class="stat-label">学习时长(h)</text>
+            </view>
+            <view class="stat-divider"></view>
+            <view class="stat-item">
+              <text class="stat-value">{{cardData.checkinCount}}</text>
+              <text class="stat-label">打卡次数</text>
+            </view>
+          </view>
+
+          <view class="time-section">
+            <text class="time-text">{{cardData.startTime}} ~ {{cardData.completeTime}}</text>
+          </view>
+
+          <view class="card-bottom-decor">
+            <view class="decor-line"></view>
+            <text class="decor-symbol">✦</text>
+            <view class="decor-line"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="action-bar">
+      <view class="action-btn save-btn" bindtap="onSaveImage">
+        <text class="action-icon">💾</text>
+        <text class="action-text">保存图片</text>
+      </view>
+      <view class="action-btn share-btn" bindtap="onShareCard">
+        <text class="action-icon">🔗</text>
+        <text class="action-text">分享卡片</text>
+      </view>
+    </view>
+  </block>
+</view>

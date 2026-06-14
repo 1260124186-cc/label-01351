@@ -12,6 +12,7 @@ const taskSystem = require('./task');
 const operaData = require('./opera-data');
 const villageData = require('./village-data');
 const craftTutorialData = require('./craft-tutorial-data');
+const pairingData = require('./pairing-data');
 
 const config = {
   useRemote: false,
@@ -8321,6 +8322,582 @@ const remoteApi = {
       url: `/api/task/achievement-card/${badgeId}`,
       method: 'GET'
     });
+  },
+
+  getTeachingList: async (params = {}) => {
+    await delay(500);
+    const { skillType = 'all', region = 'all', method = 'all', keyword = '', page = 1, pageSize = 10, sort = 'latest' } = params;
+    let teachings = wx.getStorageSync('teachings') || [];
+    teachings = teachings.filter(item => item.status === 1);
+    teachings = pairingData.filterTeachings(teachings, { skillType, region, method, keyword });
+    if (sort === 'views') {
+      teachings.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+    } else if (sort === 'likes') {
+      teachings.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
+    } else {
+      teachings.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    }
+    const total = teachings.length;
+    const start = (page - 1) * pageSize;
+    const list = teachings.slice(start, start + pageSize).map(item => ({
+      ...item,
+      skillInfo: pairingData.getSkillTagInfo(item.skillType),
+      methodInfo: pairingData.getTeachingMethodInfo(item.method),
+      regionName: pairingData.getRegionName(item.region),
+      timeCommitmentInfo: pairingData.getTimeCommitmentInfo(item.timeCommitment)
+    }));
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getTeachingDetail: async (id) => {
+    await delay(300);
+    if (!id) return { code: 400, data: null, message: '教学ID不能为空' };
+    const teachings = wx.getStorageSync('teachings') || [];
+    const teaching = teachings.find(item => item.id === id);
+    if (!teaching) return { code: 404, data: null, message: '教学信息不存在' };
+    teaching.viewCount = (teaching.viewCount || 0) + 1;
+    wx.setStorageSync('teachings', teachings);
+    return {
+      code: 200,
+      data: {
+        ...teaching,
+        skillInfo: pairingData.getSkillTagInfo(teaching.skillType),
+        methodInfo: pairingData.getTeachingMethodInfo(teaching.method),
+        regionName: pairingData.getRegionName(teaching.region),
+        timeCommitmentInfo: pairingData.getTimeCommitmentInfo(teaching.timeCommitment)
+      },
+      message: 'success'
+    };
+  },
+
+  publishTeaching: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!data.skillType) return { code: 400, data: null, message: '请选择技艺类型' };
+    if (!data.title || !data.title.trim()) return { code: 400, data: null, message: '请填写标题' };
+    if (!data.description || !data.description.trim()) return { code: 400, data: null, message: '请填写描述' };
+    if (!data.method) return { code: 400, data: null, message: '请选择传授方式' };
+    if (!data.region) return { code: 400, data: null, message: '请选择地区' };
+    const userInfo = wx.getStorageSync('userInfo');
+    const teachings = wx.getStorageSync('teachings') || [];
+    const newTeaching = {
+      id: util.generateId('teach'),
+      masterId: userInfo.id,
+      masterName: userInfo.nickname,
+      masterAvatar: userInfo.avatar || '',
+      skillType: data.skillType,
+      title: data.title.trim(),
+      description: data.description.trim(),
+      method: data.method,
+      region: data.region,
+      regionName: pairingData.getRegionName(data.region),
+      location: data.location || '',
+      maxStudents: data.maxStudents || 5,
+      currentStudents: 0,
+      timeCommitment: data.timeCommitment || 'flexible',
+      relatedFigureId: data.relatedFigureId || '',
+      relatedLandmarkId: data.relatedLandmarkId || '',
+      relatedActivityId: data.relatedActivityId || '',
+      tags: data.tags || [],
+      viewCount: 0,
+      likeCount: 0,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      status: 1
+    };
+    teachings.unshift(newTeaching);
+    wx.setStorageSync('teachings', teachings);
+    return { code: 200, data: newTeaching, message: '发布成功' };
+  },
+
+  updateTeaching: async (id, data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '教学ID不能为空' };
+    const userId = getCurrentUserId();
+    const teachings = wx.getStorageSync('teachings') || [];
+    const index = teachings.findIndex(item => item.id === id && item.masterId === userId);
+    if (index === -1) return { code: 404, data: null, message: '教学信息不存在或无权编辑' };
+    const updateData = { ...data };
+    if (data.region) updateData.regionName = pairingData.getRegionName(data.region);
+    if (data.title) updateData.title = data.title.trim();
+    if (data.description) updateData.description = data.description.trim();
+    updateData.updateTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+    teachings[index] = { ...teachings[index], ...updateData };
+    wx.setStorageSync('teachings', teachings);
+    return { code: 200, data: teachings[index], message: '更新成功' };
+  },
+
+  deleteTeaching: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '教学ID不能为空' };
+    const userId = getCurrentUserId();
+    const teachings = wx.getStorageSync('teachings') || [];
+    const index = teachings.findIndex(item => item.id === id && item.masterId === userId);
+    if (index === -1) return { code: 404, data: null, message: '教学信息不存在或无权删除' };
+    teachings.splice(index, 1);
+    wx.setStorageSync('teachings', teachings);
+    return { code: 200, data: null, message: '删除成功' };
+  },
+
+  getLearningList: async (params = {}) => {
+    await delay(500);
+    const { skillType = 'all', region = 'all', keyword = '', page = 1, pageSize = 10 } = params;
+    let learnings = wx.getStorageSync('learnings') || [];
+    learnings = learnings.filter(item => item.status === 1);
+    learnings = pairingData.filterLearnings(learnings, { skillType, region, keyword });
+    learnings.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const total = learnings.length;
+    const start = (page - 1) * pageSize;
+    const list = learnings.slice(start, start + pageSize).map(item => ({
+      ...item,
+      skillInfo: pairingData.getSkillTagInfo(item.skillType),
+      regionName: pairingData.getRegionName(item.region),
+      timeCommitmentInfo: pairingData.getTimeCommitmentInfo(item.timeCommitment)
+    }));
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getLearningDetail: async (id) => {
+    await delay(300);
+    if (!id) return { code: 400, data: null, message: '学习需求ID不能为空' };
+    const learnings = wx.getStorageSync('learnings') || [];
+    const learning = learnings.find(item => item.id === id);
+    if (!learning) return { code: 404, data: null, message: '学习需求不存在' };
+    learning.viewCount = (learning.viewCount || 0) + 1;
+    wx.setStorageSync('learnings', learnings);
+    return {
+      code: 200,
+      data: {
+        ...learning,
+        skillInfo: pairingData.getSkillTagInfo(learning.skillType),
+        regionName: pairingData.getRegionName(learning.region),
+        timeCommitmentInfo: pairingData.getTimeCommitmentInfo(learning.timeCommitment)
+      },
+      message: 'success'
+    };
+  },
+
+  publishLearning: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!data.skillType) return { code: 400, data: null, message: '请选择想学的技艺' };
+    if (!data.title || !data.title.trim()) return { code: 400, data: null, message: '请填写标题' };
+    if (!data.description || !data.description.trim()) return { code: 400, data: null, message: '请填写描述' };
+    if (!data.region) return { code: 400, data: null, message: '请选择地区' };
+    const userInfo = wx.getStorageSync('userInfo');
+    const learnings = wx.getStorageSync('learnings') || [];
+    const newLearning = {
+      id: util.generateId('learn'),
+      learnerId: userInfo.id,
+      learnerName: userInfo.nickname,
+      learnerAvatar: userInfo.avatar || '',
+      skillType: data.skillType,
+      title: data.title.trim(),
+      description: data.description.trim(),
+      region: data.region,
+      regionName: pairingData.getRegionName(data.region),
+      timeCommitment: data.timeCommitment || 'flexible',
+      relatedFigureId: data.relatedFigureId || '',
+      tags: data.tags || [],
+      viewCount: 0,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      status: 1
+    };
+    learnings.unshift(newLearning);
+    wx.setStorageSync('learnings', learnings);
+    return { code: 200, data: newLearning, message: '发布成功' };
+  },
+
+  updateLearning: async (id, data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '学习需求ID不能为空' };
+    const userId = getCurrentUserId();
+    const learnings = wx.getStorageSync('learnings') || [];
+    const index = learnings.findIndex(item => item.id === id && item.learnerId === userId);
+    if (index === -1) return { code: 404, data: null, message: '学习需求不存在或无权编辑' };
+    const updateData = { ...data };
+    if (data.region) updateData.regionName = pairingData.getRegionName(data.region);
+    if (data.title) updateData.title = data.title.trim();
+    if (data.description) updateData.description = data.description.trim();
+    updateData.updateTime = util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss');
+    learnings[index] = { ...learnings[index], ...updateData };
+    wx.setStorageSync('learnings', learnings);
+    return { code: 200, data: learnings[index], message: '更新成功' };
+  },
+
+  deleteLearning: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '学习需求ID不能为空' };
+    const userId = getCurrentUserId();
+    const learnings = wx.getStorageSync('learnings') || [];
+    const index = learnings.findIndex(item => item.id === id && item.learnerId === userId);
+    if (index === -1) return { code: 404, data: null, message: '学习需求不存在或无权删除' };
+    learnings.splice(index, 1);
+    wx.setStorageSync('learnings', learnings);
+    return { code: 200, data: null, message: '删除成功' };
+  },
+
+  getPairingMatches: async (params = {}) => {
+    await delay(500);
+    const { type = 'learning', id = '', limit = 10 } = params;
+    if (!id) return { code: 400, data: null, message: 'ID不能为空' };
+    if (type === 'learning') {
+      const learnings = wx.getStorageSync('learnings') || [];
+      const learning = learnings.find(item => item.id === id);
+      if (!learning) return { code: 404, data: null, message: '学习需求不存在' };
+      const teachings = wx.getStorageSync('teachings') || [];
+      const matches = pairingData.findMatches(learning, teachings, { limit });
+      const list = matches.map(m => ({
+        ...m,
+        teaching: {
+          ...m.teaching,
+          skillInfo: pairingData.getSkillTagInfo(m.teaching.skillType),
+          methodInfo: pairingData.getTeachingMethodInfo(m.teaching.method),
+          regionName: pairingData.getRegionName(m.teaching.region)
+        }
+      }));
+      return { code: 200, data: { list, total: list.length }, message: 'success' };
+    } else {
+      const teachings = wx.getStorageSync('teachings') || [];
+      const teaching = teachings.find(item => item.id === id);
+      if (!teaching) return { code: 404, data: null, message: '教学信息不存在' };
+      const learnings = wx.getStorageSync('learnings') || [];
+      const matches = pairingData.findMatchesForTeaching(teaching, learnings, { limit });
+      const list = matches.map(m => ({
+        ...m,
+        learning: {
+          ...m.learning,
+          skillInfo: pairingData.getSkillTagInfo(m.learning.skillType),
+          regionName: pairingData.getRegionName(m.learning.region)
+        }
+      }));
+      return { code: 200, data: { list, total: list.length }, message: 'success' };
+    }
+  },
+
+  createPairing: async (data) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!data.teachingId) return { code: 400, data: null, message: '教学ID不能为空' };
+    if (!data.learningId) return { code: 400, data: null, message: '学习需求ID不能为空' };
+    const userId = getCurrentUserId();
+    const teachings = wx.getStorageSync('teachings') || [];
+    const teaching = teachings.find(item => item.id === data.teachingId);
+    if (!teaching) return { code: 404, data: null, message: '教学信息不存在' };
+    const learnings = wx.getStorageSync('learnings') || [];
+    const learning = learnings.find(item => item.id === data.learningId);
+    if (!learning) return { code: 404, data: null, message: '学习需求不存在' };
+    const pairings = wx.getStorageSync('pairings') || [];
+    const existing = pairings.find(p =>
+      p.teachingId === data.teachingId &&
+      p.learnerId === userId &&
+      (p.status === 'pending' || p.status === 'active')
+    );
+    if (existing) return { code: 400, data: null, message: '已存在待确认或进行中的结对' };
+    if (teaching.currentStudents >= teaching.maxStudents) {
+      return { code: 400, data: null, message: '该教学已满员' };
+    }
+    const skillInfo = pairingData.getSkillTagInfo(teaching.skillType);
+    const newPairing = {
+      id: util.generateId('pair'),
+      teachingId: data.teachingId,
+      learningId: data.learningId,
+      masterId: teaching.masterId,
+      masterName: teaching.masterName,
+      masterAvatar: teaching.masterAvatar || '',
+      learnerId: userId,
+      learnerName: (wx.getStorageSync('userInfo') || {}).nickname || '',
+      learnerAvatar: (wx.getStorageSync('userInfo') || {}).avatar || '',
+      skillType: teaching.skillType,
+      skillName: skillInfo.name,
+      status: 'pending',
+      totalHours: 0,
+      checkins: [],
+      startTime: '',
+      messageEnabled: false,
+      commemorativeCardGenerated: false,
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      villageId: data.villageId || ''
+    };
+    pairings.unshift(newPairing);
+    wx.setStorageSync('pairings', pairings);
+    return { code: 200, data: newPairing, message: '结对申请已发送' };
+  },
+
+  getPairingList: async (params = {}) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const { status = 'all', role = 'all', page = 1, pageSize = 10 } = params;
+    let pairings = wx.getStorageSync('pairings') || [];
+    pairings = pairings.filter(p => p.masterId === userId || p.learnerId === userId);
+    if (status && status !== 'all') {
+      pairings = pairings.filter(p => p.status === status);
+    }
+    if (role === 'master') {
+      pairings = pairings.filter(p => p.masterId === userId);
+    } else if (role === 'learner') {
+      pairings = pairings.filter(p => p.learnerId === userId);
+    }
+    pairings.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const total = pairings.length;
+    const start = (page - 1) * pageSize;
+    const list = pairings.slice(start, start + pageSize).map(item => ({
+      ...item,
+      statusInfo: pairingData.getPairingStatusInfo(item.status),
+      skillInfo: pairingData.getSkillTagInfo(item.skillType),
+      checkinCount: (item.checkins || []).length
+    }));
+    return {
+      code: 200,
+      data: { list, total, page, pageSize, hasMore: start + pageSize < total },
+      message: 'success'
+    };
+  },
+
+  getPairingDetail: async (id) => {
+    await delay(300);
+    if (!id) return { code: 400, data: null, message: '结对ID不能为空' };
+    const pairings = wx.getStorageSync('pairings') || [];
+    const pairing = pairings.find(item => item.id === id);
+    if (!pairing) return { code: 404, data: null, message: '结对不存在' };
+    return {
+      code: 200,
+      data: {
+        ...pairing,
+        statusInfo: pairingData.getPairingStatusInfo(pairing.status),
+        skillInfo: pairingData.getSkillTagInfo(pairing.skillType),
+        checkinCount: (pairing.checkins || []).length
+      },
+      message: 'success'
+    };
+  },
+
+  acceptPairing: async (id) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '结对ID不能为空' };
+    const userId = getCurrentUserId();
+    const pairings = wx.getStorageSync('pairings') || [];
+    const index = pairings.findIndex(item => item.id === id);
+    if (index === -1) return { code: 404, data: null, message: '结对不存在' };
+    if (pairings[index].masterId !== userId) return { code: 403, data: null, message: '只有传承人可以确认结对' };
+    if (pairings[index].status !== 'pending') return { code: 400, data: null, message: '结对状态不是待确认' };
+    pairings[index].status = 'active';
+    pairings[index].messageEnabled = true;
+    pairings[index].startTime = util.formatDate(new Date(), 'YYYY-MM-DD');
+    wx.setStorageSync('pairings', pairings);
+    const teachings = wx.getStorageSync('teachings') || [];
+    const teachIndex = teachings.findIndex(item => item.id === pairings[index].teachingId);
+    if (teachIndex > -1) {
+      teachings[teachIndex].currentStudents = (teachings[teachIndex].currentStudents || 0) + 1;
+      wx.setStorageSync('teachings', teachings);
+    }
+    return { code: 200, data: pairings[index], message: '已确认结对' };
+  },
+
+  rejectPairing: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '结对ID不能为空' };
+    const userId = getCurrentUserId();
+    const pairings = wx.getStorageSync('pairings') || [];
+    const index = pairings.findIndex(item => item.id === id);
+    if (index === -1) return { code: 404, data: null, message: '结对不存在' };
+    if (pairings[index].masterId !== userId) return { code: 403, data: null, message: '只有传承人可以拒绝结对' };
+    if (pairings[index].status !== 'pending') return { code: 400, data: null, message: '结对状态不是待确认' };
+    pairings[index].status = 'cancelled';
+    wx.setStorageSync('pairings', pairings);
+    return { code: 200, data: null, message: '已拒绝结对' };
+  },
+
+  cancelPairing: async (id) => {
+    await delay(300);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '结对ID不能为空' };
+    const userId = getCurrentUserId();
+    const pairings = wx.getStorageSync('pairings') || [];
+    const index = pairings.findIndex(item => item.id === id);
+    if (index === -1) return { code: 404, data: null, message: '结对不存在' };
+    if (pairings[index].masterId !== userId && pairings[index].learnerId !== userId) {
+      return { code: 403, data: null, message: '无权取消此结对' };
+    }
+    if (pairings[index].status !== 'pending' && pairings[index].status !== 'active') {
+      return { code: 400, data: null, message: '当前状态无法取消' };
+    }
+    pairings[index].status = 'cancelled';
+    pairings[index].messageEnabled = false;
+    wx.setStorageSync('pairings', pairings);
+    return { code: 200, data: null, message: '已取消结对' };
+  },
+
+  completePairing: async (id) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '结对ID不能为空' };
+    const userId = getCurrentUserId();
+    const pairings = wx.getStorageSync('pairings') || [];
+    const index = pairings.findIndex(item => item.id === id);
+    if (index === -1) return { code: 404, data: null, message: '结对不存在' };
+    if (pairings[index].masterId !== userId) return { code: 403, data: null, message: '只有传承人可以结业' };
+    if (pairings[index].status !== 'active') return { code: 400, data: null, message: '只有进行中的结对可以结业' };
+    pairings[index].status = 'completed';
+    pairings[index].completeTime = util.formatDate(new Date(), 'YYYY-MM-DD');
+    pairings[index].totalHours = (pairings[index].checkins || []).reduce(function(sum, ck) {
+      return sum + (ck.hours || 0);
+    }, 0);
+    wx.setStorageSync('pairings', pairings);
+    return { code: 200, data: pairings[index], message: '结业成功' };
+  },
+
+  studyCheckin: async (id, data) => {
+    await delay(500);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '结对ID不能为空' };
+    if (!data || !data.hours || data.hours <= 0) return { code: 400, data: null, message: '学时必须大于0' };
+    if (data.hours > 12) return { code: 400, data: null, message: '单次打卡学时不能超过12小时' };
+    const userId = getCurrentUserId();
+    const pairings = wx.getStorageSync('pairings') || [];
+    const index = pairings.findIndex(item => item.id === id);
+    if (index === -1) return { code: 404, data: null, message: '结对不存在' };
+    if (pairings[index].learnerId !== userId) return { code: 403, data: null, message: '只有学员可以打卡' };
+    if (pairings[index].status !== 'active') return { code: 400, data: null, message: '只有进行中的结对可以打卡' };
+    const newCheckin = {
+      id: util.generateId('ck'),
+      date: util.formatDate(new Date(), 'YYYY-MM-DD'),
+      hours: data.hours,
+      content: (data.content || '').trim(),
+      createTime: util.formatDate(new Date(), 'YYYY-MM-DD HH:mm:ss')
+    };
+    if (!pairings[index].checkins) pairings[index].checkins = [];
+    pairings[index].checkins.push(newCheckin);
+    pairings[index].totalHours = pairings[index].checkins.reduce(function(sum, ck) {
+      return sum + (ck.hours || 0);
+    }, 0);
+    wx.setStorageSync('pairings', pairings);
+    return { code: 200, data: newCheckin, message: '打卡成功' };
+  },
+
+  getStudyCheckins: async (id) => {
+    await delay(300);
+    if (!id) return { code: 400, data: null, message: '结对ID不能为空' };
+    const pairings = wx.getStorageSync('pairings') || [];
+    const pairing = pairings.find(item => item.id === id);
+    if (!pairing) return { code: 404, data: null, message: '结对不存在' };
+    return {
+      code: 200,
+      data: {
+        checkins: pairing.checkins || [],
+        totalHours: pairing.totalHours || 0,
+        checkinCount: (pairing.checkins || []).length
+      },
+      message: 'success'
+    };
+  },
+
+  generateCommemorativeCard: async (id) => {
+    await delay(800);
+    const authError = requireLogin();
+    if (authError) return authError;
+    if (!id) return { code: 400, data: null, message: '结对ID不能为空' };
+    const pairings = wx.getStorageSync('pairings') || [];
+    const index = pairings.findIndex(item => item.id === id);
+    if (index === -1) return { code: 404, data: null, message: '结对不存在' };
+    if (pairings[index].status !== 'completed') return { code: 400, data: null, message: '只有已结业的结对可以生成纪念卡' };
+    const cardData = pairingData.generateCardData(pairings[index]);
+    pairings[index].commemorativeCardGenerated = true;
+    wx.setStorageSync('pairings', pairings);
+    const cards = wx.getStorageSync('commemorativeCards') || {};
+    cards[id] = cardData;
+    wx.setStorageSync('commemorativeCards', cards);
+    return { code: 200, data: cardData, message: '纪念卡生成成功' };
+  },
+
+  getCommemorativeCard: async (id) => {
+    await delay(300);
+    if (!id) return { code: 400, data: null, message: '结对ID不能为空' };
+    const cards = wx.getStorageSync('commemorativeCards') || {};
+    const cardData = cards[id];
+    if (!cardData) {
+      const pairings = wx.getStorageSync('pairings') || [];
+      const pairing = pairings.find(item => item.id === id);
+      if (!pairing) return { code: 404, data: null, message: '结对不存在' };
+      if (pairing.status !== 'completed') return { code: 400, data: null, message: '只有已结业的结对可以查看纪念卡' };
+      const newCardData = pairingData.generateCardData(pairing);
+      cards[id] = newCardData;
+      wx.setStorageSync('commemorativeCards', cards);
+      return { code: 200, data: newCardData, message: 'success' };
+    }
+    return { code: 200, data: cardData, message: 'success' };
+  },
+
+  getMyTeachings: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const teachings = wx.getStorageSync('teachings') || [];
+    const myTeachings = teachings.filter(item => item.masterId === userId && item.status === 1);
+    myTeachings.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const list = myTeachings.map(item => ({
+      ...item,
+      skillInfo: pairingData.getSkillTagInfo(item.skillType),
+      methodInfo: pairingData.getTeachingMethodInfo(item.method),
+      regionName: pairingData.getRegionName(item.region)
+    }));
+    return { code: 200, data: { list, total: list.length }, message: 'success' };
+  },
+
+  getMyLearnings: async () => {
+    await delay(400);
+    const authError = requireLogin();
+    if (authError) return authError;
+    const userId = getCurrentUserId();
+    const learnings = wx.getStorageSync('learnings') || [];
+    const myLearnings = learnings.filter(item => item.learnerId === userId && item.status === 1);
+    myLearnings.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+    const list = myLearnings.map(item => ({
+      ...item,
+      skillInfo: pairingData.getSkillTagInfo(item.skillType),
+      regionName: pairingData.getRegionName(item.region)
+    }));
+    return { code: 200, data: { list, total: list.length }, message: 'success' };
+  },
+
+  getPairingFilterOptions: async () => {
+    await delay(100);
+    const skillList = [{ id: 'all', name: '全部技艺', icon: '🎯' }].concat(pairingData.SKILL_TAGS);
+    const regionList = [{ id: 'all', name: '全部地区' }].concat(pairingData.getRegionName ? figureData.REGIONS : []);
+    const methodList = [{ id: 'all', name: '全部方式' }].concat(pairingData.TEACHING_METHODS);
+    return {
+      code: 200,
+      data: { skillList, regionList, methodList },
+      message: 'success'
+    };
   }
 };
 

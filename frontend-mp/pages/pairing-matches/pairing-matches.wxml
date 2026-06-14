@@ -1,0 +1,62 @@
+<view class="page-container">
+  <view class="header-banner">
+    <view class="banner-content">
+      <text class="banner-title">推荐匹配</text>
+      <text class="banner-desc">为你找到最合适的师友伙伴</text>
+    </view>
+  </view>
+
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <view class="empty-wrap" wx:elif="{{matchList.length === 0}}">
+    <text class="empty-icon">🤝</text>
+    <text class="empty-text">暂无匹配结果</text>
+    <text class="empty-hint">稍后再来查看吧</text>
+  </view>
+
+  <view class="match-list" wx:else>
+    <view
+      class="match-card"
+      wx:for="{{matchList}}"
+      wx:key="id"
+      bindtap="onMatchTap"
+      data-id="{{item.id}}"
+    >
+      <view class="card-top">
+        <view class="score-section">
+          <text class="score-label">匹配度</text>
+          <text class="score-value">{{item.score}}%</text>
+        </view>
+        <view class="skill-section">
+          <view class="skill-badge">
+            <text class="skill-icon">🎨</text>
+            <text class="skill-name">{{item.skillName}}</text>
+          </view>
+          <view class="region-info" wx:if="{{item.region}}">
+            <text class="region-icon">📍</text>
+            <text class="region-text">{{item.region}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="card-body">
+        <view class="user-info">
+          <image class="user-avatar" src="{{item.avatar || '/images/default-avatar.png'}}" mode="aspectFill" />
+          <view class="user-detail">
+            <text class="user-name">{{item.userName}}</text>
+            <text class="user-desc">{{item.description}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="card-footer" wx:if="{{type === 'learning'}}">
+        <view class="apply-btn" catchtap="onApplyPairing" data-id="{{item.id}}">
+          <text class="apply-text">申请配对</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -9,6 +9,7 @@ const dialect = require('./utils/dialect-dictionary');
 const villageData = require('./utils/village-data');
 const operaData = require('./utils/opera-data');
 const etiquetteData = require('./utils/etiquette-data');
+const pairingData = require('./utils/pairing-data');
 
 App({
   globalData: {
@@ -386,6 +387,7 @@ App({
     villageData.initVillageData();
     operaData.initOperaData();
     etiquetteData.initEtiquetteData();
+    pairingData.initPairingData();
 
     const articles = wx.getStorageSync('articles');
     if (!articles || articles.length === 0) {

@@ -1,0 +1,148 @@
+<view class="page-container">
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <block wx:elif="{{pairing}}">
+    <view class="status-banner" style="background: linear-gradient(135deg, {{pairing.statusInfo.color}} 0%, {{pairing.statusInfo.color}}CC 100%);">
+      <view class="status-icon">{{pairing.statusInfo.icon}}</view>
+      <view class="status-name">{{pairing.statusInfo.name}}</view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title">👤 结对双方</view>
+      <view class="pair-info-row">
+        <view class="pair-user" bindtap="goToMasterHome">
+          <view class="pair-avatar master-avatar">
+            <image wx:if="{{pairing.masterAvatar}}" src="{{pairing.masterAvatar}}" class="avatar-img" mode="aspectFill"></image>
+            <text wx:else class="avatar-text">{{pairing.masterName[0] || '师'}}</text>
+          </view>
+          <view class="pair-user-info">
+            <text class="pair-user-name">{{pairing.masterName}}</text>
+            <text class="pair-user-role">传承人</text>
+          </view>
+        </view>
+        <view class="pair-link">
+          <view class="link-line"></view>
+          <text class="link-icon">🤝</text>
+          <view class="link-line"></view>
+        </view>
+        <view class="pair-user" bindtap="goToLearnerHome">
+          <view class="pair-avatar learner-avatar">
+            <image wx:if="{{pairing.learnerAvatar}}" src="{{pairing.learnerAvatar}}" class="avatar-img" mode="aspectFill"></image>
+            <text wx:else class="avatar-text">{{pairing.learnerName[0] || '学'}}</text>
+          </view>
+          <view class="pair-user-info">
+            <text class="pair-user-name">{{pairing.learnerName}}</text>
+            <text class="pair-user-role">学员</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title">🎯 技艺信息</view>
+      <view class="info-list">
+        <view class="info-row" wx:if="{{pairing.skillInfo}}">
+          <text class="info-label">技艺类型</text>
+          <text class="info-value">{{pairing.skillInfo.icon}} {{pairing.skillInfo.name}}</text>
+        </view>
+        <view class="info-row" wx:if="{{pairing.methodInfo}}">
+          <text class="info-label">教学方式</text>
+          <text class="info-value">{{pairing.methodInfo.icon}} {{pairing.methodInfo.name}}</text>
+        </view>
+        <view class="info-row" wx:if="{{pairing.regionName}}">
+          <text class="info-label">所在地区</text>
+          <text class="info-value">📍 {{pairing.regionName}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title">📊 学习进度</view>
+      <view class="progress-grid">
+        <view class="progress-item">
+          <text class="progress-value">{{pairing.totalHours || 0}}</text>
+          <text class="progress-label">累计学时</text>
+        </view>
+        <view class="progress-item">
+          <text class="progress-value">{{checkins.length}}</text>
+          <text class="progress-label">打卡次数</text>
+        </view>
+        <view class="progress-item" wx:if="{{pairing.startTime}}">
+          <text class="progress-value">{{pairing.startTime}}</text>
+          <text class="progress-label">开始日期</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-card" wx:if="{{checkins.length > 0}}">
+      <view class="section-title">📝 打卡记录</view>
+      <view class="checkin-list">
+        <view class="checkin-item" wx:for="{{checkins}}" wx:key="id">
+          <view class="checkin-header">
+            <text class="checkin-date">{{item.date}}</text>
+            <text class="checkin-hours">{{item.hours}}小时</text>
+          </view>
+          <view class="checkin-content" wx:if="{{item.content}}">{{item.content}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty-checkins" wx:if="{{checkins.length === 0 && pairing.status === 'active'}}">
+      <text class="empty-text">暂无打卡记录，快去打卡吧！</text>
+    </view>
+
+    <view class="bottom-bar" wx:if="{{pairing.status === 'pending' || pairing.status === 'active' || pairing.status === 'completed'}}">
+      <block wx:if="{{pairing.status === 'pending' && isMaster}}">
+        <view class="action-btn accept-btn" bindtap="onAccept">✅ 接受结对</view>
+        <view class="action-btn reject-btn" bindtap="onReject">❌ 拒绝结对</view>
+      </block>
+      <block wx:elif="{{pairing.status === 'pending' && isLearner}}">
+        <view class="action-btn cancel-btn" bindtap="onCancel">取消申请</view>
+        <view class="waiting-text">⏳ 等待传承人确认</view>
+      </block>
+      <block wx:elif="{{pairing.status === 'active' && isLearner}}">
+        <view class="action-btn checkin-btn" bindtap="onCheckin">📝 打卡</view>
+        <view class="action-btn chat-btn" bindtap="goToChat">💬 聊天</view>
+      </block>
+      <block wx:elif="{{pairing.status === 'active' && isMaster}}">
+        <view class="action-btn complete-btn" bindtap="onComplete">🎓 结业</view>
+        <view class="action-btn chat-btn" bindtap="goToChat">💬 聊天</view>
+      </block>
+      <block wx:elif="{{pairing.status === 'completed'}}">
+        <view class="action-btn card-btn" wx:if="{{!pairing.commemorativeCardGenerated}}" bindtap="onGenerateCard">🎴 生成纪念卡</view>
+        <view class="action-btn card-btn" wx:if="{{pairing.commemorativeCardGenerated}}" bindtap="onGenerateCard">🖼️ 查看纪念卡</view>
+      </block>
+    </view>
+
+    <view class="sheet-mask" wx:if="{{showCheckinSheet}}" bindtap="onHideCheckinSheet"></view>
+    <view class="checkin-sheet {{showCheckinSheet ? 'show' : ''}}">
+      <view class="sheet-header">
+        <text class="sheet-title">学习打卡</text>
+        <text class="sheet-close" bindtap="onHideCheckinSheet">✕</text>
+      </view>
+      <view class="sheet-body">
+        <view class="form-row">
+          <text class="form-label">学习学时</text>
+          <picker class="hours-picker" range="{{[1,2,3,4,5,6,7,8,9,10,11,12]}}" value="{{checkinHours - 1}}" bindchange="onCheckinHoursChange">
+            <view class="picker-value">{{checkinHours}} 小时 ▾</view>
+          </picker>
+        </view>
+        <view class="form-row">
+          <text class="form-label">学习内容</text>
+          <textarea class="checkin-textarea" placeholder="请描述本次学习内容..." value="{{checkinContent}}" bindinput="onCheckinContentInput" maxlength="200"></textarea>
+        </view>
+        <view class="sheet-actions">
+          <view class="sheet-btn submit-sheet-btn" bindtap="onSubmitCheckin">提交打卡</view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="empty-wrap" wx:else>
+    <text class="empty-icon">🤝</text>
+    <text class="empty-text">结对不存在</text>
+  </view>
+</view>

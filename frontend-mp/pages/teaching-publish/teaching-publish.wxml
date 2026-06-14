@@ -1,0 +1,119 @@
+<view class="page-container">
+  <view class="form-section">
+    <view class="section-label">技艺类型 *</view>
+    <view class="chip-grid">
+      <view
+        class="chip {{form.skillType === item.id ? 'active' : ''}}"
+        wx:for="{{skillTypes}}"
+        wx:key="id"
+        bindtap="onSkillTypeChange"
+        data-id="{{item.id}}"
+      >
+        {{item.icon}} {{item.name}}
+      </view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">标题 *</view>
+    <input class="form-input" placeholder="输入传授技艺标题" value="{{form.title}}" bindinput="onTitleInput" maxlength="50" />
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">描述 *</view>
+    <textarea class="form-textarea" placeholder="详细描述您可传授的技艺内容、经验等" value="{{form.description}}" bindinput="onDescriptionInput" maxlength="500" />
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">传授方式 *</view>
+    <view class="chip-grid">
+      <view
+        class="chip {{form.method === item.id ? 'active' : ''}}"
+        wx:for="{{teachingMethods}}"
+        wx:key="id"
+        bindtap="onMethodChange"
+        data-id="{{item.id}}"
+      >
+        {{item.icon}} {{item.name}}
+      </view>
+    </view>
+    <view class="chip-desc" wx:if="{{form.method}}">
+      {{teachingMethods[form.method] || ''}}
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">所在地区 *</view>
+    <view class="chip-grid">
+      <view
+        class="chip {{form.region === item.id ? 'active' : ''}}"
+        wx:for="{{regions}}"
+        wx:key="id"
+        bindtap="onRegionChange"
+        data-id="{{item.id}}"
+      >
+        {{item.name}}
+      </view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">详细地点</view>
+    <input class="form-input" placeholder="如：苏州市刺绣传习所" value="{{form.location}}" bindinput="onLocationInput" maxlength="100" />
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">最大收徒人数</view>
+    <input class="form-input" type="number" placeholder="默认5人" value="{{form.maxStudents}}" bindinput="onMaxStudentsInput" />
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">时间安排</view>
+    <view class="chip-grid">
+      <view
+        class="chip {{form.timeCommitment === item.id ? 'active' : ''}}"
+        wx:for="{{timeCommitments}}"
+        wx:key="id"
+        bindtap="onTimeCommitmentChange"
+        data-id="{{item.id}}"
+      >
+        {{item.icon}} {{item.name}}
+      </view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">标签</view>
+    <view class="tag-row" wx:if="{{form.tags.length > 0}}">
+      <view class="tag-item" wx:for="{{form.tags}}" wx:key="*this">
+        <text>{{item}}</text>
+        <text class="tag-remove" bindtap="removeTag" data-index="{{index}}">✕</text>
+      </view>
+    </view>
+    <view class="tag-input-row">
+      <input class="add-input" placeholder="输入标签" value="{{tagInput}}" bindinput="onTagInput" confirm-type="done" bindconfirm="onTagsChange" maxlength="10" />
+      <view class="add-btn small" bindtap="onTagsChange">+</view>
+    </view>
+  </view>
+
+  <view class="form-section">
+    <view class="section-label">关联人物</view>
+    <view class="chip-grid">
+      <view
+        class="chip {{form.relatedFigureId === item.id ? 'active' : ''}}"
+        wx:for="{{figureList}}"
+        wx:key="id"
+        bindtap="onRelatedFigureChange"
+        data-id="{{item.id}}"
+      >
+        {{item.name}}
+      </view>
+    </view>
+  </view>
+
+  <view class="submit-area">
+    <view class="submit-btn {{submitting ? 'disabled' : ''}}" bindtap="onSubmit">
+      {{submitting ? '提交中...' : '发布传授技艺'}}
+    </view>
+  </view>
+</view>

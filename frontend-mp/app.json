@@ -64,7 +64,13 @@
     "pages/etiquette-detail/etiquette-detail",
     "pages/craft-tutorial/craft-tutorial",
     "pages/craft-tutorial-detail/craft-tutorial-detail",
-    "pages/craft-tutorial-create/craft-tutorial-create"
+    "pages/craft-tutorial-create/craft-tutorial-create",
+    "pages/pairing/pairing",
+    "pages/teaching-publish/teaching-publish",
+    "pages/learning-publish/learning-publish",
+    "pages/pairing-detail/pairing-detail",
+    "pages/pairing-matches/pairing-matches",
+    "pages/commemorative-card/commemorative-card"
   ],
   "window": {
     "backgroundTextStyle": "dark",
